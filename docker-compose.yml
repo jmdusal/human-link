@@ -1,0 +1,125 @@
+services:
+  # --- UI SERVICE ---
+  ui:
+    build: ./humanlink
+    container_name: human_link_ui
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./humanlink:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000/api
+
+  # --- API SERVICE ---
+  api:
+    # build: ./humanlink-api
+    build:
+      context: ./humanlink-api
+      dockerfile: Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    container_name: human_link_api
+    user: "${UID:-1000}:${GID:-1000}"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./humanlink-api:/var/www
+    env_file:
+      - ./humanlink-api/.env
+    depends_on:
+      - mysql
+      - redis
+
+    # environment: &laravel-env
+    #   - DB_HOST=mysql
+    #   - DB_DATABASE=human_link
+    #   - DB_USERNAME=root
+    #   - DB_PASSWORD=root
+    #   - REDIS_HOST=redis
+    #   - QUEUE_CONNECTION=redis
+    #   - APP_URL=http://localhost:8000
+    #   - FRONTEND_URL=http://localhost:5173
+    #   - SANCTUM_STATEFUL_DOMAINS=localhost:5173
+    #   - SESSION_DOMAIN=localhost
+    #   - SESSION_DRIVER=cookie
+    command: php artisan serve --host=0.0.0.0 --port=8000
+    
+  # --- QUEUE WORKER SERVICE ---
+  queue:
+    # build: ./humanlink-api
+    build:
+      context: ./humanlink-api
+      args:
+          UID: ${UID:-1000}
+          GID: ${GID:-1000}
+    user: "${UID:-1000}:${GID:-1000}"
+    container_name: human_link_queue
+    volumes:
+      - ./humanlink-api:/var/www
+    env_file:
+      - ./humanlink-api/.env
+    depends_on:
+      - mysql
+      - api
+
+    # environment: *laravel-env
+    command: php artisan queue:work --verbose --tries=3 --timeout=90
+    
+  # --- REVERB (WEBSOCKET) SERVICE ---
+  reverb:
+    build:
+      context: ./humanlink-api
+      dockerfile: Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    container_name: human_link_reverb
+    user: "${UID:-1000}:${GID:-1000}"
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./humanlink-api:/var/www
+    env_file:
+      - ./humanlink-api/.env
+    depends_on:
+      - mysql
+      - api
+    command: php artisan reverb:start --host=0.0.0.0 --port=8081 --debug
+
+  # --- REDIS SERVICE ---
+  redis:
+    image: redis:alpine
+    container_name: human_link_redis
+    ports:
+      - "6379:6379"
+
+  # --- MYSQL DATABASE SERVICE ---
+  mysql:
+    image: mysql:8.0
+    container_name: human_link_mysql
+    restart: always
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_DATABASE: human_link
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  # --- PHPMYADMIN SERVICE ---
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: human_link_pma
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      - PMA_HOST=mysql
+      - MYSQL_ROOT_PASSWORD=root
+    depends_on:
+      - mysql
+
+volumes:
+  mysql_data:
