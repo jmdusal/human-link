@@ -2,6 +2,7 @@
 
 ## Project Architecture
 
+```text
 human-link/
 ├── frontend/ (React UI)         # Vite + TS
 │   ├── src/
