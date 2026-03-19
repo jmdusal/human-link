@@ -1,35 +1,32 @@
 # Human Link
 
-A high-performance decoupled application.
+## Project Architecture
 
----
-
-Project Architecture
 human-link/
-├── humanlink/ (React UI)       # Independent Frontend (Vite + TS)
+├── frontend/ (React UI)         # Vite + TS
 │   ├── src/
-│   │   ├── api/                # API client (Axios/React Query) & services
-│   │   ├── components/         # Atomic UI (atoms, molecules, organisms)
-│   │   ├── features/           # Feature-based logic (e.g., Auth, Profile)
-│   │   ├── hooks/              # Reusable custom React hooks
-│   │   ├── layouts/            # Page structures (Admin, Guest)
-│   │   ├── pages/              # View components mapped to routes
-│   │   ├── store/              # State (Zustand, Redux, or Context)
-│   │   ├── types/              # Global TypeScript interfaces
-│   │   └── utils/              # Pure helper functions
-│   └── vite.config.ts          # Build & Alias configuration
+│   │   ├── api/                 # API client (Axios/React Query) & services
+│   │   ├── components/          # Atomic UI (atoms, molecules, organisms)
+│   │   ├── features/            # Feature-based logic (e.g., Auth, Profile)
+│   │   ├── hooks/               # Reusable custom React hooks
+│   │   ├── layouts/             # Page structures (Admin, Guest)
+│   │   ├── pages/               # View components mapped to routes
+│   │   ├── store/               # State (Zustand, Redux, or Context)
+│   │   ├── types/               # Global TypeScript interfaces
+│   │   └── utils/               # Pure helper functions
+│   └── vite.config.ts           # Build & Alias configuration
 │
-└── human-link/ (Laravel API)   # Stateless Backend
+└── backend/ (Laravel API)       # Stateless Backend
     ├── app/
     │   ├── Http/
-    │   │   ├── Controllers/    # Returns JSON only (no Blade)
-    │   │   ├── Requests/       # API validation logic
-    │   │   └── Resources/      # JSON transformation layer
-    │   └── Models/             # Eloquent database entities
-    ├── database/               # Migrations, Seeders, & Factories
+    │   │   ├── Controllers/     # Returns JSON only (no Blade)
+    │   │   ├── Requests/        # API validation logic
+    │   │   └── Resources/       # JSON transformation layer
+    │   └── Models/              # Eloquent database entities
+    ├── database/                # Migrations, Seeders, & Factories
     ├── routes/
-    │   └── api.php             # Core endpoint definitions
-    └── .env                    # Database & Sanctum credentials
+    │   └── api.php              # Core endpoint definitions
+    └── .env                     # Database & Sanctum credentials
 
 ---
 
@@ -59,5 +56,3 @@ In the backend `config/cors.php`, authorize your frontend origin:
 'paths' => ['api/*', 'sanctum/csrf-cookie'],
 'allowed_origins' => ['http://localhost:5173'],
 'supports_credentials' => true,
-
-
