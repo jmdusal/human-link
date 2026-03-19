@@ -2,6 +2,8 @@
 
 A high-performance decoupled application.
 
+---
+
 Project Architecture
 human-link/
 ├── humanlink/ (React UI)       # Independent Frontend (Vite + TS)
@@ -31,9 +33,9 @@ human-link/
 
 ---
 
-## 🚀 Quick Start Guide
+## Quick Start Guide
 
-### 1. ⚙️ Backend (Laravel 12)
+### 1. Backend (Laravel 12)
 The backend serves as a headless API.
 *   **Install:** `composer install`
 *   **Environment:** `cp .env.example .env` (Set `DB_DATABASE`, `APP_URL`)
@@ -41,7 +43,7 @@ The backend serves as a headless API.
 *   **API Mode:** `php artisan install:api` (Ensures Sanctum/Passport is ready)
 *   **Run:** `php artisan serve`
 
-### 2. 🖥️ Frontend (React + TypeScript)
+### 2. Frontend (React + TypeScript)
 The UI is a modern SPA built with Vite.
 *   **Install:** `npm install`
 *   **Environment:** `cp .env.example .env` (Set `VITE_API_URL=http://localhost:8000/api`)
@@ -49,12 +51,13 @@ The UI is a modern SPA built with Vite.
 
 ---
 
-## 🛠️ Key Integration Details
+## Key Integration Details
 
 ### CORS Configuration
 In the backend `config/cors.php`, authorize your frontend origin:
 ```php
 'paths' => ['api/*', 'sanctum/csrf-cookie'],
 'allowed_origins' => ['http://localhost:5173'],
+'supports_credentials' => true,
 
 
