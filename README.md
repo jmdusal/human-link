@@ -57,3 +57,14 @@ In the backend `config/cors.php`, authorize your frontend origin:
 'paths' => ['api/*', 'sanctum/csrf-cookie'],
 'allowed_origins' => ['http://localhost:5173'],
 'supports_credentials' => true,
+
+
+---
+
+### 🐋 Docker Usage (Optional)
+If you are running this project inside a Docker container (e.g., Laravel Sail), add the following to your root or backend `.env` to ensure correct file permissions:
+
+```text
+# Match these to your local user ID (usually 1000 on Linux)
+UID=1000
+GID=1000
