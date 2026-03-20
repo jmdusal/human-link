@@ -2,7 +2,7 @@ export interface LeavePolicy {
     id: number;
     name: string;
     slug: string;
-    defaultCredit: string;
+    defaultCredits: string;
     isActive: number;
     isPaid: number;
     createdAt: string;
