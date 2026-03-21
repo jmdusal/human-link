@@ -8,6 +8,7 @@ use App\Http\Requests\Role\UpdateRoleRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Models\Role;
+use Illuminate\Support\Facades\DB;
 
 class RoleController extends Controller
 {
@@ -23,12 +24,16 @@ class RoleController extends Controller
 
     public function store(StoreRoleRequest $request): JsonResponse
     {
-        $data = array_merge($request->validated(), ['guard_name' => 'web']);
-        $role = Role::create($data);
+        $role = DB::transaction(function () use ($request) {
+            $data = array_merge($request->validated(), ['guard_name' => 'web']);
+            $role = Role::create($data);
 
-        if ($request->has('permissions')) {
-            $role->syncPermissions($request->validated('permissions'));
-        }
+            if ($request->has('permissions')) {
+                $role->syncPermissions($request->input('permissions'));
+            }
+
+            return $role;
+        });
 
         return response()->json([
             'message' => 'Role created successfully.',
@@ -38,11 +43,15 @@ class RoleController extends Controller
 
     public function update(UpdateRoleRequest $request, Role $role): JsonResponse
     {
-        $role->update($request->validated());
+        $role = DB::transaction(function () use ($request, $role) {
+            $role->update($request->validated());
 
-        if ($request->has('permissions')) {
-            $role->syncPermissions($request->validated('permissions'));
-        }
+            if ($request->has('permissions')) {
+                $role->syncPermissions($request->input('permissions'));
+            }
+
+            return $role;
+        });
 
         return response()->json([
             'message' => 'Role updated successfully.',

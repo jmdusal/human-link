@@ -5,6 +5,7 @@ import Input from '@/components/Input';
 import api from '@/api/axios';
 import type { Permission } from '@/types/models';
 import { API_ROUTES } from '@/constants';
+import { camelizeKeys } from '@/utils/formatUtils';
 
 interface PermissionFormProps {
     isOpen: boolean;
@@ -16,10 +17,44 @@ interface PermissionFormProps {
 
 export default function PermissionForm({ isOpen, onClose, onSuccess, onError, selectedPermission }: PermissionFormProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string[]>>({});
     const [formData, setFormData] = useState({ 
         name: '',
     });
+    
+    const handleChange = (field: keyof typeof formData, value: any) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
 
+        if (errors[field as string]) {
+            const { [field as string]: _, ...rest } = errors;
+            setErrors(rest);
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setErrors({});
+        setIsSubmitting(true);
+        
+        try {
+            const res = selectedPermission
+            ? await api.put(API_ROUTES.PERMISSIONS.UPDATE(selectedPermission.id), formData)
+            : await api.post(API_ROUTES.PERMISSIONS.STORE, formData);
+            
+            toast.success(`Permission ${selectedPermission ? 'updated' : 'created'} successfully!`);
+            onSuccess(res.data.data);
+            onClose();
+        } catch (err: any) {
+            if (err.response?.status === 422) {
+                const validationErrors = camelizeKeys(err.response.data.errors);
+                setErrors(validationErrors);
+            }
+            onError(err);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    
     useEffect(() => {
         if (selectedPermission && isOpen) {
             setFormData({
@@ -29,29 +64,6 @@ export default function PermissionForm({ isOpen, onClose, onSuccess, onError, se
             setFormData({ name: ''});
         }
     }, [selectedPermission, isOpen]);
-    
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        const saveRequest = selectedPermission
-            ? api.put(API_ROUTES.PERMISSIONS.UPDATE(selectedPermission.id), formData)
-            : api.post(API_ROUTES.PERMISSIONS.STORE, formData);
-
-        setIsSubmitting(true);
-
-        toast.promise(saveRequest, {
-            loading: 'Processing request...',
-            success: (res) => {
-                onSuccess(res.data.data);
-                onClose();
-                return `Permission ${selectedPermission ? 'updated' : 'created'} successfully!`;
-            },
-            error: (err) => {
-                onError(err);
-                return err?.response?.data?.message || 'Failed to save permission.';
-            }
-        }).finally(() => setIsSubmitting(false));
-    };
 
     return (
         <ModalForm
@@ -68,11 +80,8 @@ export default function PermissionForm({ isOpen, onClose, onSuccess, onError, se
                     label="Name"
                     placeholder="Enter name"
                     value={formData.name}
-                    onChange={(e) => setFormData({
-                        ...formData,
-                        name:
-                        e.target.value
-                    })}
+                    onChange={(e) => handleChange('name', e.target.value)}
+                    error={errors.name?.[0]}
                 />
             </div>
         </ModalForm>

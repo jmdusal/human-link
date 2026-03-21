@@ -1,3 +1,5 @@
+import FormLabel from '@/components/FormLabel';
+
 interface ToggleOption {
     label: string;
     value: string;
@@ -11,6 +13,7 @@ interface ToggleProps {
 }
 
 export default function Toggle({ label, value, options, onChange }: ToggleProps) {
+    // Assuming options[0] is the "active/on" state
     const isActive = value === options[0].value;
 
     const handleToggle = () => {
@@ -19,36 +22,34 @@ export default function Toggle({ label, value, options, onChange }: ToggleProps)
     };
 
     return (
-        <div className="space-y-2 text-left">
-            {label && (
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] opacity-80">
-                    {label}
-                </label>
-            )}
+        <div className="space-y-1.5 text-left group">
+            {label && <FormLabel>{label}</FormLabel>}
             
             <button
                 type="button"
                 onClick={handleToggle}
-                className="flex items-center gap-3 py-1 group outline-none"
+                className="flex items-center gap-2.5 py-1 outline-none cursor-pointer"
             >
+                {/* The Track */}
                 <div className={`
-                    relative inline-flex h-[18px] w-8 shrink-0 items-center rounded-full 
-                    transition-all duration-300 ease-in-out
-                    ${isActive ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.2)]' : 'bg-slate-200'}
+                    relative inline-flex h-5 w-9 shrink-0 items-center rounded-full 
+                    transition-colors duration-200 ease-in-out
+                    ${isActive ? 'bg-blue-600' : 'bg-slate-200 hover:bg-slate-300'}
                 `}>
+                    {/* The Thumb */}
                     <span className={`
-                        pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white 
-                        shadow-sm transition duration-300 ease-in-out
-                        ${isActive ? 'translate-x-4' : 'translate-x-0.5'}
+                        pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white 
+                        shadow-sm ring-0 transition duration-200 ease-in-out
+                        ${isActive ? 'translate-x-4.5' : 'translate-x-0.5'}
                     `} />
                 </div>
                 
+                {/* The Label */}
                 <span className={`
-                    text-[11px] font-bold tracking-wide transition-colors cursor-pointer
-                    ${isActive ? 'text-blue-600' : 'text-slate-400'}
-                    group-hover:opacity-80
+                    text-sm font-medium transition-colors
+                    ${isActive ? 'text-slate-900' : 'text-slate-500'}
                 `}>
-                    {isActive ? options[0].label.toUpperCase() : options[1].label.toUpperCase()}
+                    {isActive ? options[0].label : options[1].label}
                 </span>
             </button>
         </div>

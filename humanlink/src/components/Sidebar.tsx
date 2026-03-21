@@ -23,27 +23,13 @@ const NavItem = ({ icon, label, to, isChild = false, isCollapsed = false }: NavI
         } ${isCollapsed ? 'justify-center px-0 mx-2' : ''} ${
             isActive
             ? 'bg-white shadow-sm text-blue-600 font-bold'
-            : 'text-black hover:bg-slate-200/50 hover:text-slate-800 font-bold'
+            // : 'text-black hover:bg-slate-200/50 hover:text-slate-800 font-bold'
+            : 'text-slate-600 hover:bg-slate-200/50 hover:text-slate-900 font-semibold'
             }`}
     >
         <span className="shrink-0">{icon}</span>
         {!isCollapsed && <span className="whitespace-nowrap">{label}</span>}
     </NavLink>
-    // <NavLink
-    //     to={to}
-    //     end={to === '/dashboard'}
-    //     className={({ isActive }) => `flex items-center gap-4 px-4 py-2.5 rounded-xl cursor-pointer transition-all ${
-    //     isChild ? 'ml-9 text-xs' : 'text-sm'
-    //     } ${
-    //         isActive
-    //         ? 'bg-white shadow-sm text-blue-600 font-bold'
-    //         : 'text-black hover:bg-slate-200/50 hover:text-slate-800 font-bold'
-    //         // : 'text-slate-500 hover:bg-slate-200/50 hover:text-slate-800'
-    //         }`}
-    // >
-    //     {icon}
-    //     <span>{label}</span>
-    // </NavLink>
 );
 
 interface NavParentProps {
@@ -99,16 +85,8 @@ export default function Sidebar() {
 
     
     return (
-        // <aside className="w-64 bg-[#F0F2F5] border-r border-slate-300/50 flex flex-col p-4 shadow-[4px_0_15px_-5px_rgba(0,0,0,0.05)] h-full">
         <aside className={`relative ${isCollapsed ? 'w-20' : 'w-64'} bg-[#F0F2F5] border-r border-slate-300/50 flex flex-col p-4 transition-all duration-300 ease-in-out h-screen sticky top-0`}>
-            
-            {/* <button 
-                onClick={() => setIsCollapsed(!isCollapsed)}
-                className="absolute -right-3 top-10 bg-white border border-slate-200 rounded-full p-1 shadow-sm hover:bg-slate-50 transition-all z-50"
-            >
-                {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-            </button> */}
-            
+
             {/* Brand Logo */}
             <div className="flex items-center gap-3 px-2 mb-8">
                 <div className="h-8 w-8 bg-blue-600 rounded-lg shadow-lg flex items-center justify-center text-white font-bold">H</div>
@@ -148,26 +126,6 @@ export default function Sidebar() {
                 </div>
             </nav>
 
-                {/* <nav className="flex-1 space-y-1">
-                    {navItems
-                        .filter((item: any) => {
-                            return !item.permission || can(item.permission);
-                        })
-                        .map((item: any) => (
-                            <NavItem 
-                                key={item.path} 
-                                to={item.path} 
-                                icon={item.icon} 
-                                label={item.label} 
-                            />
-                        ))
-                    }
-
-                    <NavParent icon={<Settings size={18}/>} label="Configuration">
-                        <NavItem to="/settings" icon={<Globe size={14}/>} label="Global Settings" isChild />
-                        <NavItem to="/security" icon={<Lock size={14}/>} label="Security Keys" isChild />
-                    </NavParent>
-                </nav> */}
             <div className="mt-auto p-4 bg-white/40 rounded-2xl border border-white/60 shadow-sm backdrop-blur-sm">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">System</p>
                 <div className="flex items-center gap-2 text-xs font-bold text-green-600">

@@ -9,6 +9,7 @@ import Button from '@/components/Button';
 import api from '@/api/axios';
 import UserForm from '@/pages/users/UserForm';
 import ModalConfirmation from '@/components/modals/ModalConfirmation';
+import TableActions from '@/components/TableActions';
 import { DataTable } from '@/components/Datatable';
 import { useAuth } from '@/context/AuthContext';
 import { API_ROUTES } from '@/constants';
@@ -94,32 +95,38 @@ export default function UserIndex() {
     };
     const columns = useMemo(() => [
         columnHelper.accessor('name', {
-            header: 'User Identity',
+            header: () => (
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
+                    User Identity
+                </span>
+            ),
             cell: (info) => (
-                <div className="flex items-center gap-4">
-                    <div className={`h-10 w-10 ${info.row.original.color || 'bg-slate-500'} rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-slate-100`}>
-                        {info.getValue().charAt(0)}
+                <div className="flex items-center gap-3 py-1">
+                    <div className="h-9 w-9 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 font-bold text-xs border border-blue-100/50 shadow-sm">
+                        {info.getValue()?.charAt(0).toUpperCase() || '?'}
                     </div>
+                    
+                    
+                    
                     <div>
-                        <p className="font-bold text-slate-800 text-sm">{info.getValue()}</p>
-                        <p className="text-[11px] text-slate-400 font-medium">{info.row.original.email}</p>
+                        <p className="font-semibold text-slate-900 text-sm leading-none mb-1">{info.getValue()}</p>
+                        <p className="text-[11px] text-slate-500 font-normal">{info.row.original.email}</p>
                     </div>
                 </div>
             ),
         }),
         columnHelper.accessor('roles', {
-            header: 'Access Level',
+            header: () => (
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
+                    Access
+                </span>
+            ),
             cell: (info) => {
-                const roles = info.getValue() || [];
-                const roleName = roles.length > 0 ? roles[0].name : 'Operator';
-                
+                const roleName = info.getValue()?.[0]?.name || 'Operator';
                 return (
-                    <div className="flex items-center gap-2 bg-slate-50 w-fit px-3 py-1 rounded-full border border-slate-100">
-                        <Shield size={12} className="text-blue-600" />
-                        <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">
-                            {roleName}
-                        </span>
-                    </div>
+                    <span className="px-2 py-1 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-tight">
+                        {roleName}
+                    </span>
                 );
             },
         }),
@@ -144,51 +151,33 @@ export default function UserIndex() {
         }),
         columnHelper.display({
             id: 'actions',
-            cell: (info) => (
-                <div className="text-right relative px-6">
-                    <button
-                        onClick={() => setOpenDropdown(openDropdown === info.row.original.id ? null : info.row.original.id)}
-                        className="p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all cursor-pointer border-none bg-transparent"
-                    >
-                        <MoreHorizontal size={20} />
-                    </button>
-                    
-                    {openDropdown === info.row.original.id && (
-                        <>
-                            <div className="fixed inset-0 z-20" onClick={() => setOpenDropdown(null)}></div>
-                            <div className="absolute right-8 bottom-full mb-2 w-44 bg-white rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] border border-slate-100 z-30 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                                <div className="py-2">
-                                    <button
-                                        onClick={() => handleView(info.row.original)}
-                                        className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition-colors border-none bg-transparent cursor-pointer"
-                                    >
-                                        <Eye size={14} className="text-blue-500" /> Show/View
-                                    </button>
-                                    
-                                    {can('user-edit') && (
-                                        <button 
-                                            onClick={() => handleEdit(info.row.original)}
-                                            className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition-colors border-none bg-transparent cursor-pointer"
-                                        >
-                                            <Pencil size={14} className="text-amber-500" /> Edit
-                                        </button>
-                                    )}
-                                    
-                                    {can('user-delete') && (
-                                        <button
-                                            onClick={() => handleDeleteClick(info.row.original)}
-                                            className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-bold text-red-500 hover:bg-red-50 transition-colors border-none bg-transparent cursor-pointer"
-                                        >
-                                            <Trash2 size={14} /> Delete
-                                        </button>
-                                    )}
-                                    
-                                </div>
-                            </div>
-                        </>
-                    )}
-                </div>
-            ),
+            cell: (info) => {
+                return (
+                    <TableActions 
+                        actions={[
+                            {
+                                label: 'View',
+                                icon: Eye,
+                                onClick: () => handleView(info.row.original),
+                                show: true
+                            },
+                            { 
+                                label: 'Edit',
+                                icon: Pencil,
+                                onClick: () => handleEdit(info.row.original),
+                                show: can('user-edit') 
+                            },
+                            { 
+                                label: 'Delete',
+                                icon: Trash2,
+                                onClick: () => handleDeleteClick(info.row.original),
+                                variant: 'danger',
+                                show: can('user-delete')
+                            },
+                        ]}
+                    />
+                );
+            },
         }),
     ], [openDropdown, can]);
 
@@ -196,9 +185,7 @@ export default function UserIndex() {
         <div className="w-full">
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-slate-100 text-slate-600">
-                        <User2Icon size={24} className="text-blue-600" />
-                    </div>
+                    
                     <div>
                         <h1 className="text-2xl font-bold text-slate-800 tracking-tight">User Management</h1>
                         <p className="text-slate-400 text-sm font-medium">Manage operators and system access levels.</p>

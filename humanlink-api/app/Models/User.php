@@ -55,6 +55,11 @@ use Spatie\Activitylog\LogOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereStatus($value)
  * @property-read \App\Models\UserRate|null $activeRate
  * @property-read \App\Models\UserRate|null $rate
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Schedule> $activeSchedules
+ * @property-read int|null $active_schedules_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Schedule> $schedules
+ * @property-read int|null $schedules_count
+ * @property-read \App\Models\Schedule|null $schedule
  * @mixin \Eloquent
  */
 class User extends Authenticatable
@@ -97,5 +102,12 @@ class User extends Authenticatable
     public function rate()
     {
         return $this->hasOne(UserRate::class)->where('is_active', true);
+    }
+
+    public function schedule()
+    {
+        // return $this->hasMany(Schedule::class);
+        // return $this->hasMany(Schedule::class)->whereNull('end_date');
+        return $this->hasOne(Schedule::class)->whereNull('end_date');
     }
 }

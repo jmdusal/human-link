@@ -8,6 +8,7 @@ use App\Http\Requests\LeavePolicy\StoreLeavePolicyRequest;
 use App\Http\Requests\LeavePolicy\UpdateLeavePolicyRequest;
 use Illuminate\Http\JsonResponse;
 use App\Models\LeavePolicy;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 
@@ -24,11 +25,13 @@ class LeavePolicyController extends Controller
 
     public function store(StoreLeavePolicyRequest $request): JsonResponse
     {
-        $data = array_merge($request->validated(), [
-            'slug' => Str::slug($request->name)
-        ]);
+        $leavePolicy = DB::transaction(function () use ($request) {
+            $data = array_merge($request->validated(), [
+                'slug' => Str::slug($request->name)
+            ]);
 
-        $leavePolicy = LeavePolicy::create($data);
+            return LeavePolicy::create($data);
+        });
 
         return response()->json([
             'message' => 'Leave policy created successfully.',
@@ -38,13 +41,17 @@ class LeavePolicyController extends Controller
 
     public function update(UpdateLeavePolicyRequest $request, LeavePolicy $leavePolicy): JsonResponse
     {
-        $data = $request->validated();
+        $leavePolicy = DB::transaction(function () use ($request, $leavePolicy) {
+            $data = $request->validated();
 
-        if ($request->has('name')) {
-            $data['slug'] = Str::slug($request->name);
-        }
+            if ($request->has('name')) {
+                $data['slug'] = Str::slug($request->name);
+            }
 
-        $leavePolicy->update($data);
+            $leavePolicy->update($data);
+
+            return $leavePolicy;
+        });
 
         return response()->json([
             'message' => 'Leave policy updated successfully.',

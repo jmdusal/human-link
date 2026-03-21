@@ -15,10 +15,15 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        collect(['activity-log', 'user', 'role', 'permission', 'leave-policy'])->each(function ($model) {
+        collect(['activity-log', 'user', 'role', 'permission', 'leave-policy', 'schedule'])->each(function ($model) {
 
-            if ($model === 'activity-log') {
-                Permission::create(['name' => "activity-log-view"]);
+            // if ($model === 'activity-log') {
+            //     Permission::create(['name' => "activity-log-view"]);
+            //     return;
+            // }
+
+            if (in_array($model, ['activity-log', 'schedule'])) {
+                Permission::create(['name' => "$model-view"]);
                 return;
             }
 

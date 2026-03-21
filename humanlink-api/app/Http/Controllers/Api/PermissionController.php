@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 // use Spatie\Permission\Models\Permission;
 use App\Models\Permission;
+use Illuminate\Support\Facades\DB;
 
 class PermissionController extends Controller
 {
@@ -23,9 +24,10 @@ class PermissionController extends Controller
 
     public function store(StorePermissionRequest $request): JsonResponse
     {
-        // $permission = Permission::create($request->validated());
-        $data = array_merge($request->validated(), ['guard_name' => 'web']);
-        $permission = Permission::create($data);
+        $permission = DB::transaction(function () use ($request) {
+            $data = array_merge($request->validated(), ['guard_name' => 'web']);
+            return Permission::create($data);
+        });
 
         return response()->json([
             'status' => 'success',
@@ -36,7 +38,10 @@ class PermissionController extends Controller
 
     public function update(UpdatePermissionRequest $request, Permission $permission): JsonResponse
     {
-        $permission->update($request->validated());
+        $permission = DB::transaction(function () use ($request, $permission) {
+            $permission->update($request->validated());
+            return $permission;
+        });
 
         return response()->json([
             'status' => 'success',

@@ -1,5 +1,6 @@
 import type { Role } from '@/types/models/Role';
 import type { UserRate } from '@/types/models/UserRate';
+import type { Schedule } from '@/types/models/Schedule';
 
 export interface User {
     id: number;
@@ -10,5 +11,6 @@ export interface User {
     color?: string;
     roles: Role[];
     rate?: UserRate;
+    schedule?: Schedule;
     createdAt: string;
 }

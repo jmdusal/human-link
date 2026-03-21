@@ -29,5 +29,8 @@ export const API_ROUTES = {
         STORE: '/leave-policies',
         UPDATE: (id: number) => `/leave-policies/${id}`,
         DELETE: (id: number) => `/leave-policies/${id}`,
+    },
+    SCHEDULES: {
+        LIST: '/schedules',
     }
 } as const;

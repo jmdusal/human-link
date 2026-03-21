@@ -1,5 +1,5 @@
 import { lazy } from 'react';
-import { LayoutDashboard, Users, Database, History, Shield, ShieldCheck, CalendarDays } from 'lucide-react';
+import { LayoutDashboard, Users, Database, History, Shield, ShieldCheck, CalendarDays, Clock } from 'lucide-react';
 
 const Overview = lazy(() => import('@/pages/Overview'));
 const Team = lazy(() => import('@/pages/Team'));
@@ -8,6 +8,7 @@ const Login = lazy(() => import('@/pages/authentication/Login'));
 const ActivityLogIndex = lazy(() => import('@/pages/activity-logs/Index'));
 const UserIndex = lazy(() => import('@/pages/users/Index'));
 const LeavePolicyIndex = lazy(() => import('@/pages/leave-policies/Index'));
+const ScheduleIndex = lazy(() => import('@/pages/schedules/Index'));
 
 const RoleIndex = lazy(() => import('@/pages/roles/Index'));
 const PermissionIndex = lazy(() => import('@/pages/permissions/Index'));
@@ -29,7 +30,15 @@ export const navItems = [
         component: <UserIndex />,
         permission: 'user-view'
     },
-    
+    {
+        path: '/schedules',
+        label: 'Schedules',
+        title: 'Schedules',
+        category: 'Manage',
+        icon: <CalendarDays size={18}/>,
+        component: <ScheduleIndex />,
+        permission: 'schedule-view'
+    },
     {
         path: '/projects',
         label: 'Projects',
@@ -44,6 +53,7 @@ export const navItems = [
         icon: <Users size={18}/>, 
         component: <Team /> 
     },
+    
     {
         path: '/leave-policies',
         label: 'Leave Policy',

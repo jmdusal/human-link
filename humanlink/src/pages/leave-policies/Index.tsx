@@ -7,6 +7,7 @@ import api from '@/api/axios';
 import Button from '@/components/Button';
 import LeavePolicyForm from '@/pages/leave-policies/LeavePolicyForm';
 import ModalConfirmation from '@/components/modals/ModalConfirmation';
+import TableActions from '@/components/TableActions';
 import { useAuth } from '@/context/AuthContext';
 import { API_ROUTES } from '@/constants';
 import type { LeavePolicy } from '@/types/models';
@@ -105,6 +106,17 @@ export default function LeavePolicyIndex() {
                 </div>
             ),
         }),
+        columnHelper.accessor('defaultCredits', {
+            header: 'Policy Name',
+            cell: (info) => (
+                <div className="flex items-center gap-4">
+                    <div>
+                        <p className="font-medium text-slate-700 text-sm">{info.row.original.defaultCredits}</p>
+                    </div>
+                </div>
+            ),
+        }),
+        
         columnHelper.accessor('createdAt', {
             header: 'Created',
             cell: (info) => (
@@ -118,53 +130,27 @@ export default function LeavePolicyIndex() {
         }),
         columnHelper.display({
             id: 'actions',
-            // header: 'Action',
-            cell: (info) => (
-                <div className="text-right relative px-6">
-                    <button
-                        onClick={() => setOpenDropdown(openDropdown === info.row.original.id ? null : info.row.original.id)}
-                        className="p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all cursor-pointer border-none bg-transparent"
-                    >
-                        <MoreHorizontal size={20} />
-                    </button>
-                    
-                    {openDropdown === info.row.original.id && (
-                        <>
-                            <div className="fixed inset-0 z-20" onClick={() => setOpenDropdown(null)}></div>
-                            <div className="absolute right-8 bottom-full mb-2 w-44 bg-white rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] border border-slate-100 z-30 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                                <div className="py-2">
-                                    
-                                    {/* <button
-                                        onClick={() => handleView(info.row.original)}
-                                        className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition-colors border-none bg-transparent cursor-pointer"
-                                    >
-                                        <Eye size={14} className="text-blue-500" /> Show/View
-                                    </button> */}
-                                    
-                                    {can('leave-policy-edit') && (
-                                        <button 
-                                            onClick={() => handleEdit(info.row.original)}
-                                            className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition-colors border-none bg-transparent cursor-pointer"
-                                        >
-                                            <Pencil size={14} className="text-amber-500" /> Edit
-                                        </button>
-                                    )}
-                                    
-                                    {can('leave-policy-delete') && (
-                                        <button
-                                            onClick={() => handleDeleteClick(info.row.original)}
-                                            className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-bold text-red-500 hover:bg-red-50 transition-colors border-none bg-transparent cursor-pointer"
-                                        >
-                                            <Trash2 size={14} /> Delete
-                                        </button>
-                                    )}
-                                    
-                                </div>
-                            </div>
-                        </>
-                    )}
-                </div>
-            ),
+            cell: (info) => {
+                return (
+                    <TableActions
+                        actions={[
+                            {
+                                label: 'Edit',
+                                icon: Pencil,
+                                onClick: () => handleEdit(info.row.original),
+                                show: can('leave-policy-edit')
+                            },
+                            {
+                                label: 'Delete',
+                                icon: Trash2,
+                                onClick: () => handleDeleteClick(info.row.original),
+                                variant: 'danger',
+                                show: can('leave-policy-delete')
+                            },
+                        ]}
+                    />
+                );
+            },
         }),
     ], [openDropdown, can, formatDate]);
 

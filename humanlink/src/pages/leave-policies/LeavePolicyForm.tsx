@@ -5,6 +5,7 @@ import Input from '@/components/Input';
 import api from '@/api/axios';
 import type { LeavePolicy } from '@/types/models';
 import { API_ROUTES } from '@/constants';
+import { camelizeKeys } from '@/utils/formatUtils';
 
 interface LeavePolicyFormProps {
     isOpen: boolean;
@@ -17,7 +18,7 @@ interface LeavePolicyFormProps {
 
 export default function LeavePolicyForm({ isOpen, onClose, onSuccess, onError, selectedLeavePolicy }: LeavePolicyFormProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
-    
+    const [errors, setErrors] = useState<Record<string, string[]>>({});
     const [formData, setFormData] = useState({ 
         name: '',
         slug: '',
@@ -26,8 +27,56 @@ export default function LeavePolicyForm({ isOpen, onClose, onSuccess, onError, s
         isPaid: true,
     });
     
-    const formatSlug = (text: string) => text.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const handleChange = (field: keyof typeof formData, value: any) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
 
+        if (errors[field as string]) {
+            const { [field as string]: _, ...rest } = errors;
+            setErrors(rest);
+        }
+    };
+    
+    const formatSlug = (text: string) => text.toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newName = e.target.value;
+        setFormData(prev => ({
+            ...prev,
+            name: newName,
+            slug: formatSlug(newName)
+        }));
+        
+        if (errors.name) {
+            const { name, ...rest } = errors;
+            setErrors(rest);
+        }
+    };
+    
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setErrors({});
+        setIsSubmitting(true);
+        
+        try {
+            const res = selectedLeavePolicy
+            ? await api.put(API_ROUTES.LEAVE_POLICIES.UPDATE(selectedLeavePolicy.id), formData)
+            : await api.post(API_ROUTES.LEAVE_POLICIES.STORE, formData);
+            
+            toast.success(`Policy ${selectedLeavePolicy ? 'updated' : 'created'} successfully!`);
+            onSuccess(res.data.data);
+            onClose();
+            
+        } catch (err: any) {
+            if (err.response?.status === 422) {
+                const validationErrors = camelizeKeys(err.response.data.errors);
+                setErrors(validationErrors);
+            }
+            onError(err);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    
     useEffect(() => {
         if (selectedLeavePolicy && isOpen) {
             setFormData({
@@ -48,38 +97,6 @@ export default function LeavePolicyForm({ isOpen, onClose, onSuccess, onError, s
         }
     }, [selectedLeavePolicy, isOpen]);
     
-    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newName = e.target.value;
-        setFormData(prev => ({
-            ...prev,
-            name: newName,
-            slug: formatSlug(newName)
-        }));
-    };
-    
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        const saveRequest = selectedLeavePolicy
-            ? api.put(API_ROUTES.LEAVE_POLICIES.UPDATE(selectedLeavePolicy.id), formData)
-            : api.post(API_ROUTES.LEAVE_POLICIES.STORE, formData);
-
-        setIsSubmitting(true);
-
-        toast.promise(saveRequest, {
-            loading: 'Processing request...',
-            success: (res) => {
-                onSuccess(res.data.data);
-                onClose();
-                return `Policy ${selectedLeavePolicy ? 'updated' : 'created'} successfully!`;
-            },
-            error: (err) => {
-                onError(err);
-                return err?.response?.data?.message || 'Failed to save policy.';
-            }
-        }).finally(() => setIsSubmitting(false));
-    };
-
     return (
         <ModalForm
             isOpen={isOpen}
@@ -96,6 +113,7 @@ export default function LeavePolicyForm({ isOpen, onClose, onSuccess, onError, s
                     placeholder="Enter name"
                     value={formData.name}
                     onChange={handleNameChange}
+                    error={errors.name?.[0]}
                 />
                 
                 <Input
@@ -111,8 +129,8 @@ export default function LeavePolicyForm({ isOpen, onClose, onSuccess, onError, s
                     step="0.01"
                     placeholder="0.00"
                     value={formData.defaultCredits}
-                    onChange={(e) => setFormData({ ...formData, defaultCredits: e.target.value })}
-                    required
+                    onChange={(e) => handleChange('defaultCredits', e.target.value)}
+                    error={errors.defaultCredits?.[0]}
                 />
                 
                 

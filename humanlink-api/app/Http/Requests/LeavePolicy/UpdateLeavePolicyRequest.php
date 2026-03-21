@@ -14,21 +14,11 @@ class UpdateLeavePolicyRequest extends FormRequest
 
     public function rules(): array
     {
-        $policyId = $this->route('leave_policy')?->id ?? $this->route('leave_policy');
+        $leavePolicy = $this->route('leavePolicy')?->id ?? $this->route('leavePolicy');
 
         return [
-            'name' => [
-                'sometimes',
-                'string',
-                'max:255',
-                Rule::unique('leave_policies', 'name')->ignore($policyId),
-            ],
-            'default_credits' => [
-                'sometimes',
-                'numeric',
-                'min:0',
-                'max:999.99'
-            ],
+            'name' => ['sometimes', 'string', 'max:255', Rule::unique('leave_policies', 'name')->ignore($leavePolicy),],
+            'default_credits' => ['sometimes', 'numeric', 'min:0', 'max:999.99'],
             'is_active' => ['sometimes', 'boolean'],
             'is_paid' => ['sometimes', 'boolean'],
         ];

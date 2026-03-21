@@ -10,12 +10,13 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Notifications\NewActivityNotification;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
     public function index(): JsonResponse
     {
-        $users = User::with(['roles', 'rate'])->latest()->get();
+        $users = User::with(['roles', 'rate', 'schedule'])->latest()->get();
 
         return response()->json([
             'data' => $users
@@ -24,69 +25,69 @@ class UserController extends Controller
 
     public function store(StoreUserRequest $request): JsonResponse
     {
-        $data = $request->validated();
+        $user = DB::transaction(function () use ($request) {
+            $user = User::create($request->validated());
 
-        if (isset($data['password'])) {
-            $data['password'] = Hash::make($data['password']);
-        }
+            if ($request->filled('monthly_rate')) {
+                $user->rate()->create($request->only([
+                    'monthly_rate', 'daily_rate', 'hourly_rate',
+                    'allowance_monthly', 'effective_date', 'is_active'
+                ]));
+            }
 
-        $user = User::create($data);
+            $user->schedule()->create([
+                'weekly_data' => $request->weekly_data,
+                'start_date'  => $request->start_date ?? now()->format('Y-m-d'),
+            ]);
 
-        if ($request->has('monthly_rate')) {
-            $user->rate()->create($request->only([
-                'monthly_rate', 'daily_rate', 'hourly_rate',
-                'allowance_monthly', 'effective_date', 'is_active'
-            ]));
-        }
+            $user->assignRole($request->role ?? 'user');
+            $user->notify(new NewActivityNotification());
 
-        if ($request->has('role')) {
-            $user->assignRole($request->role);
-        } else {
-            $user->assignRole('user');
-        }
-
-        $user->notify(new NewActivityNotification());
+            return $user;
+        });
 
         return response()->json([
-            'status' => 'success',
-            'message' => 'User created successfully',
-            'data' => $user->load(['roles', 'rate'])
-            // 'data' => $user->load('roles')
+            'data' => $user->load(['roles', 'rate', 'schedule'])
         ], 201);
-    }
-
-    public function show(User $user): JsonResponse
-    {
-        return response()->json([
-            'status' => 'success',
-            'data' => $user
-        ], 200);
     }
 
     public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
-        // $user->update($request->validated());
-        $user->update($request->only(['name', 'email', 'status', 'password']));
+        $user = DB::transaction(function () use ($request, $user) {
 
-        if ($request->hasAny(['monthly_rate', 'daily_rate', 'hourly_rate'])) {
-            $user->rate()->updateOrCreate(
-                ['user_id' => $user->id],
-                $request->only([
-                    'monthly_rate', 'daily_rate', 'hourly_rate',
-                    'allowance_monthly', 'effective_date', 'is_active'
-                ])
-            );
-        }
+            $user->update($request->validated());
 
-        if ($request->has('role')) {
-            $user->syncRoles($request->role);
-        }
+            if ($request->has('role')) {
+                $user->syncRoles($request->role);
+            }
+
+            if ($request->hasAny(['monthly_rate', 'daily_rate', 'hourly_rate'])) {
+                $user->rate()->updateOrCreate(
+                    ['user_id' => $user->id],
+                    $request->only([
+                        'monthly_rate', 'daily_rate', 'hourly_rate',
+                        'allowance_monthly', 'effective_date', 'is_active'
+                    ])
+                );
+            }
+
+            if ($request->filled('weekly_data')) {
+                $user->schedule()->updateOrCreate(
+                    ['user_id' => $user->id],
+                    [
+                        'weekly_data' => $request->weekly_data,
+                        'start_date'  => $request->start_date ?? now()->format('Y-m-d'),
+                    ]
+                );
+            }
+
+            return $user;
+
+        });
 
         return response()->json([
-            'status' => 'success',
             'message' => 'User updated successfully',
-            'data' => $user->load(['roles', 'rate'])
-            // 'data' => $user->load('roles')
+            'data' => $user->load(['roles', 'rate', 'schedule'])
         ], 200);
     }
 

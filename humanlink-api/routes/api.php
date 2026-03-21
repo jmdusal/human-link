@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AuthenticationController;
 use App\Http\Controllers\Api\LeavePolicyController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\Api\UserController;
 
 Route::group(['middleware' => ['web']], function () {
@@ -66,4 +67,9 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::put('/{leavePolicy}', 'update')->name('update');
         Route::delete('/{leavePolicy}', 'destroy')->name('destroy');
     });
+
+    Route::controller(ScheduleController::class)->prefix('schedules')->name('schedules.')->group(function () {
+        Route::get('/', 'index')->name('index');
+    });
+
 });

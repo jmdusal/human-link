@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { echo } from '../../lib/echo';
+import { echo } from '../lib/echo';
 
 export const useNotifications = (userId: number | undefined) => {
     const [notifications, setNotifications] = useState<any[]>([]);

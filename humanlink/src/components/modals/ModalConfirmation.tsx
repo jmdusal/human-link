@@ -1,4 +1,7 @@
-import { Trash2 } from 'lucide-react';
+import { X, Loader2, AlertTriangle, Info, Trash2 } from 'lucide-react';
+import Button from '@/components/Button';
+
+type ConfirmationVariant = 'danger' | 'warning' | 'info';
 
 interface ModalConfirmationProps {
     isOpen: boolean;
@@ -7,52 +10,77 @@ interface ModalConfirmationProps {
     title: string;
     message: string;
     loading?: boolean;
+    confirmText?: string;
+    variant?: ConfirmationVariant;
 }
 
-export default function ModalConfirmation({ 
-    isOpen, onClose, onConfirm, title, message, loading 
+export default function ModalConfirmation({ isOpen, onClose, onConfirm, title, message, loading,confirmText,variant = 'danger' 
 }: ModalConfirmationProps) {
     if (!isOpen) return null;
 
+    const variantConfig = {
+        danger: { 
+            icon: Trash2, 
+            iconColor: 'text-red-600 bg-red-50 border-red-100', 
+            btnVariant: 'danger' as const 
+        },
+        warning: { 
+            icon: AlertTriangle, 
+            iconColor: 'text-amber-600 bg-amber-50 border-amber-100', 
+            btnVariant: 'primary' as const
+        },
+        info: { 
+            icon: Info, 
+            iconColor: 'text-blue-600 bg-blue-50 border-blue-100', 
+            btnVariant: 'primary' as const 
+        },
+    };
+
+    const { icon: Icon, iconColor, btnVariant } = variantConfig[variant];
+
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <div 
-                className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300" 
-                onClick={onClose} 
-            />
-            
-            {/* Modal Content */}
-            <div className="relative bg-white w-full max-w-sm rounded-3xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] border border-slate-100 p-6 animate-in zoom-in-95 duration-200">
-                <div className="flex flex-col items-center text-center gap-4">
-                    <div className="h-16 w-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 shadow-inner">
-                        <Trash2 size={32} />
-                    </div>
-                    
-                    <div>
-                        <h3 className="text-xl font-black text-slate-800 tracking-tight">{title}</h3>
-                        <p className="text-sm text-slate-500 font-medium mt-1 leading-relaxed">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-hidden bg-slate-900/40 backdrop-blur-[2px] animate-in fade-in duration-200">
+            <div className="absolute inset-0" onClick={onClose} />
+            <div className="relative w-full max-w-sm bg-white rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-2 border border-slate-200">
+                <button
+                    onClick={onClose}
+                    className="absolute right-3 top-3 p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-400 hover:text-slate-600 z-10"
+                >
+                    <X size={16} />
+                </button>
+
+                <div className="p-6">
+                    <div className="flex flex-col items-center text-center">
+                        <div className={`h-12 w-12 rounded-xl flex items-center justify-center border ${iconColor} mb-4`}>
+                            <Icon size={24} />
+                        </div>
+                        
+                        <h3 className="text-lg font-semibold text-slate-900 leading-tight">
+                            {title}
+                        </h3>
+                        <p className="text-slate-500 text-sm mt-2 leading-relaxed">
                             {message}
                         </p>
                     </div>
 
-                    <div className="flex w-full gap-3 mt-2">
-                        <button
+                    <div className="flex w-full gap-3 mt-8">
+                        <Button
+                            variant="secondary"
                             onClick={onClose}
                             disabled={loading}
-                            className="flex-1 px-4 py-3 rounded-2xl bg-slate-100 text-slate-600 text-xs font-bold hover:bg-slate-200 transition-all border-none cursor-pointer disabled:opacity-50"
+                            className="flex-1 justify-center py-2.5"
                         >
                             Cancel
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                            variant={btnVariant}
                             onClick={onConfirm}
                             disabled={loading}
-                            className="flex-1 px-4 py-3 rounded-2xl bg-red-500 text-white text-xs font-bold hover:bg-red-600 shadow-lg shadow-red-200 transition-all border-none cursor-pointer flex items-center justify-center gap-2 disabled:opacity-70"
+                            icon={loading ? Loader2 : undefined}
+                            className={`flex-1 justify-center py-2.5 ${loading ? 'opacity-70' : ''}`}
                         >
-                            {loading ? (
-                                <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            ) : "Confirm Delete"}
-                        </button>
+                            {loading ? 'Processing...' : (confirmText || (variant === 'danger' ? 'Delete' : 'Confirm'))}
+                        </Button>
                     </div>
                 </div>
             </div>

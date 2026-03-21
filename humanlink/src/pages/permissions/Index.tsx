@@ -8,6 +8,7 @@ import api from '@/api/axios';
 import Button from '@/components/Button';
 import PermissionForm from '@/pages/permissions/PermissionForm';
 import ModalConfirmation from '@/components/modals/ModalConfirmation';
+import TableActions from '@/components/TableActions';
 import { useAuth } from '@/context/AuthContext';
 import { API_ROUTES } from '@/constants';
 import type { Permission } from '@/types/models';
@@ -118,52 +119,27 @@ export default function PermissionIndex() {
         }),
         columnHelper.display({
             id: 'actions',
-            // header: 'Action',
-            cell: (info) => (
-                <div className="text-right relative px-6">
-                    <button
-                        onClick={() => setOpenDropdown(openDropdown === info.row.original.id ? null : info.row.original.id)}
-                        className="p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all cursor-pointer border-none bg-transparent"
-                    >
-                        <MoreHorizontal size={20} />
-                    </button>
-                    
-                    {openDropdown === info.row.original.id && (
-                        <>
-                            <div className="fixed inset-0 z-20" onClick={() => setOpenDropdown(null)}></div>
-                            <div className="absolute right-8 bottom-full mb-2 w-44 bg-white rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] border border-slate-100 z-30 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                                <div className="py-2">
-                                    <button
-                                        onClick={() => handleView(info.row.original)}
-                                        className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition-colors border-none bg-transparent cursor-pointer"
-                                    >
-                                        <Eye size={14} className="text-blue-500" /> Show/View
-                                    </button>
-                                    
-                                    {can('permission-edit') && (
-                                        <button 
-                                            onClick={() => handleEdit(info.row.original)}
-                                            className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition-colors border-none bg-transparent cursor-pointer"
-                                        >
-                                            <Pencil size={14} className="text-amber-500" /> Edit
-                                        </button>
-                                    )}
-                                    
-                                    {can('permission-delete') && (
-                                        <button
-                                            onClick={() => handleDeleteClick(info.row.original)}
-                                            className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-bold text-red-500 hover:bg-red-50 transition-colors border-none bg-transparent cursor-pointer"
-                                        >
-                                            <Trash2 size={14} /> Delete
-                                        </button>
-                                    )}
-                                    
-                                </div>
-                            </div>
-                        </>
-                    )}
-                </div>
-            ),
+            cell: (info) => {
+                return (
+                    <TableActions
+                        actions={[
+                            { 
+                                label: 'Edit', 
+                                icon: Pencil, 
+                                onClick: () => handleEdit(info.row.original),
+                                show: can('permission-edit') 
+                            },
+                            { 
+                                label: 'Delete', 
+                                icon: Trash2, 
+                                onClick: () => handleDeleteClick(info.row.original),
+                                variant: 'danger',
+                                show: can('permission-delete')
+                            },
+                        ]}
+                    />
+                );
+            },
         }),
     ], [openDropdown, can, formatDate]);
 
@@ -171,9 +147,6 @@ export default function PermissionIndex() {
         <div className="w-full">
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-slate-100 text-slate-600">
-                        <ShieldCheck size={24} className="text-blue-600" />
-                    </div>
                     <div>
                         <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Permission Management</h1>
                         <p className="text-slate-400 text-sm font-medium">System Access Control.</p>

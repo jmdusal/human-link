@@ -1,27 +1,20 @@
 import React from 'react';
-import { Plus, type LucideIcon } from "lucide-react";
+import { type LucideIcon } from "lucide-react";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     icon?: LucideIcon;
-    variant?: 'ghost' | 'primary';
+    variant?: 'ghost' | 'primary' | 'outline' | 'secondary' | 'danger';
 }
 
-// const Button = ({ 
-//   icon: Icon = Plus, 
-//   variant = 'primary', 
-//   children, 
-//   className = "", 
-//   ...props 
-// }: ButtonProps) => {
-
-export default function Button({icon: Icon = Plus, variant = 'primary', children, className = "", ...props }: ButtonProps) {
-    // const baseStyles = "flex items-center gap-2 transition-all";
-    const baseStyles = "flex items-center gap-2 transition-all duration-200 active:scale-95 hover:scale-105 cursor-pointer";
+export default function Button({icon: Icon, variant = 'primary', children, className = "", ...props }: ButtonProps) {
+    const baseStyles = "flex items-center gap-2 transition-all duration-200 active:scale-[0.98] cursor-pointer font-medium text-sm";
     
     const variants = {
-        ghost: "p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-lg",
-        // primary: "bg-slate-900 text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-xl shadow-slate-200 hover:bg-blue-600"
-        primary: "bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-xl shadow-slate-200"
+        primary: "bg-blue-600 text-white px-4 py-2 rounded-lg shadow-sm border border-blue-700 hover:bg-blue-700 hover:shadow-md",
+        secondary: "bg-white text-slate-700 px-4 py-2 rounded-lg border border-slate-200 shadow-sm hover:bg-slate-50 hover:border-slate-300",
+        ghost: "p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md",
+        outline: "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 rounded-lg px-4 py-2 shadow-sm",
+        danger: "bg-red-600 text-white px-4 py-2 rounded-lg border border-red-700 shadow-sm hover:bg-red-700"
     };
 
     return (
@@ -29,8 +22,9 @@ export default function Button({icon: Icon = Plus, variant = 'primary', children
             className={`${baseStyles} ${variants[variant]} ${className}`}
             {...props}
         >
-            <Icon size={variant === 'ghost' ? 20 : 18} />
+            {/* <Icon size={18} strokeWidth={2.5} /> */}
+            {Icon && <Icon size={18} strokeWidth={2.5} />}
             {children}
         </button>
     );
-};
+}
