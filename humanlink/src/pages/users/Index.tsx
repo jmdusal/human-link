@@ -1,42 +1,32 @@
-import { useMemo, useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
+import { useMemo, useState } from 'react';
 import { createColumnHelper } from "@tanstack/react-table";
-import { Plus, MoreHorizontal, Shield, Eye, Pencil, Trash2, 
-    User2Icon
-} from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import UserProfile from '@/components/modals/users/UserProfile';
 import Button from '@/components/Button';
-import api from '@/api/axios';
 import UserForm from '@/pages/users/UserForm';
 import ModalConfirmation from '@/components/modals/ModalConfirmation';
 import TableActions from '@/components/TableActions';
 import { DataTable } from '@/components/Datatable';
 import { useAuth } from '@/context/AuthContext';
-import { API_ROUTES } from '@/constants';
 import type { User } from '@/types/models';
+import { UserService } from '@/services/UserService';
+import { useUsers } from '@/hooks/useUsers';
+import { DateCell, StatusBadge, UserCell, RoleBadge } from '@/components/TableCells';
 
 const columnHelper = createColumnHelper<User>();
 
 export default function UserIndex() {
     const { can } = useAuth();
-    const [users, setUsers] = useState<User[]>([]);
+    const { users, setUsers, loading } = useUsers(true);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     
-    const [loading, setLoading] = useState(true);
     const [openDropdown, setOpenDropdown] = useState<number | null>(null);
-
     const [isViewOpen, setIsViewOpen] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
-
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    
-    useEffect(() => {
-        api.get(API_ROUTES.USERS.LIST)
-           .then(res => setUsers(res.data.data))
-           .finally(() => setLoading(false));
-    }, []);
-    
+
     const handleAdd = () => {
         setSelectedUser(null);
         setIsFormOpen(true);
@@ -56,7 +46,7 @@ export default function UserIndex() {
 
     const handleSuccess = (userData: User) => {
         if (selectedUser) {
-            setUsers(prev => prev.map(u => u.id === userData.id ? userData : u));
+            setUsers(prev => prev.map(user => user.id === userData.id ? userData : user));
         } else {
             setUsers(prev => [userData, ...prev]);
         }
@@ -75,79 +65,73 @@ export default function UserIndex() {
     
     const handleConfirmDelete = async () => {
         if (!selectedUser) return;
-        
         setIsDeleting(true);
-        toast.promise(
-            api.delete(API_ROUTES.USERS.DELETE(selectedUser.id)),
-            {
-                loading: 'Processing deletion...',
-                success: () => {
-                    setUsers(prev => prev.filter(u => u.id !== selectedUser.id));
-                    setIsDeleteModalOpen(false);
-                    return <b>User removed successfully.</b>;
-                },
-                error: (err) => {
-                    console.error(err);
-                    return <b>Failed to delete user.</b>;
-                },
-            }
-        ).finally(() => setIsDeleting(false));
+        // const toastId = toast.loading('Processing...');
+        
+        try {
+            await UserService.deleteUser(selectedUser.id);
+            
+            // toast.success(<b>User removed successfully.</b>, { id: toastId });
+            setUsers(prev => prev.filter(u => u.id !== selectedUser.id));
+            toast.success('User removed successfully.');
+            setIsDeleteModalOpen(false);
+            
+        } catch (err: any) {
+            console.error("Delete Error:", err);
+
+            // const errorMessage = err.response?.data?.message || 'Failed to delete user.';
+            // toast.error(<b>{errorMessage}</b>, { id: toastId });
+            
+        } finally {
+            setIsDeleting(false);
+            setSelectedUser(null);
+        }
+        
+        // toast.success(`User ${selectedUser ? 'updated' : 'created'} successfully!`);
+        // toast.promise(
+        //     api.delete(API_ROUTES.USERS.DELETE(selectedUser.id)),
+        //     {
+        //         loading: 'Processing deletion...',
+        //         success: () => {
+        //             setUsers(prev => prev.filter(u => u.id !== selectedUser.id));
+        //             setIsDeleteModalOpen(false);
+        //             return <b>User removed successfully.</b>;
+        //         },
+        //         error: (err) => {
+        //             console.error(err);
+        //             return <b>Failed to delete user.</b>;
+        //         },
+        //     }
+        // ).finally(() => setIsDeleting(false));
     };
+    
     const columns = useMemo(() => [
         columnHelper.accessor('name', {
-            header: () => (
-                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
-                    User Identity
-                </span>
-            ),
+            header: 'User Identity',
             cell: (info) => (
-                <div className="flex items-center gap-3 py-1">
-                    <div className="h-9 w-9 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 font-bold text-xs border border-blue-100/50 shadow-sm">
-                        {info.getValue()?.charAt(0).toUpperCase() || '?'}
-                    </div>
-                    
-                    
-                    
-                    <div>
-                        <p className="font-semibold text-slate-900 text-sm leading-none mb-1">{info.getValue()}</p>
-                        <p className="text-[11px] text-slate-500 font-normal">{info.row.original.email}</p>
-                    </div>
-                </div>
+                <UserCell
+                    name={info.getValue()} 
+                    email={info.row.original.email} 
+                />
             ),
         }),
         columnHelper.accessor('roles', {
-            header: () => (
-                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
-                    Access
-                </span>
-            ),
+            header: 'Roles',
             cell: (info) => {
-                const roleName = info.getValue()?.[0]?.name || 'Operator';
-                return (
-                    <span className="px-2 py-1 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-tight">
-                        {roleName}
-                    </span>
-                );
+                const roles = info.getValue();
+                const roleName = roles?.[0]?.name; 
+                
+                return <RoleBadge roleName={roleName} />;
             },
         }),
         columnHelper.accessor('status', {
             header: 'Status',
-            cell: (info) => {
-                const status = info.row.original.status || 'active'; 
-                const isInactive = status.toLowerCase() === 'inactive';
-
-                return (
-                    <div className="flex items-center gap-2">
-                        <div className={`h-1.5 w-1.5 rounded-full transition-colors duration-300 ${
-                            isInactive ? 'bg-slate-300' : 'bg-green-500 animate-pulse'
-                        }`} />
-                        
-                        <span className="text-xs font-bold text-slate-500 capitalize">
-                            {status}
-                        </span>
-                    </div>
-                );
-            },
+            cell: (info) => <StatusBadge status={info.getValue()} />,
+        }),
+        columnHelper.accessor('createdAt', {
+            header: 'Created',
+            cell: (info) => <DateCell date={info.getValue()} />,
+            // cell: (info) => <DateCell value={formatDate(info.getValue())} />,
         }),
         columnHelper.display({
             id: 'actions',
@@ -203,22 +187,26 @@ export default function UserIndex() {
                 loading={loading}
                 showSearch={true}
             />
+            
+            {isFormOpen && (
+                <UserForm
+                    isOpen={isFormOpen}
+                    onClose={() => setIsFormOpen(false)}
+                    onSuccess={handleSuccess}
+                    onError={handleError}
+                    selectedUser={selectedUser}
+                />
+            )}
 
-            <UserForm 
-                isOpen={isFormOpen} 
-                onClose={() => setIsFormOpen(false)} 
-                onSuccess={handleSuccess} 
-                onError={handleError}
-                selectedUser={selectedUser} 
-            />
-
-            <UserProfile
-                isOpen={isViewOpen}
-                onClose={() => setIsViewOpen(false)}
-                title="User Details"
-                data={selectedUser}
-            />
-
+            {isViewOpen && (
+                <UserProfile
+                    isOpen={isViewOpen}
+                    onClose={() => setIsViewOpen(false)}
+                    title="User Details"
+                    data={selectedUser}
+                />
+            )}
+            
             <ModalConfirmation 
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}

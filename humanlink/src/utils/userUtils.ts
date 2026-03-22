@@ -1,8 +1,29 @@
-import type { User } from '@/types/models'; 
+import type { User, UserFormData } from '@/types/models';
+import { getToday } from '@/utils/dateUtils';
 
-export const DAYS_NAME = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+export const DAYS_NAME = [
+    'Sunday', 
+    'Monday', 
+    'Tuesday', 
+    'Wednesday', 
+    'Thursday', 
+    'Friday', 
+    'Saturday'
+];
 
-export const INITIAL_FORM_STATE = (today: string) => ({
+// generates a blank 7-day schedule template
+export const createEmptySchedules = (startDate: string) => Array.from({ length: 7 }, (_, i) => ({
+    dayOfWeek: i,
+    shiftStart: '08:00',
+    shiftEnd: '17:00',
+    breakMinutes: 60,
+    isRestDay: i === 0 || i === 6,
+    isNightShift: false,
+    startDate: startDate,
+}));
+
+// export const INITIAL_USER_FORM_STATE = (today: string): UserFormData => ({
+export const INITIAL_USER_FORM_STATE: UserFormData = {
     name: '',
     email: '',
     password: '',
@@ -12,25 +33,14 @@ export const INITIAL_FORM_STATE = (today: string) => ({
     dailyRate: '',
     hourlyRate: '',
     allowanceMonthly: '0.00',
-    effectiveDate: today,
+    effectiveDate: getToday(),
     isActive: true,
-    weeklyData: createEmptySchedules(today),
-    scheduleStartDate: today
-});
+    weeklyData: createEmptySchedules(getToday()),
+    scheduleStartDate: getToday(),
+};
 
-// generates a blank 7-day schedule template 
-export const createEmptySchedules = (startDate: string) => 
-    Array.from({ length: 7 }, (_, i) => ({
-        dayOfWeek: i,
-        shiftStart: '08:00',
-        shiftEnd: '17:00',
-        breakMinutes: 60,
-        isRestDay: i === 0 || i === 6,
-        isNightShift: false,
-        startDate: startDate,
-    }));
-
-export const formatUserFormData = (user: User, today: string) => {
+export const formatUserFormData = (user: User): UserFormData => {
+    const today = getToday();
     const { rate, schedule, roles, name, email, status } = user;
     const mainStartDate = schedule?.startDate || today;
     const displaySchedules = schedule?.weeklyData?.length ? schedule.weeklyData : createEmptySchedules(today);
@@ -58,7 +68,14 @@ export const formatUserFormData = (user: User, today: string) => {
     };
 };
 
-export const formatDateForInput = (dateString: string | null | undefined) => {
-    if (!dateString) return '';
-    return dateString.split('T')[0]; 
+export const getInitials = (name: string): string => {
+    if (!name) return '?';
+    
+    const parts = name.trim().split(/\s+/);
+    
+    if (parts.length > 1) {
+        return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+    }
+    
+    return parts[0].slice(0, 2).toUpperCase();
 };

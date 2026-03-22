@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { X, Loader2, Save } from 'lucide-react';
 import Button from '@/components/Button';
 
@@ -29,11 +30,20 @@ export default function ModalForm({ isOpen, onClose, onSubmit, title, descriptio
         '5xl': 'max-w-5xl',
         'full': 'max-w-[95vw]'
     };
+    
+    useEffect(() => {
+        const handleEsc = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [onClose]);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden bg-slate-900/40 backdrop-blur-[2px] animate-in fade-in duration-200">
             {/* Backdrop */}
-            <div className="absolute inset-0" onClick={onClose} />
+            {/* onClick={onClose} */}
+            <div className="absolute inset-0" />
             
             {/* Modal Body */}
             <div className={`

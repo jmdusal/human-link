@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
+import React, { useEffect, useMemo } from 'react';
 import ModalForm from '@/components/modals/ModalForm';
 import Input from '@/components/Input';
 import FormLabel from '@/components/FormLabel';
 import Checkbox from '@/components/Checkbox';
-import type { Role, Permission } from '@/types/models';
-import api from '@/api/axios';
-import { API_ROUTES } from '@/constants';
-import { camelizeKeys } from '@/utils/formatUtils';
+import type { Role, RoleFormData, Permission } from '@/types/models';
+import { RoleService } from '@/services/RoleService';
+import { usePermissions } from '@/hooks/usePermissions';
+import { INITIAL_ROLE_FORM_STATE, formatRoleFormData } from '@/utils/roleUtils';
+import { useForm } from '@/hooks/useForm';
 
 interface RoleFormProps {
     isOpen: boolean;
@@ -17,41 +17,39 @@ interface RoleFormProps {
     selectedRole: Role | null;
 }
 
-export default function RoleForm({ isOpen, onClose, onSuccess, onError, selectedRole }: RoleFormProps) {
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [availablePermissions, setAvailablePermissions] = useState<Permission[]>([]);
-    const [errors, setErrors] = useState<Record<string, string[]>>({});
-    const [formData, setFormData] = useState({ 
-        name: '',
-        permissions: [] as string[]
-    });
+export default function RoleForm({ isOpen, onClose, onSuccess, selectedRole }: RoleFormProps) {
+    const { permissions } = usePermissions(isOpen);
+    const form = useForm<RoleFormData>(INITIAL_ROLE_FORM_STATE);
     
-    const groupedPermissions = Object.entries(availablePermissions.reduce((access, permission) => {
-        const parts = permission.name.split('-');
-        const category = parts.slice(0, -1).join('-');
-        
-        if (!access[category]) access[category] = [];
-        access[category].push(permission);
-            return access;
-        }, {} as Record<string, Permission[]>)
-    )
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([category, perms]) => [
-        category,
-        perms.sort((a, b) => a.name.localeCompare(b.name))
-    ]) as [string, Permission[]][];
-    
-    const handleChange = (field: keyof typeof formData, value: any) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-
-        if (errors[field as string]) {
-            const { [field as string]: _, ...rest } = errors;
-            setErrors(rest);
-        }
+    const onSubmit = (e: React.FormEvent) => {
+        form.handleSubmit(e, () => RoleService.saveRole(form.formData, selectedRole?.id),
+            (data) => { 
+                onSuccess(data); 
+                onClose();
+            },
+            "Role",
+            !!selectedRole
+        );
     };
     
+    const groupedPermissions = useMemo(() => {
+        return Object.entries((permissions || []).reduce((access, permission) => {
+            const parts = permission.name.split('-');
+            const category = parts.slice(0, -1).join('-');
+            
+            if (!access[category]) access[category] = [];
+            access[category].push(permission);
+            return access;
+        }, {} as Record<string, Permission[]>))
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([category, perms]) => [
+            category,
+            perms.sort((a, b) => a.name.localeCompare(b.name))
+        ]) as [string, Permission[]][];
+    }, [permissions]);
+    
     const handlePermissionChange = (permissionName: string) => {
-        setFormData(prev => {
+        form.setFormData(prev => {
             const isSelected = prev.permissions.includes(permissionName);
             return {
                 ...prev,
@@ -61,69 +59,32 @@ export default function RoleForm({ isOpen, onClose, onSuccess, onError, selected
             };
         });
     };
-    
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setErrors({});
-        setIsSubmitting(true);
-        
-        try {
-            const res = selectedRole
-            ? await api.put(API_ROUTES.ROLES.UPDATE(selectedRole.id), formData)
-            : await api.post(API_ROUTES.ROLES.STORE, formData);
-            
-            toast.success(`Role ${selectedRole ? 'updated' : 'created'} successfully!`);
-            onSuccess(res.data.data);
-            onClose();
-        } catch (err: any) {
-            if (err.response?.status === 422) {
-                const validationErrors = camelizeKeys(err.response.data.errors);
-                console.log("error Object:", validationErrors);
-                setErrors(validationErrors);
-            }
-            onError(err);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-    
+
     useEffect(() => {
-        if (selectedRole && isOpen) {
-            setFormData({
-                name: selectedRole.name,
-                permissions: selectedRole.permissions?.map(p => p.name) || [],
-            });
-        } else if (!selectedRole && isOpen) {
-            setFormData({ name: '', permissions: [] });
-        }
-    }, [selectedRole, isOpen]);
-    
-    useEffect(() => {
-        if (isOpen) {
-            api.get(API_ROUTES.PERMISSIONS.LIST)
-                .then(res => setAvailablePermissions(res.data.data))
-                .catch(() => toast.error("Failed to load permissions"));
-                // .catch(err => toast.error("Failed to load permissions"));
-        }
-    }, [isOpen]);
+        const state = selectedRole
+            ? formatRoleFormData(selectedRole) 
+            : INITIAL_ROLE_FORM_STATE;
+
+        form.setFormData(state);
+    }, [selectedRole, form.setFormData]);
     
     return (
         <ModalForm
             isOpen={isOpen}
             onClose={onClose}
-            onSubmit={handleSubmit}
+            onSubmit={onSubmit}
             title={selectedRole ? "Edit Role" : "Create New Role"}
             description={selectedRole ? "MODIFY EXISTING CREDENTIALS" : "SETUP A NEW OPERATOR"}
             isUpdate={!!selectedRole}
-            loading={isSubmitting}
+            loading={form.isSubmitting}
         >
             <div className="col-span-1 md:col-span-2 flex flex-col gap-5 py-2">
                 <Input
                     label="Name"
                     placeholder="Enter name"
-                    value={formData.name}
-                    onChange={(e) => handleChange('name', e.target.value)}
-                    error={errors.name?.[0]}
+                    value={form.formData.name}
+                    onChange={(e) => form.handleChange('name', e.target.value)}
+                    error={form.errors.name?.[0]}
                 />
                 
                 <div className="space-y-8 text-left col-span-1 md:col-span-2">
@@ -148,7 +109,7 @@ export default function RoleForm({ isOpen, onClose, onSuccess, onError, selected
                                 {/* Permissions Grid */}
                                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                     {permissions.map((permission) => {
-                                        const isSelected = formData.permissions.includes(permission.name);
+                                        const isSelected = form.formData.permissions.includes(permission.name);
                                         const actionLabel = permission.name.split('-').pop() || permission.name;
 
                                         return (

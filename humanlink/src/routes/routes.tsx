@@ -82,7 +82,7 @@ export const navItems = [
     {
         path: '/permissions',
         label: 'Permissions',
-        title: 'Permissiond Management',
+        title: 'Permission Management',
         category: 'Access',
         icon: <ShieldCheck size={18}/>,
         component: <PermissionIndex />,

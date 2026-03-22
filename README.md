@@ -33,7 +33,7 @@ human-link/
 
 ## Quick Start Guide
 
-### 1. Backend (Laravel 12)
+### Backend (Laravel 12)
 The backend serves as a headless API.
 *   **Install:** `composer install`
 *   **Environment:** `cp .env.example .env` (Set `DB_DATABASE`, `APP_URL`)
@@ -41,7 +41,7 @@ The backend serves as a headless API.
 *   **API Mode:** `php artisan install:api` (Ensures Sanctum/Passport is ready)
 *   **Run:** `php artisan serve`
 
-### 2. Frontend (React + TypeScript)
+### Frontend (React + TypeScript)
 The UI is a modern SPA built with Vite.
 *   **Install:** `npm install`
 *   **Environment:** `cp .env.example .env` (Set `VITE_API_URL=http://localhost:8000/api`)

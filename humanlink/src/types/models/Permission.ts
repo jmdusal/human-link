@@ -3,3 +3,7 @@ export interface Permission {
     name: string;
     createdAt: string;
 }
+
+export interface PermissionFormData {
+    name: string;
+}

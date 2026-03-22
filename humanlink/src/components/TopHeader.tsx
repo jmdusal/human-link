@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Bell, Search, LogOut, User, Settings, ChevronDown } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { LogOut, User, Settings, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/api/axios';

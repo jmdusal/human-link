@@ -1,8 +1,7 @@
-import { useMemo, useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
+import { useMemo, useState } from 'react';
 import { createColumnHelper } from "@tanstack/react-table";
-import { Plus, MoreHorizontal, ShieldCheck, Pencil, Trash2, Clock } from 'lucide-react';
-import api from '@/api/axios';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import RoleForm from '@/pages/roles/RoleForm';
 import ModalConfirmation from '@/components/modals/ModalConfirmation';
 import TableActions from '@/components/TableActions';
@@ -10,30 +9,21 @@ import Button from '@/components/Button';
 import { DataTable } from '@/components/Datatable';
 import { useAuth } from '@/context/AuthContext';
 import type { Role } from '@/types/models';
-import { API_ROUTES } from '@/constants';
-import { useFormatDate } from '@/hooks/useFormatDate';
+import { RoleService } from '@/services/RoleService';
+import { useRoles } from '@/hooks/useRoles';
+import { TextCell, DateCell, TagsCell } from '@/components/TableCells';
 
 const columnHelper = createColumnHelper<Role>();
 
 export default function RoleIndex() {
     const { can } = useAuth();
-    const { formatDate } = useFormatDate();
-    const [roles, setRoles] = useState<Role[]>([]);
+    const { roles, setRoles, loading } = useRoles(true);
     const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-    const [loading, setLoading] = useState(true);
+    
     const [openDropdown, setOpenDropdown] = useState<number | null>(null);
-
-    // const [isViewOpen, setIsViewOpen] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
-
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    
-    useEffect(() => {
-        api.get(API_ROUTES.ROLES.LIST)
-           .then(res => setRoles(res.data.data))
-           .finally(() => setLoading(false));
-    }, []);
     
     const handleAdd = () => {
         setSelectedRole(null);
@@ -48,11 +38,9 @@ export default function RoleIndex() {
     
     const handleSuccess = (roleData: Role) => {
         if (selectedRole) {
-            setRoles(prev => prev.map(u => u.id === roleData.id ? roleData : u));
-            console.log("Role updated successfully!");
+            setRoles(prev => prev.map(r => r.id === roleData.id ? roleData : r));
         } else {
             setRoles(prev => [roleData, ...prev]);
-            console.log("Role created successfully!");
         }
     };
 
@@ -69,69 +57,34 @@ export default function RoleIndex() {
     
     const handleConfirmDelete = async () => {
         if (!selectedRole) return;
-        
         setIsDeleting(true);
-        toast.promise(
-            api.delete(API_ROUTES.ROLES.DELETE(selectedRole.id)),
-            {
-                loading: 'Processing deletion...',
-                success: () => {
-                    setRoles(prev => prev.filter(u => u.id !== selectedRole.id));
-                    setIsDeleteModalOpen(false);
-                    return <b>Role removed successfully.</b>;
-                },
-                error: (err) => {
-                    console.error(err);
-                    return <b>Failed to delete role.</b>;
-                },
-            }
-        ).finally(() => setIsDeleting(false));
+        
+        try {
+            await RoleService.deleteRole(selectedRole.id);
+            
+            setRoles(prev => prev.filter(u => u.id !== selectedRole.id));
+            toast.success('Role removed successfully.');
+            setIsDeleteModalOpen(false);
+        } catch (err: any) {
+            console.error("Delete Error:", err);
+        } finally {
+            setIsDeleting(false);
+            setSelectedRole(null);
+        }
     };
     
     const columns = useMemo(() => [
         columnHelper.accessor('name', {
             header: 'Role Name',
-            cell: (info) => (
-                <div className="flex items-center gap-4">
-                    <div>
-                        <p className="font-medium text-slate-700 text-sm">{info.row.original.name}</p>
-                    </div>
-                </div>
-                
-            ),
+            cell: (info) => <TextCell title={info.getValue()} />,
         }),
         columnHelper.accessor('permissions' as any, {
             header: 'Permissions',
-            cell: (info) => {
-                const permissions = (info.row.original as any).permissions;
-                return (
-                    <div className="flex flex-wrap gap-1.5 py-1">
-                        {permissions?.length > 0 ? (
-                            permissions.map((p: any) => (
-                                <span 
-                                    key={p.id} 
-                                    className="px-2 py-0.5 text-[10px] font-semibold text-slate-500 bg-slate-50/50 border border-slate-200/60 rounded-md tracking-tight hover:bg-slate-100 transition-colors"
-                                >
-                                    {p.name.replace('-', ' ')} 
-                                </span>
-                            ))
-                        ) : (
-                            <span className="text-[11px] text-slate-300 italic">No permissions assigned</span>
-                        )}
-                    </div>
-                );
-            }
+            cell: (info) => <TagsCell tags={info.getValue()} emptyText="No permissions assigned" />
         }),
         columnHelper.accessor('createdAt', {
             header: 'Created',
-            cell: (info) => (
-                <div className="flex items-center gap-2">
-                    <Clock size={12} className="text-slate-300" />
-                    <span className="text-xs font-bold text-slate-500">
-                        {formatDate(info.row.original.createdAt)}
-                    </span>
-                </div>
-            ),
+            cell: (info) => <DateCell date={info.getValue()} />,   
         }),
         columnHelper.display({
             id: 'actions',
@@ -157,7 +110,7 @@ export default function RoleIndex() {
                 );
             },
         }),
-    ], [openDropdown, can, formatDate]);
+    ], [openDropdown, can]);
 
     return (
         <div className="w-full">
@@ -180,15 +133,16 @@ export default function RoleIndex() {
                 loading={loading}
                 showSearch={true}
             />
-
-            <RoleForm
-                isOpen={isFormOpen} 
-                onClose={() => setIsFormOpen(false)} 
-                onSuccess={handleSuccess}
-                onError={handleError}
-                selectedRole={selectedRole} 
-            />
-
+            {isFormOpen && (
+                <RoleForm
+                    isOpen={isFormOpen} 
+                    onClose={() => setIsFormOpen(false)} 
+                    onSuccess={handleSuccess}
+                    onError={handleError}
+                    selectedRole={selectedRole} 
+                />
+            )}
+            
             <ModalConfirmation 
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}

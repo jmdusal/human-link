@@ -1,41 +1,37 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { createColumnHelper } from "@tanstack/react-table";
-import { Plus, MoreHorizontal, Eye, Pencil, Trash2, Clock, CalendarDays } from 'lucide-react';
+import { Plus, Pencil, Trash2, CalendarDays } from 'lucide-react';
 import { DataTable } from '@/components/Datatable';
-import api from '@/api/axios';
 import Button from '@/components/Button';
 import LeavePolicyForm from '@/pages/leave-policies/LeavePolicyForm';
 import ModalConfirmation from '@/components/modals/ModalConfirmation';
 import TableActions from '@/components/TableActions';
 import { useAuth } from '@/context/AuthContext';
-import { API_ROUTES } from '@/constants';
 import type { LeavePolicy } from '@/types/models';
-import { useFormatDate } from '@/hooks/useFormatDate';
+import { LeavePolicyService } from '@/services/LeavePolicyService';
+import { useLeavePolicies } from '@/hooks/useLeavePolicies';
+import { TextCell, DateCell } from '@/components/TableCells';
 
 const columnHelper = createColumnHelper<LeavePolicy>();
 
 export default function LeavePolicyIndex() {
     const { can } = useAuth();
-    const { formatDate } = useFormatDate();
-    
-    const [leavepolicies, setLeavePolicies] = useState<LeavePolicy[]>([]);
+    const { leavepolicies, setLeavePolicies, loading,  } = useLeavePolicies(true);
+
     const [selectedLeavePolicy, setSelectedLeavePolicy] = useState<LeavePolicy | null>(null);
     
-    const [loading, setLoading] = useState(true);
+    // const [loading, setLoading] = useState(true);
     const [openDropdown, setOpenDropdown] = useState<number | null>(null);
-
-    // const [isViewOpen, setIsViewOpen] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
-
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     
-    useEffect(() => {
-        api.get(API_ROUTES.LEAVE_POLICIES.LIST)
-           .then(res => setLeavePolicies(res.data.data))
-           .finally(() => setLoading(false));
-    }, []);
+    // useEffect(() => {
+    //     api.get(API_ROUTES.LEAVE_POLICIES.LIST)
+    //        .then(res => setLeavePolicies(res.data.data))
+    //        .finally(() => setLoading(false));
+    // }, []);
     
     const handleAdd = () => {
         setSelectedLeavePolicy(null);
@@ -48,19 +44,11 @@ export default function LeavePolicyIndex() {
         setOpenDropdown(null);
     };   
     
-    // const handleView = (leavepolicy: LeavePolicy) => {
-    //     setSelectedLeavePolicy(leavepolicy);
-    //     // setIsViewOpen(true);
-    //     setOpenDropdown(null);
-    // };
-
     const handleSuccess = (policyData: LeavePolicy) => {
         if (selectedLeavePolicy) {
-            setLeavePolicies(prev => prev.map(u => u.id === policyData.id ? policyData : u));
-            console.log("Policy updated successfully!");
+            setLeavePolicies(prev => prev.map(policy => policy.id === policyData.id ? policyData : policy));
         } else {
             setLeavePolicies(prev => [policyData, ...prev]);
-            console.log("Policy created successfully!");
         }
     };
 
@@ -76,57 +64,35 @@ export default function LeavePolicyIndex() {
     
     const handleConfirmDelete = async () => {
         if (!selectedLeavePolicy) return;
-        
         setIsDeleting(true);
-        toast.promise(
-            api.delete(API_ROUTES.LEAVE_POLICIES.DELETE(selectedLeavePolicy.id)),
-            {
-                loading: 'Processing deletion...',
-                success: () => {
-                    setLeavePolicies(prev => prev.filter(u => u.id !== selectedLeavePolicy.id));
-                    setIsDeleteModalOpen(false);
-                    return <b>Policy removed successfully.</b>;
-                },
-                error: (err) => {
-                    console.error(err);
-                    return <b>Failed to delete policy.</b>;
-                },
-            }
-        ).finally(() => setIsDeleting(false));
+        
+        try {
+            await LeavePolicyService.deletePolicy(selectedLeavePolicy.id);
+            
+            setLeavePolicies(prev => prev.filter(u => u.id !== selectedLeavePolicy.id));
+            toast.success('Policy removed successfully.');
+            setIsDeleteModalOpen(false);
+        } catch (err: any) {
+            console.error("Delete Error:", err);
+        } finally {
+            setIsDeleting(false);
+            setSelectedLeavePolicy(null);
+        }
     };
     
     const columns = useMemo(() => [
         columnHelper.accessor('name', {
             header: 'Policy Name',
-            cell: (info) => (
-                <div className="flex items-center gap-4">
-                    <div>
-                        <p className="font-medium text-slate-700 text-sm">{info.row.original.name}</p>
-                    </div>
-                </div>
-            ),
+            cell: (info) => <TextCell title={info.getValue()} />,
         }),
         columnHelper.accessor('defaultCredits', {
-            header: 'Policy Name',
-            cell: (info) => (
-                <div className="flex items-center gap-4">
-                    <div>
-                        <p className="font-medium text-slate-700 text-sm">{info.row.original.defaultCredits}</p>
-                    </div>
-                </div>
-            ),
+            header: 'Credits',
+            cell: (info) => <TextCell title={info.getValue()} />,
         }),
         
         columnHelper.accessor('createdAt', {
             header: 'Created',
-            cell: (info) => (
-                <div className="flex items-center gap-2">
-                    <Clock size={12} className="text-slate-300" />
-                    <span className="text-xs font-bold text-slate-500">
-                        {formatDate(info.row.original.createdAt)}
-                    </span>
-                </div>
-            ),
+            cell: (info) => <DateCell date={info.getValue()} />,
         }),
         columnHelper.display({
             id: 'actions',
@@ -152,7 +118,7 @@ export default function LeavePolicyIndex() {
                 );
             },
         }),
-    ], [openDropdown, can, formatDate]);
+    ], [openDropdown, can]);
 
     return (
         <div className="w-full">
@@ -179,14 +145,16 @@ export default function LeavePolicyIndex() {
                 showSearch={true}
             />
 
-            <LeavePolicyForm 
-                isOpen={isFormOpen} 
-                onClose={() => setIsFormOpen(false)} 
-                onSuccess={handleSuccess}
-                onError={handleError}
-                selectedLeavePolicy={selectedLeavePolicy} 
-            />
-
+            {isFormOpen && (
+                <LeavePolicyForm 
+                    isOpen={isFormOpen} 
+                    onClose={() => setIsFormOpen(false)} 
+                    onSuccess={handleSuccess}
+                    onError={handleError}
+                    selectedLeavePolicy={selectedLeavePolicy} 
+                />
+            )}
+            
             <ModalConfirmation 
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}

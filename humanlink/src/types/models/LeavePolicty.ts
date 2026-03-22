@@ -7,3 +7,11 @@ export interface LeavePolicy {
     isPaid: number;
     createdAt: string;
 }
+
+export interface LeavePolicyFormData {
+    name: string;
+    slug: string;
+    defaultCredits: string;
+    isActive: boolean;
+    isPaid: boolean;
+}

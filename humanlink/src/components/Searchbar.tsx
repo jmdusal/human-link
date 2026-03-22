@@ -1,22 +1,14 @@
-import React from 'react';
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 interface SearchbarProps {
     value: string;
     onChange: (value: string) => void;
     placeholder?: string;
-    // onFilterClick?: () => void;
 }
 
-export default function Searchbar({ 
-    value, 
-    onChange, 
-    placeholder = "Search...", 
-    // onFilterClick 
-}: SearchbarProps) {
+export default function Searchbar({ value, onChange, placeholder = "Search...", }: SearchbarProps) {
     return (
         <div className="flex items-center justify-between gap-4">
-            {/* Search Input Group */}
             <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                 <input

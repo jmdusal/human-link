@@ -6,3 +6,8 @@ export interface Role {
     createdAt: string;
     permissions?: Permission[];
 }
+
+export interface RoleFormData {
+    name: string;
+    permissions: string[];
+}

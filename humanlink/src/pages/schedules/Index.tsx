@@ -65,7 +65,7 @@ export default function ScheduleIndex() {
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Team Schedules</h1>
+                        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Schedules</h1>
                         <p className="text-slate-400 text-sm font-medium">Visualize shifts, and rest days across the team.</p>
                     </div>
                 </div>
@@ -112,18 +112,18 @@ export default function ScheduleIndex() {
 
             {/* Main Calendar Content */}
             <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden relative">
-                {loading && (
+                {/* {loading && (
                     <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
                         <div className="flex flex-col items-center gap-2">
                             <Loader2 className="text-blue-600 animate-spin" size={32} />
                             <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Updating View...</span>
                         </div>
                     </div>
-                )}
+                )} */}
                 
                 <ScheduleCalendar 
                     data={filteredSchedules} 
-                    loading={loading} 
+                    // loading={loading}
                     currentDate={currentDate}
                 />
             </div>

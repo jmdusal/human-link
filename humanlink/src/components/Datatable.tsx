@@ -23,7 +23,9 @@ export function DataTable<TData>({ columns, data, loading, showSearch = true }: 
     const table = useReactTable({
         data,
         columns,
-        state: { globalFilter },
+        state: {
+            globalFilter 
+        },
         onGlobalFilterChange: setGlobalFilter,
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
@@ -42,7 +44,6 @@ export function DataTable<TData>({ columns, data, loading, showSearch = true }: 
 
     return (
         <div className="space-y-4">
-            {/* TOOLBAR */}
             {showSearch && (
                 <Searchbar 
                     value={globalFilter} 
