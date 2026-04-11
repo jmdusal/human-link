@@ -1,6 +1,6 @@
 import api from '@/api/axios';
 import { API_ROUTES } from '@/constants';
-import type { LeavePolicy, LeavePolicyFormData } from '@/types/models';
+import type { LeavePolicy, LeavePolicyFormData } from '@/types';
 
 export const LeavePolicyService = {
     
@@ -9,7 +9,7 @@ export const LeavePolicyService = {
         return response.data.data;
     },
     
-     async savePolicy(formData: LeavePolicyFormData, policyId?: number): Promise<LeavePolicy> {
+    async savePolicy(formData: LeavePolicyFormData, policyId?: number): Promise<LeavePolicy> {
         
         const response = policyId
             ? await api.put(API_ROUTES.LEAVE_POLICIES.UPDATE(policyId), formData)

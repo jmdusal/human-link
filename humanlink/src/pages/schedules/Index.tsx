@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Plus, CalendarDays, ChevronLeft, ChevronRight, Loader2, Search, SlidersHorizontal } from 'lucide-react';
 import api from '@/api/axios';
-import Button from '@/components/Button';
+import Button from '@/components/ui/Button';
 import { useAuth } from '@/context/AuthContext';
 import { API_ROUTES } from '@/constants';
-import type { Schedule } from '@/types/models';
-import ScheduleCalendar from '@/components/ScheduleCalendar';
-import Searchbar from '@/components/Searchbar';
+import type { Schedule } from '@/types';
+import ScheduleCalendar from '@/components/features/schedules/ScheduleCalendar';
+import Searchbar from '@/components/shared/Searchbar';
 // import ScheduleForm from './ScheduleForm'; 
 
 export default function ScheduleIndex() {
@@ -66,7 +66,7 @@ export default function ScheduleIndex() {
                 <div className="flex items-center gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Schedules</h1>
-                        <p className="text-slate-400 text-sm font-medium">Visualize shifts, and rest days across the team.</p>
+                        <p className="text-slate-400 text-sm font-medium">Visualize shifts, and rest days.</p>
                     </div>
                 </div>
             </div>

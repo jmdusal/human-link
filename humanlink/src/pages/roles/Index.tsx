@@ -4,14 +4,15 @@ import { Plus, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import RoleForm from '@/pages/roles/RoleForm';
 import ModalConfirmation from '@/components/modals/ModalConfirmation';
-import TableActions from '@/components/TableActions';
-import Button from '@/components/Button';
-import { DataTable } from '@/components/Datatable';
+import TableActions from '@/components/shared/TableActions';
+import Button from '@/components/ui/Button';
+import { DataTable } from '@/components/shared/Datatable';
 import { useAuth } from '@/context/AuthContext';
-import type { Role } from '@/types/models';
+import type { Role } from '@/types';
 import { RoleService } from '@/services/RoleService';
-import { useRoles } from '@/hooks/useRoles';
-import { TextCell, DateCell, TagsCell } from '@/components/TableCells';
+import { useRoles } from '@/hooks/use-roles';
+import { TextCell, DateCell, TagsCell } from '@/components/shared/TableCells';
+import { AnimatePresence } from 'framer-motion';
 
 const columnHelper = createColumnHelper<Role>();
 
@@ -88,6 +89,8 @@ export default function RoleIndex() {
         }),
         columnHelper.display({
             id: 'actions',
+            size: 50,
+            header: () => <div className="text-right">Actions</div>,
             cell: (info) => {
                 return (
                     <TableActions
@@ -96,14 +99,14 @@ export default function RoleIndex() {
                                 label: 'Edit',
                                 icon: Pencil,
                                 onClick: () => handleEdit(info.row.original),
-                                show: can('role-edit')
+                                show: can('roles-edit')
                             },
                             {
                                 label: 'Delete',
                                 icon: Trash2,
                                 onClick: () => handleDeleteClick(info.row.original),
                                 variant: 'danger',
-                                show: can('role-delete')
+                                show: can('roles-delete')
                             },
                         ]}
                     />
@@ -122,8 +125,8 @@ export default function RoleIndex() {
                     </div>
                 </div>
 
-                {can('role-create') && (
-                    <Button variant="primary" icon={Plus} onClick={handleAdd}>Add Role</Button>
+                {can('roles-create') && (
+                    <Button variant="primary" icon={Plus} onClick={handleAdd}>New Role</Button>
                 )}
             </div>
 
@@ -133,24 +136,33 @@ export default function RoleIndex() {
                 loading={loading}
                 showSearch={true}
             />
-            {isFormOpen && (
-                <RoleForm
-                    isOpen={isFormOpen} 
-                    onClose={() => setIsFormOpen(false)} 
-                    onSuccess={handleSuccess}
-                    onError={handleError}
-                    selectedRole={selectedRole} 
-                />
-            )}
             
-            <ModalConfirmation 
-                isOpen={isDeleteModalOpen}
-                onClose={() => setIsDeleteModalOpen(false)}
-                onConfirm={handleConfirmDelete}
-                loading={isDeleting}
-                title="Delete Role"
-                message={`Are you sure you want to delete ${selectedRole?.name}? This action is permanent.`}
-            />
+            <AnimatePresence>
+                {isFormOpen && (
+                    <RoleForm
+                        key={selectedRole ? `edit-${selectedRole.id}` : 'create-role'}
+                        isOpen={isFormOpen} 
+                        onClose={() => setIsFormOpen(false)} 
+                        onSuccess={handleSuccess}
+                        onError={handleError}
+                        selectedRole={selectedRole} 
+                    />
+                )}
+            </AnimatePresence>
+            
+            <AnimatePresence>
+                {isDeleteModalOpen && (
+                    <ModalConfirmation
+                        key="delete-confirmation"
+                        isOpen={isDeleteModalOpen}
+                        onClose={() => setIsDeleteModalOpen(false)}
+                        onConfirm={handleConfirmDelete}
+                        loading={isDeleting}
+                        title="Delete Role"
+                        message={`Are you sure you want to delete ${selectedRole?.name}? This action is permanent.`}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 }

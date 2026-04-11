@@ -2,16 +2,17 @@ import { useMemo, useState } from 'react';
 import { createColumnHelper } from "@tanstack/react-table";
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { DataTable } from '@/components/Datatable';
-import Button from '@/components/Button';
+import { DataTable } from '@/components/shared/Datatable';
+import Button from '@/components/ui/Button';
 import PermissionForm from '@/pages/permissions/PermissionForm';
 import ModalConfirmation from '@/components/modals/ModalConfirmation';
-import TableActions from '@/components/TableActions';
+import TableActions from '@/components/shared/TableActions';
 import { useAuth } from '@/context/AuthContext';
-import type { Permission } from '@/types/models';
+import type { Permission } from '@/types';
 import { PermissionService } from '@/services/PermissionService';
-import { usePermissions } from '@/hooks/usePermissions';
-import { TextCell, DateCell } from '@/components/TableCells';
+import { usePermissions } from '@/hooks/use-permissions';
+import { TextCell, DateCell } from '@/components/shared/TableCells';
+import { AnimatePresence } from 'framer-motion';
 
 const columnHelper = createColumnHelper<Permission>();
 
@@ -84,6 +85,8 @@ export default function PermissionIndex() {
         }),
         columnHelper.display({
             id: 'actions',
+            size: 50,
+            header: () => <div className="text-right">Actions</div>,
             cell: (info) => {
                 return (
                     <TableActions
@@ -92,14 +95,14 @@ export default function PermissionIndex() {
                                 label: 'Edit', 
                                 icon: Pencil, 
                                 onClick: () => handleEdit(info.row.original),
-                                show: can('permission-edit') 
+                                show: can('permissions-edit') 
                             },
                             { 
                                 label: 'Delete', 
                                 icon: Trash2, 
                                 onClick: () => handleDeleteClick(info.row.original),
                                 variant: 'danger',
-                                show: can('permission-delete')
+                                show: can('permissions-delete')
                             },
                         ]}
                     />
@@ -118,8 +121,8 @@ export default function PermissionIndex() {
                     </div>
                 </div>
 
-                {can('permission-create') && (
-                    <Button variant="primary" icon={Plus} onClick={handleAdd}>Add Permission</Button>
+                {can('permissions-create') && (
+                    <Button variant="primary" icon={Plus} onClick={handleAdd}>New Permission</Button>
                 )}
             </div>
 
@@ -130,24 +133,32 @@ export default function PermissionIndex() {
                 showSearch={true}
             />
             
-            {isFormOpen && (
-                <PermissionForm
-                    isOpen={isFormOpen} 
-                    onClose={() => setIsFormOpen(false)} 
-                    onSuccess={handleSuccess}
-                    onError={handleError}
-                    selectedPermission={selectedPermission} 
-                />
-            )}
+            <AnimatePresence>
+                {isFormOpen && (
+                    <PermissionForm
+                        key={selectedPermission ? `edit-${selectedPermission.id}` : 'create-permission'}
+                        isOpen={isFormOpen} 
+                        onClose={() => setIsFormOpen(false)} 
+                        onSuccess={handleSuccess}
+                        onError={handleError}
+                        selectedPermission={selectedPermission} 
+                    />
+                )}
+            </AnimatePresence>
             
-            <ModalConfirmation 
-                isOpen={isDeleteModalOpen}
-                onClose={() => setIsDeleteModalOpen(false)}
-                onConfirm={handleConfirmDelete}
-                loading={isDeleting}
-                title="Delete Permission"
-                message={`Are you sure you want to delete ${selectedPermission?.name}? This action is permanent.`}
-            />
+            <AnimatePresence>
+                {isDeleteModalOpen && (
+                    <ModalConfirmation
+                        key="delete-confirmation"
+                        isOpen={isDeleteModalOpen}
+                        onClose={() => setIsDeleteModalOpen(false)}
+                        onConfirm={handleConfirmDelete}
+                        loading={isDeleting}
+                        title="Delete Permission"
+                        message={`Are you sure you want to delete ${selectedPermission?.name}? This action is permanent.`}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 }

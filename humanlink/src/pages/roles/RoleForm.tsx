@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo } from 'react';
 import ModalForm from '@/components/modals/ModalForm';
-import Input from '@/components/Input';
-import FormLabel from '@/components/FormLabel';
-import Checkbox from '@/components/Checkbox';
-import type { Role, RoleFormData, Permission } from '@/types/models';
+import Input from '@/components/ui/Input';
+import FormLabel from '@/components/ui/FormLabel';
+import Checkbox from '@/components/ui/Checkbox';
+import type { Role, RoleFormData, Permission } from '@/types';
 import { RoleService } from '@/services/RoleService';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissions } from '@/hooks/use-permissions';
 import { INITIAL_ROLE_FORM_STATE, formatRoleFormData } from '@/utils/roleUtils';
-import { useForm } from '@/hooks/useForm';
+import { useForm } from '@/hooks/use-form';
+import { Check } from 'lucide-react';
 
 interface RoleFormProps {
     isOpen: boolean;
@@ -87,7 +88,7 @@ export default function RoleForm({ isOpen, onClose, onSuccess, selectedRole }: R
                     error={form.errors.name?.[0]}
                 />
                 
-                <div className="space-y-8 text-left col-span-1 md:col-span-2">
+                {/* <div className="space-y-8 text-left col-span-1 md:col-span-2">
                     <div>
                         <FormLabel>Access Permissions</FormLabel>
                         <p className="text-[11px] text-slate-400 mt-1">
@@ -98,7 +99,7 @@ export default function RoleForm({ isOpen, onClose, onSuccess, selectedRole }: R
                     <div className="space-y-8"> 
                         {groupedPermissions.map(([category, permissions]) => (
                             <div key={category} className="group">
-                                {/* Category Header */}
+                                
                                 <div className="flex items-center gap-4 mb-4">
                                     <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">
                                         {category}
@@ -106,7 +107,6 @@ export default function RoleForm({ isOpen, onClose, onSuccess, selectedRole }: R
                                     <div className="h-[1px] flex-1 bg-slate-100 group-hover:bg-slate-200 transition-colors" />
                                 </div>
 
-                                {/* Permissions Grid */}
                                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                     {permissions.map((permission) => {
                                         const isSelected = form.formData.permissions.includes(permission.name);
@@ -142,7 +142,127 @@ export default function RoleForm({ isOpen, onClose, onSuccess, selectedRole }: R
                             </div>
                         ))}
                     </div>
+                </div> */}
+                
+                <div className="space-y-6 text-left col-span-1 md:col-span-2">
+                    <div className="flex items-end justify-between px-1">
+                        <div>
+                            <h3 className="text-sm font-bold text-slate-900 tracking-tight">Access Permissions</h3>
+                            <p className="text-[11px] text-slate-400 mt-0.5">Configure granular access for this role.</p>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <button 
+                                type="button"
+                                onClick={() => {
+                                    groupedPermissions.forEach(([_, perms]) => {
+                                        perms.forEach(p => {
+                                            if (!form.formData.permissions.includes(p.name)) {
+                                                handlePermissionChange(p.name);
+                                            }
+                                        });
+                                    });
+                                }}
+                                className="text-[10px] font-bold text-blue-600 hover:text-blue-700 uppercase tracking-widest transition-colors"
+                            >
+                                Select All
+                            </button>
+                            <div className="w-[1px] h-3 bg-slate-200" />
+                            <button 
+                                type="button"
+                                onClick={() => {
+                                    [...form.formData.permissions].forEach(permName => {
+                                        handlePermissionChange(permName);
+                                    });
+                                }}
+                                className="text-[10px] font-bold text-slate-400 hover:text-red-500 uppercase tracking-widest transition-colors"
+                            >
+                                Clear All
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm">
+                        <div className="grid grid-cols-12 bg-slate-50/50 border-b border-slate-100 px-5 py-3">
+                            <div className="col-span-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Resource</div>
+                            <div className="col-span-6 flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                <span className="w-12 text-center">View</span>
+                                <span className="w-12 text-center">Create</span>
+                                <span className="w-12 text-center">Edit</span>
+                                <span className="w-12 text-center">Delete</span>
+                            </div>
+                        </div>
+
+                        <div className="divide-y divide-slate-100">
+                            {groupedPermissions.map(([category, permissions]) => (
+                                <div key={category} className="grid grid-cols-12 px-5 py-4 items-center hover:bg-slate-50/30 transition-colors group">
+                                    <div className="col-span-6 pr-4">
+                                        <h4 className="text-sm font-semibold text-slate-800 capitalize tracking-tight">{category.replace(/_/g, ' ')}</h4>
+
+                                        <div className="flex gap-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    permissions.forEach(p => {
+                                                        if (!form.formData.permissions.includes(p.name)) {
+                                                            handlePermissionChange(p.name);
+                                                        }
+                                                    });
+                                                }}
+                                                className="text-[9px] font-bold text-blue-600 hover:underline uppercase tracking-tighter"
+                                            >
+                                                Select
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    permissions.forEach(p => {
+                                                        if (form.formData.permissions.includes(p.name)) {
+                                                            handlePermissionChange(p.name);
+                                                        }
+                                                    });
+                                                }}
+                                                className="text-[9px] font-bold text-slate-400 hover:text-red-500 hover:underline uppercase tracking-tighter"
+                                            >
+                                                Clear
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="col-span-6 flex justify-between">
+                                        {['view', 'create', 'edit', 'delete'].map(action => {
+                                            const perm = permissions.find(p => p.name.endsWith(action));
+                                            const isSelected = perm ? form.formData.permissions.includes(perm.name) : false;
+
+                                            return (
+                                                <div key={action} className="w-12 flex justify-center">
+                                                    {perm ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handlePermissionChange(perm.name)}
+                                                            className={`
+                                                                w-5 h-5 rounded flex items-center justify-center transition-all border
+                                                                ${isSelected 
+                                                                    ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-100' 
+                                                                    : 'bg-white border-slate-200 hover:border-slate-400 text-transparent'
+                                                                }
+                                                            `}
+                                                        >
+                                                            <Check size={12} strokeWidth={4} className={isSelected ? 'scale-100' : 'scale-0'} />
+                                                        </button>
+                                                    ) : (
+                                                        <div className="w-5 h-5 rounded bg-slate-50/50 border border-transparent" />
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
+
             </div>
         </ModalForm>
     );

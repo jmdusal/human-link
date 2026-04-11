@@ -1,17 +1,17 @@
 import React, { useEffect } from 'react';
 import ModalForm from '@/components/modals/ModalForm';
-import Input from '@/components/Input';
-import Select from '@/components/Select';
-import Toggle from '@/components/Toggle';
-import DateInput from '@/components/DateInput';
-import Checkbox from '@/components/Checkbox';
-import FormLabel from '@/components/FormLabel';
-import type { User, UserFormData } from '@/types/models';
+import Input from '@/components/ui/Input';
+import Select from '@/components/ui/Select';
+import Toggle from '@/components/ui/Toggle';
+import DateInput from '@/components/ui/DateInput';
+import Checkbox from '@/components/ui/Checkbox';
+import FormLabel from '@/components/ui/FormLabel';
+import type { User, UserFormData } from '@/types';
 import { USER_STATUS_OPTIONS } from '@/constants';
 import { formatUserFormData, INITIAL_USER_FORM_STATE, DAYS_NAME } from '@/utils/userUtils';
 import { UserService } from '@/services/UserService';
-import { useRoles } from '@/hooks/useRoles';
-import { useForm } from '@/hooks/useForm';
+import { useRoles } from '@/hooks/use-roles';
+import { useForm } from '@/hooks/use-form';
 
 interface UserFormProps {
     isOpen: boolean;
@@ -159,11 +159,11 @@ export default function UserForm({ isOpen, onClose, onSuccess, selectedUser }: U
                         onBlur={(e) => {
                             const val = parseFloat(e.target.value);
                             
-                            if (isNaN(val) || e.target.value === '') {
-                                form.handleChange('monthlyRate', '0.00');
-                            } else {
-                                form.handleChange('monthlyRate', val.toFixed(2));
-                            }
+                            const formattedValue = isNaN(val) || e.target.value === '' 
+                                ? '0.00' 
+                                : val.toFixed(2);
+                            
+                            form.handleChange('monthlyRate', formattedValue);
                         }}
                         error={form.errors.monthlyRate?.[0]}
                     />

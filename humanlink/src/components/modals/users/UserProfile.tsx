@@ -1,8 +1,12 @@
 import { useState } from 'react';
+import ModalTabs from '@/components/ui/ModalTabs';
+import CloseButton from '@/components/ui/CloseButton';
+import { formatCurrency } from '@/utils/formatUtils';
+import { getInitials } from '@/utils/userUtils';
 import { 
-    X, Mail, Shield, User as UserIcon, 
+    Mail, Shield, User as UserIcon, 
     Wallet, History, Settings,
-    Banknote, Clock, CalendarDays, Percent,
+    Banknote, Clock, CalendarDays,
     CalendarClock, ChevronLeft, ChevronRight, CheckCircle2
 } from 'lucide-react';
 
@@ -49,56 +53,65 @@ export default function UserProfile({ isOpen, onClose, title, data }: ModalViewP
         return scheduleRecord.weeklyData.find((day: any) => day.dayOfWeek === dayOfWeek);
     };
 
-    const formatCurrency = (value: any) => {
-        const num = parseFloat(value);
-        return isNaN(num) ? '0.00' : num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    };
-
     return (
         <div className="fixed inset-0 z-[100] bg-white flex flex-col animate-in fade-in duration-300">
             
             {/* TOP BAR */}
             <div className="px-6 py-4 flex justify-between items-center border-b border-slate-100">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center">
+                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                         <Shield className="text-white" size={16} />
                     </div>
-                    <span className="text-sm font-semibold text-slate-900">{title}</span>
+                    <span className="text-sm font-semibold text-slate-900 uppercase tracking-wider">
+                        {title}
+                    </span>
                 </div>
-                <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-md text-slate-400 transition-colors">
-                    <X size={18} />
-                </button>
+
+                <CloseButton onClose={onClose} />
+                {/* <button
+                    onClick={onClose}
+                    className="p-2 rounded-full text-black hover:bg-slate-100 transition-colors"
+                >
+                    <X size={18} strokeWidth={2.5} />
+                </button> */}
             </div>
 
             {/* HERO SECTION */}
             <div className="bg-slate-50/50 border-b border-slate-100">
-                <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center gap-6">
+                <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center gap-6">
                     <div className="relative">
-                        <div className={`h-20 w-20 ${data.color || 'bg-indigo-600'} rounded-2xl flex items-center justify-center text-white text-3xl font-bold shadow-inner`}>
-                            {data.name.charAt(0)}
-                        </div>
-                        <div className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full border border-slate-100">
-                            <div className={`h-3 w-3 rounded-full ${data.status === 'active' ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                        {/* <div className={`h-20 w-20 ${data.color || 'bg-indigo-600'} rounded-2xl flex items-center justify-center text-white text-3xl font-bold shadow-inner`}> */}
+                        <div className="h-20 w-20 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold shadow-inner">
+                            {getInitials(data.name)}
                         </div>
                     </div>
                     
                     <div className="flex-1 text-center md:text-left">
-                        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{data.name}</h2>
+                        <h2 className="text-3xl font-bold text-slate-900 tracking-tight">{data.name}</h2>
                         <div className="flex items-center justify-center md:justify-start gap-3 mt-1 text-sm text-slate-500 font-medium">
                             <span className="px-2 py-0.5 bg-white border border-slate-200 rounded text-[11px] uppercase tracking-wider text-slate-600">
                                 {data.role || 'Member'}
                             </span>
-                            <span>ID: #{data.id || '000'}</span>
+                            <span className="flex items-center gap-1">
+                                ID: #{data.id || '000'}
+                            </span>
                         </div>
                     </div>
 
                     <div className="flex gap-2">
-                        <button className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 transition-all">Edit Info</button>
+                        <button className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 transition-all">
+                            Edit Info
+                        </button>
                     </div>
                 </div>
 
-                {/* ROW TABS */}
-                <div className="max-w-6xl mx-auto px-6">
+                {/* TABS */}
+                <ModalTabs 
+                    tabs={TABS} 
+                    activeTab={activeTab} 
+                    onTabChange={setActiveTab} 
+                />
+                {/* <div className="max-w-7xl mx-auto px-6">
                     <nav className="flex gap-8">
                         {TABS.map((tab) => {
                             const isActive = activeTab === tab.id;
@@ -107,22 +120,23 @@ export default function UserProfile({ isOpen, onClose, title, data }: ModalViewP
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`pb-4 text-sm font-medium transition-all relative flex items-center gap-2 ${
-                                        isActive ? "text-indigo-600" : "text-slate-500 hover:text-slate-700"
+                                        isActive ? "text-blue-600" : "text-slate-500 hover:text-slate-700"
                                     }`}
                                 >
                                     <tab.icon size={16} />
                                     {tab.label}
-                                    {isActive && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />}
+                                    {isActive && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />}
                                 </button>
                             );
                         })}
                     </nav>
-                </div>
+                </div> */}
             </div>
 
             {/* CONTENT AREA */}
-            <div className="flex-1 overflow-y-auto">
-                <div className="max-w-6xl mx-auto px-6 py-10">
+            {/* <div className="flex-1 overflow-y-auto"> */}
+            <div className="flex-1 overflow-y-auto bg-[#F8FAFC]">
+                <div className="max-w-7xl mx-auto px-6 py-10">
                     
                     {/* PROFILE TAB */}
                     {activeTab === 'profile' && (
@@ -133,21 +147,21 @@ export default function UserProfile({ isOpen, onClose, title, data }: ModalViewP
                                     <div className="p-6 rounded-2xl border border-slate-100 bg-slate-50/30 flex items-center justify-between">
                                         <div className="flex items-center gap-4">
                                             <div className="p-3 bg-white rounded-xl border border-slate-100 shadow-sm text-slate-400">
-                                                <Mail size={20} />
+                                                <Mail size={16} />
                                             </div>
                                             {/* <div> */}
                                                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter leading-none mb-1">Primary Email</p>
                                                 <p className="text-lg font-semibold text-slate-700">{data.email}</p>
                                             {/* </div> */}
                                         </div>
-                                        <CheckCircle2 size={20} className="text-emerald-500" />
+                                        <CheckCircle2 size={16} className="text-emerald-500" />
                                     </div>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* SCHEDULE TAB (Clean SaaS Calendar) */}
+                    {/* SCHEDULE TAB */}
                     {activeTab === 'schedule' && (
                         <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
                             <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8">

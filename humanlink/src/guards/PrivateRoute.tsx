@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Lock } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 
 interface PrivateRouteProps {
     children: React.ReactNode;

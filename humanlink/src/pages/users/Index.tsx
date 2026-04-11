@@ -3,16 +3,18 @@ import { createColumnHelper } from "@tanstack/react-table";
 import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import UserProfile from '@/components/modals/users/UserProfile';
-import Button from '@/components/Button';
-import UserForm from '@/pages/users/UserForm';
+import Button from '@/components/ui/Button';
+// import UserForm from '@/pages/users/UserForm';
+import UserForm from '@/components/modals/users/UserForm';
 import ModalConfirmation from '@/components/modals/ModalConfirmation';
-import TableActions from '@/components/TableActions';
-import { DataTable } from '@/components/Datatable';
+import TableActions from '@/components/shared/TableActions';
+import { DataTable } from '@/components/shared/Datatable';
 import { useAuth } from '@/context/AuthContext';
-import type { User } from '@/types/models';
+import type { User } from '@/types';
 import { UserService } from '@/services/UserService';
-import { useUsers } from '@/hooks/useUsers';
-import { DateCell, StatusBadge, UserCell, RoleBadge } from '@/components/TableCells';
+import { useUsers } from '@/hooks/use-users';
+import { DateCell, StatusBadge, UserCell, RoleBadge } from '@/components/shared/TableCells';
+import { AnimatePresence } from 'framer-motion';
 
 const columnHelper = createColumnHelper<User>();
 
@@ -131,10 +133,11 @@ export default function UserIndex() {
         columnHelper.accessor('createdAt', {
             header: 'Created',
             cell: (info) => <DateCell date={info.getValue()} />,
-            // cell: (info) => <DateCell value={formatDate(info.getValue())} />,
         }),
         columnHelper.display({
             id: 'actions',
+            size: 50,
+            header: () => <div className="text-right">Actions</div>,
             cell: (info) => {
                 return (
                     <TableActions 
@@ -149,14 +152,14 @@ export default function UserIndex() {
                                 label: 'Edit',
                                 icon: Pencil,
                                 onClick: () => handleEdit(info.row.original),
-                                show: can('user-edit') 
+                                show: can('users-edit') 
                             },
                             { 
                                 label: 'Delete',
                                 icon: Trash2,
                                 onClick: () => handleDeleteClick(info.row.original),
                                 variant: 'danger',
-                                show: can('user-delete')
+                                show: can('users-delete')
                             },
                         ]}
                     />
@@ -169,15 +172,14 @@ export default function UserIndex() {
         <div className="w-full">
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-4">
-                    
                     <div>
                         <h1 className="text-2xl font-bold text-slate-800 tracking-tight">User Management</h1>
                         <p className="text-slate-400 text-sm font-medium">Manage operators and system access levels.</p>
                     </div>
                 </div>
 
-                {can('user-create') && (
-                    <Button variant="primary" icon={Plus} onClick={handleAdd}>Add User</Button>
+                {can('users-create') && (
+                    <Button variant="primary" icon={Plus} onClick={handleAdd}>New User</Button>
                 )}
             </div>
 
@@ -188,8 +190,10 @@ export default function UserIndex() {
                 showSearch={true}
             />
             
-            {isFormOpen && (
+            <AnimatePresence>
+                {isFormOpen && (
                 <UserForm
+                    key={selectedUser ? `edit-${selectedUser.id}` : 'create-user'}
                     isOpen={isFormOpen}
                     onClose={() => setIsFormOpen(false)}
                     onSuccess={handleSuccess}
@@ -197,24 +201,34 @@ export default function UserIndex() {
                     selectedUser={selectedUser}
                 />
             )}
-
-            {isViewOpen && (
+            </AnimatePresence>
+            
+            <AnimatePresence>
+               {isViewOpen && (
                 <UserProfile
+                    key="user-profile-modal"
                     isOpen={isViewOpen}
                     onClose={() => setIsViewOpen(false)}
                     title="User Details"
                     data={selectedUser}
                 />
-            )}
+            )} 
+            </AnimatePresence>
             
-            <ModalConfirmation 
-                isOpen={isDeleteModalOpen}
-                onClose={() => setIsDeleteModalOpen(false)}
-                onConfirm={handleConfirmDelete}
-                loading={isDeleting}
-                title="Delete User"
-                message={`Are you sure you want to delete ${selectedUser?.name}? This action is permanent.`}
-            />
+            <AnimatePresence>
+                {isDeleteModalOpen && (
+                    <ModalConfirmation
+                        key="delete-confirmation"
+                        isOpen={isDeleteModalOpen}
+                        onClose={() => setIsDeleteModalOpen(false)}
+                        onConfirm={handleConfirmDelete}
+                        loading={isDeleting}
+                        title="Delete User"
+                        message={`Are you sure you want to delete ${selectedUser?.name}? This action is permanent.`}
+                    />
+                    
+                )}
+            </AnimatePresence>
         </div>
     );
 }

@@ -1,4 +1,4 @@
-import type { User, UserFormData } from '@/types/models';
+import type { User, UserFormData } from '@/types';
 import { getToday } from '@/utils/dateUtils';
 
 export const DAYS_NAME = [

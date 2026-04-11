@@ -1,17 +1,19 @@
 import { lazy } from 'react';
-import { LayoutDashboard, Users, Database, History, Shield, ShieldCheck, CalendarDays, Clock } from 'lucide-react';
+import { LayoutDashboard, Users, History, Shield, ShieldCheck, CalendarDays } from 'lucide-react';
 
 const Overview = lazy(() => import('@/pages/Overview'));
-const Team = lazy(() => import('@/pages/Team'));
-const Login = lazy(() => import('@/pages/authentication/Login'));
-
 const ActivityLogIndex = lazy(() => import('@/pages/activity-logs/Index'));
 const UserIndex = lazy(() => import('@/pages/users/Index'));
-const LeavePolicyIndex = lazy(() => import('@/pages/leave-policies/Index'));
-const ScheduleIndex = lazy(() => import('@/pages/schedules/Index'));
-
 const RoleIndex = lazy(() => import('@/pages/roles/Index'));
 const PermissionIndex = lazy(() => import('@/pages/permissions/Index'));
+const WorkspaceIndex = lazy(() => import('@/pages/workspaces/Index'));
+
+const LeavePolicyIndex = lazy(() => import('@/pages/leave-policies/Index'));
+const LeaveBalanceIndex = lazy(() => import('@/pages/leave-balances/Index'));
+const ScheduleIndex = lazy(() => import('@/pages/schedules/Index'));
+
+const Workspace = lazy(() => import('@/pages/workspaces/Workspace'));
+
 
 export const navItems = [
     {
@@ -24,11 +26,21 @@ export const navItems = [
     {
         path: '/users',
         label: 'Users',
-        title: 'User Management',
+        title: 'Users',
         category: 'Manage',
         icon: <Users size={18}/>,
         component: <UserIndex />,
-        permission: 'user-view'
+        permission: 'users-view'
+    },
+    {
+        path: '/workspaces',
+        label: 'Workspaces',
+        title: 'Workspaces',
+        category: 'Manage',
+        icon: <LayoutDashboard size={18}/>,
+        component: <WorkspaceIndex />,
+        permission: 'workspaces-view',
+        // hidden: true
     },
     {
         path: '/schedules',
@@ -37,38 +49,30 @@ export const navItems = [
         category: 'Manage',
         icon: <CalendarDays size={18}/>,
         component: <ScheduleIndex />,
-        permission: 'schedule-view'
+        permission: 'schedules-view'
     },
     {
-        path: '/projects',
-        label: 'Projects',
-        category: 'Manage',
-        icon: <Database size={18}/>, 
-        component: <div>Projects</div>
-    },
-    { 
-        path: '/team',
-        label: 'Team Members',
-        category: 'Manage',
-        icon: <Users size={18}/>, 
-        component: <Team /> 
-    },
-    
-    {
-        path: '/leave-policies',
-        label: 'Leave Policy',
-        title: 'Leave Policy Management',
+        label: 'Leaves',
+        title: 'Leaves',
         category: 'Manage',
         icon: <CalendarDays size={18}/>,
-        component: <LeavePolicyIndex />,
-        permission: 'leave-policy-view'
-    },
-    {
-        path: '/testhahaha',
-        label: 'Simple',
-        category: 'Manage',
-        icon: <Database size={18}/>, 
-        component: <div>wsahgahahahaha</div>
+        permission: 'leaves-view',
+        children: [
+            {
+                path: '/leave-policies',
+                label: 'Policies',
+                title: 'Leave Policy',
+                component: <LeavePolicyIndex />,
+                permission: 'leave-policies-view'
+            },
+            {
+                path: '/leave-balances',
+                label: 'Balances',
+                title: 'Leave Balance',
+                component: <LeaveBalanceIndex />,
+                permission: 'leave-balances-view'  
+            },
+        ]
     },
     {
         path: '/roles',
@@ -77,7 +81,7 @@ export const navItems = [
         category: 'Access',
         icon: <Shield size={18}/>,
         component: <RoleIndex />,
-        permission: 'role-view'
+        permission: 'roles-view'
     },
     {
         path: '/permissions',
@@ -86,7 +90,7 @@ export const navItems = [
         category: 'Access',
         icon: <ShieldCheck size={18}/>,
         component: <PermissionIndex />,
-        permission: 'permission-view'
+        permission: 'permissions-view'
     },
     {
         path: '/activity-logs',
@@ -95,74 +99,15 @@ export const navItems = [
         category: 'System',
         icon: <History size={18}/>,
         component: <ActivityLogIndex />,
-        permission: 'activity-log-view'
+        permission: 'activity-logs-view'
     },
-    
-    // {
-    //     path: '/testhahaha',
-    //     label: 'test',
-    //     category: 'System',
-    //     icon: <Database size={18}/>, 
-    //     component: <div>wsahgahahahaha</div>
-    // },
-    // {
-    //     path: '/testhahaha',
-    //     label: 'test',
-    //     category: 'System',
-    //     icon: <Database size={18}/>, 
-    //     component: <div>wsahgahahahaha</div>
-    // },
-    // {
-    //     path: '/testhahaha',
-    //     label: 'test',
-    //     category: 'System',
-    //     icon: <Database size={18}/>, 
-    //     component: <div>wsahgahahahaha</div>
-    // },
-    // {
-    //     path: '/testhahaha',
-    //     label: 'test',
-    //     category: 'System',
-    //     icon: <Database size={18}/>, 
-    //     component: <div>wsahgahahahaha</div>
-    // },
-    // {
-    //     path: '/testhahaha',
-    //     label: 'test',
-    //     category: 'System',
-    //     icon: <Database size={18}/>, 
-    //     component: <div>wsahgahahahaha</div>
-    // },
-    // {
-    //     path: '/testhahaha',
-    //     label: 'test',
-    //     category: 'System',
-    //     icon: <Database size={18}/>, 
-    //     component: <div>wsahgahahahaha</div>
-    // },
-    // {
-    //     path: '/testhahaha',
-    //     label: 'test',
-    //     category: 'System',
-    //     icon: <Database size={18}/>, 
-    //     component: <div>wsahgahahahaha</div>
-    // },
-    // {
-    //     path: '/testhahaha',
-    //     label: 'test',
-    //     category: 'System',
-    //     icon: <Database size={18}/>, 
-    //     component: <div>wsahgahahahaha</div>
-    // },
-    // {
-    //     path: '/testhahaha',
-    //     label: 'test',
-    //     category: 'System',
-    //     icon: <Database size={18}/>, 
-    //     component: <div>wsahgahahahaha</div>
-    // },
-    
-    
-    
-    // { path: '/login', label: 'Login', icon: <Users size={18}/>, component: <Login /> },
+    // hidden
+    {
+        path: '/workspaces/:slug',
+        label: 'Activity aghahaha',
+        title: 'Workspace Dashboard',
+        component: <Workspace />,
+        permission: 'workspaces-view',
+        hidden: true
+    },
 ];

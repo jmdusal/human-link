@@ -52,7 +52,7 @@ class PermissionController extends Controller
 
     public function destroy(Permission $permission): JsonResponse
     {
-        $permission->delete();
+        DB::transaction(fn () => $permission->delete());
 
         return response()->json([
             'message' => 'Permission deleted successfully'

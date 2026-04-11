@@ -1,5 +1,6 @@
 import { X, Loader2, AlertTriangle, Info, Trash2 } from 'lucide-react';
-import Button from '@/components/Button';
+import { motion, AnimatePresence } from 'framer-motion';
+import Button from '@/components/ui/Button';
 
 type ConfirmationVariant = 'danger' | 'warning' | 'info';
 
@@ -14,8 +15,17 @@ interface ModalConfirmationProps {
     variant?: ConfirmationVariant;
 }
 
-export default function ModalConfirmation({ isOpen, onClose, onConfirm, title, message, loading,confirmText,variant = 'danger' 
+export default function ModalConfirmation({ 
+    isOpen, 
+    onClose, 
+    onConfirm, 
+    title, 
+    message, 
+    loading, 
+    confirmText, 
+    variant = 'danger' 
 }: ModalConfirmationProps) {
+    
     if (!isOpen) return null;
 
     const variantConfig = {
@@ -39,9 +49,26 @@ export default function ModalConfirmation({ isOpen, onClose, onConfirm, title, m
     const { icon: Icon, iconColor, btnVariant } = variantConfig[variant];
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-hidden bg-slate-900/40 backdrop-blur-[2px] animate-in fade-in duration-200">
-            <div className="absolute inset-0" onClick={onClose} />
-            <div className="relative w-full max-w-sm bg-white rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-2 border border-slate-200">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-hidden">
+            {/* BACKDROP ANIMATION */}
+            <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                onClick={onClose}
+                className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
+            />
+
+            {/* MODAL CARD ANIMATION */}
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ 
+                    opacity: 1, 
+                    scale: 1, 
+                    y: 0,
+                    transition: { type: "spring", duration: 0.4, bounce: 0.3 } 
+                }}
+                className="relative w-full max-w-sm bg-white rounded-xl shadow-2xl overflow-hidden border border-slate-200"
+            >
                 <button
                     onClick={onClose}
                     className="absolute right-3 top-3 p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-400 hover:text-slate-600 z-10"
@@ -83,7 +110,7 @@ export default function ModalConfirmation({ isOpen, onClose, onConfirm, title, m
                         </Button>
                     </div>
                 </div>
-            </div>
+            </motion.div>
         </div>
     );
 }

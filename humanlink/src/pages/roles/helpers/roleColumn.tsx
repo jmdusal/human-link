@@ -1,6 +1,6 @@
 import { createColumnHelper, type ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Pencil, Trash2, Clock } from 'lucide-react';
-import type { Role } from '@/types/models';
+import type { Role } from '@/types';
 
 const columnHelper = createColumnHelper<Role>();
 

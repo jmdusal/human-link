@@ -1,9 +1,9 @@
 import { useMemo, useState, useEffect } from 'react';
 import { createColumnHelper } from "@tanstack/react-table";
 import { History, Shield, Clock, Activity } from 'lucide-react';
-import { DataTable } from '@/components/Datatable';
+import { DataTable } from '@/components/shared/Datatable';
 import api from '@/api/axios';
-import type { ActivityLog } from '@/types/models';
+import type { ActivityLog } from '@/types';
 import { API_ROUTES } from '@/constants';
 
 // const API_ROUTES = {

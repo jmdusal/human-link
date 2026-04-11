@@ -1,11 +1,13 @@
 import React, { useEffect } from 'react';
 import ModalForm from '@/components/modals/ModalForm';
-import Input from '@/components/Input';
-import Toggle from '@/components/Toggle';
-import type { LeavePolicy, LeavePolicyFormData } from '@/types/models';
+import Input from '@/components/ui/Input';
+import Toggle from '@/components/ui/Toggle';
+import Switch from '@/components/ui/Switch';
+import type { LeavePolicy, LeavePolicyFormData } from '@/types';
 import { LeavePolicyService } from '@/services/LeavePolicyService';
 import { INITIAL_LEAVE_POLICY_FORM_STATE, formatLeavePolicyFormData } from '@/utils/leavepolicyUtils';
-import { useForm } from '@/hooks/useForm';
+import { useForm } from '@/hooks/use-form';
+import { formatSlug } from '@/utils/formatUtils';
 
 interface LeavePolicyFormProps {
     isOpen: boolean;
@@ -29,17 +31,16 @@ export default function LeavePolicyForm({ isOpen, onClose, onSuccess, selectedLe
         );
     };
     
-    const formatSlug = (text: string) => text.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newName = e.target.value;
+        
         form.setFormData(prev => ({
             ...prev,
             name: newName,
             slug: formatSlug(newName)
         }));
         
-        if (form.errors.name) {
+        if (form.errors.name || form.errors.slug) {
             const { name, ...rest } = form.errors;
             form.setErrors(rest);
         }
@@ -93,14 +94,70 @@ export default function LeavePolicyForm({ isOpen, onClose, onSuccess, selectedLe
                     }}
                     onBlur={(e) => {
                         const val = parseFloat(e.target.value);
-                        
-                        if (isNaN(val) || e.target.value === '') {
-                            form.handleChange('defaultCredits', '0.00');
-                        } else {
-                            form.handleChange('defaultCredits', val.toFixed(2));
-                        }
+                            
+                        const formattedValue = isNaN(val) || e.target.value === '' 
+                            ? '0.00' 
+                            : val.toFixed(2);
+                            
+                        form.handleChange('defaultCredits', formattedValue);
                     }}
                     error={form.errors.defaultCredits?.[0]}
+                />
+                {form.formData.allowCarryOver && (
+                    <Input
+                        label="Max Days to Carry Over"
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={form.formData.maxCarryOver}
+                        onChange={(e) => form.handleChange('maxCarryOver', e.target.value)}
+                        onFocus={(e) => {
+                            if (form.formData.maxCarryOver === '0.00') {
+                                form.handleChange('maxCarryOver', '');
+                            } else {
+                                e.target.select();
+                            }
+                        }}
+                        onBlur={(e) => {
+                            const val = parseFloat(e.target.value);
+                                
+                            const formattedValue = isNaN(val) || e.target.value === '' 
+                                ? '0.00' 
+                                : val.toFixed(2);
+                            form.handleChange('maxCarryOver', formattedValue);
+                        }}
+                        error={form.errors.maxCarryOver?.[0]}
+                    />
+                )}
+                <Switch
+                    label="Policy Status" 
+                    description="Enable or disable this leave policy across the system."
+                    checked={form.formData.isActive} 
+                    onChange={(val) => form.handleChange('isActive', val)} 
+                />
+                <Switch
+                    label="Paid Leave" 
+                    description="Determine if this leave type is deductible from payroll."
+                    checked={form.formData.isPaid} 
+                    onChange={(val) => form.handleChange('isPaid', val)} 
+                />
+                <Switch
+                    label="Cashable" 
+                    description="Allow unused credits to be converted to cash at the end of the year (e.g., SIL)."
+                    checked={form.formData.isCashable} 
+                    onChange={(val) => form.handleChange('isCashable', val)} 
+                />
+                <Switch
+                    label="Allow Carry-over" 
+                    description="Enable unused leave credits to be moved to the next year."
+                    checked={form.formData.allowCarryOver} 
+                    onChange={(val) => form.handleChange('allowCarryOver', val)} 
+                />
+                <Switch 
+                    label="Requires Attachment"
+                    description="Force users to upload documents (Medical Cert, Solo Parent ID, etc.)"
+                    checked={form.formData.requiresAttachment} 
+                    onChange={(val) => form.handleChange('requiresAttachment', val)} 
                 />
             </div>
         </ModalForm>

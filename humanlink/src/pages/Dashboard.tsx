@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router-dom';
-import Sidebar from '../components/Sidebar';
-import TopHeader from '../components/TopHeader';
+import Sidebar from '../components/layouts/Sidebar';
+import TopHeader from '../components/layouts/TopHeader';
 import { MoreVertical, Plus, ArrowUpRight } from 'lucide-react';
 
 interface LayoutProps {

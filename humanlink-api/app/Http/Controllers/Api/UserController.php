@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
-use Illuminate\Support\Facades\Hash;
+use App\Models\LeavePolicy;
+use App\Models\Project;
 use App\Models\User;
+use App\Models\Workspace;
+use App\Notifications\NewActivityNotification;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use App\Notifications\NewActivityNotification;
 use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
@@ -27,6 +30,18 @@ class UserController extends Controller
     {
         $user = DB::transaction(function () use ($request) {
             $user = User::create($request->validated());
+
+            $activePolicies = LeavePolicy::where('is_active', true)->get();
+            $currentYear = date('Y');
+
+            foreach ($activePolicies as $policy) {
+                $user->leaveBalances()->create([
+                    'leave_policy_id' => $policy->id,
+                    'allowed'         => $policy->default_credits,
+                    'used'            => 0.00,
+                    'year'            => $currentYear,
+                ]);
+            }
 
             if ($request->filled('monthly_rate')) {
                 $user->rate()->create($request->only([
@@ -47,7 +62,7 @@ class UserController extends Controller
         });
 
         return response()->json([
-            'data' => $user->load(['roles', 'rate', 'schedule'])
+            'data' => $user->load(['roles', 'rate', 'schedule', 'leaveBalances.leavePolicy'])
         ], 201);
     }
 
@@ -104,4 +119,26 @@ class UserController extends Controller
             'message' => 'User deleted successfully'
         ], 200);
     }
+
+    public function getWorkspaceUsers(Workspace $workspace): JsonResponse
+    {
+        $users = $workspace->members()->get();
+
+        return response()->json([
+            'data' => $users
+        ], 200);
+    }
+
+    public function getProjectUsers(Project $project): JsonResponse
+    {
+        $users = $project->projectMembers()->get();
+
+        return response()->json([
+            'data' => $users
+        ], 200);
+    }
+
+
+
+
 }

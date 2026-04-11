@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import ModalForm from '@/components/modals/ModalForm';
-import Input from '@/components/Input';
-import type { Permission, PermissionFormData } from '@/types/models';
+import Input from '@/components/ui/Input';
+import type { Permission, PermissionFormData } from '@/types';
 import { PermissionService } from '@/services/PermissionService';
 import { INITIAL_PERMISSION_FORM_STATE, formatPermissionFormData } from '@/utils/permissionUtils';
-import { useForm } from '@/hooks/useForm';
+import { useForm } from '@/hooks/use-form';
 
 interface PermissionFormProps {
     isOpen: boolean;
@@ -42,7 +42,7 @@ export default function PermissionForm({ isOpen, onClose, onSuccess, selectedPer
             onClose={onClose}
             onSubmit={onSubmit}
             title={selectedPermission ? "Edit Permission" : "Create New Permission"}
-            description={selectedPermission ? "MODIFY EXISTING CREDENTIALS" : "SETUP A NEW OPERATOR"}
+            description={selectedPermission ? "MODIFY EXISTING CREDENTIALS" : "SETUP A NEW PERMISSION"}
             isUpdate={!!selectedPermission}
             loading={form.isSubmitting}
         >

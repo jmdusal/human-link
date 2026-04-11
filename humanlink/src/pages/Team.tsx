@@ -1,5 +1,5 @@
 import React from 'react';
-import Button from '../components/Button';
+import Button from '../components/ui/Button';
 import { Plus, Search, MoreHorizontal, Shield} from 'lucide-react';
 
 export default function Team() {

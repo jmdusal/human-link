@@ -1,6 +1,6 @@
 import api from '@/api/axios';
 import { API_ROUTES } from '@/constants';
-import type { Permission, PermissionFormData } from '@/types/models';
+import type { Permission, PermissionFormData } from '@/types';
 
 export const PermissionService = {
     

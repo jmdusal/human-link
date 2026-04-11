@@ -1,21 +1,23 @@
 import { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { createColumnHelper } from "@tanstack/react-table";
-import { Plus, Pencil, Trash2, CalendarDays } from 'lucide-react';
-import { DataTable } from '@/components/Datatable';
-import Button from '@/components/Button';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { DataTable } from '@/components/shared/Datatable';
+import Button from '@/components/ui/Button';
 import LeavePolicyForm from '@/pages/leave-policies/LeavePolicyForm';
 import ModalConfirmation from '@/components/modals/ModalConfirmation';
-import TableActions from '@/components/TableActions';
+import TableActions from '@/components/shared/TableActions';
 import { useAuth } from '@/context/AuthContext';
-import type { LeavePolicy } from '@/types/models';
+import type { LeavePolicy } from '@/types';
 import { LeavePolicyService } from '@/services/LeavePolicyService';
-import { useLeavePolicies } from '@/hooks/useLeavePolicies';
-import { TextCell, DateCell } from '@/components/TableCells';
+import { useLeavePolicies } from '@/hooks/use-leave-policies';
+import { TextCell, DateCell } from '@/components/shared/TableCells';
+import { AnimatePresence } from 'framer-motion';
 
 const columnHelper = createColumnHelper<LeavePolicy>();
 
 export default function LeavePolicyIndex() {
+// export default function LeavePolicyIndex({ initialData, onRefresh }: LeavePolicyIndexProps) {
     const { can } = useAuth();
     const { leavepolicies, setLeavePolicies, loading,  } = useLeavePolicies(true);
 
@@ -96,6 +98,8 @@ export default function LeavePolicyIndex() {
         }),
         columnHelper.display({
             id: 'actions',
+            size: 50,
+            header: () => <div className="text-right">Actions</div>,
             cell: (info) => {
                 return (
                     <TableActions
@@ -104,14 +108,14 @@ export default function LeavePolicyIndex() {
                                 label: 'Edit',
                                 icon: Pencil,
                                 onClick: () => handleEdit(info.row.original),
-                                show: can('leave-policy-edit')
+                                show: can('leave-policies-edit')
                             },
                             {
                                 label: 'Delete',
                                 icon: Trash2,
                                 onClick: () => handleDeleteClick(info.row.original),
                                 variant: 'danger',
-                                show: can('leave-policy-delete')
+                                show: can('leave-policies-delete')
                             },
                         ]}
                     />
@@ -124,17 +128,14 @@ export default function LeavePolicyIndex() {
         <div className="w-full">
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-slate-100 text-slate-600">
-                        <CalendarDays size={24} className="text-blue-600" />
-                    </div>
                     <div>
                         <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Leave Policy Management</h1>
                         <p className="text-slate-400 text-sm font-medium">Configure leave types, accruals, and policies.</p>
                     </div>
                 </div>
 
-                {can('leave-policy-create') && (
-                    <Button variant="primary" icon={Plus} onClick={handleAdd}>Add Policy</Button>
+                {can('leave-policies-create') && (
+                    <Button variant="primary" icon={Plus} onClick={handleAdd}>New Policy</Button>
                 )}
             </div>
 
@@ -145,24 +146,33 @@ export default function LeavePolicyIndex() {
                 showSearch={true}
             />
 
-            {isFormOpen && (
-                <LeavePolicyForm 
-                    isOpen={isFormOpen} 
-                    onClose={() => setIsFormOpen(false)} 
-                    onSuccess={handleSuccess}
-                    onError={handleError}
-                    selectedLeavePolicy={selectedLeavePolicy} 
-                />
+            <AnimatePresence>
+                {isFormOpen && (
+                    <LeavePolicyForm
+                        key={selectedLeavePolicy ? `edit-${selectedLeavePolicy.id}` : 'create-policy'}
+                        isOpen={isFormOpen} 
+                        onClose={() => setIsFormOpen(false)} 
+                        onSuccess={handleSuccess}
+                        onError={handleError}
+                        selectedLeavePolicy={selectedLeavePolicy} 
+                    />
             )}
+            </AnimatePresence>
             
-            <ModalConfirmation 
-                isOpen={isDeleteModalOpen}
-                onClose={() => setIsDeleteModalOpen(false)}
-                onConfirm={handleConfirmDelete}
-                loading={isDeleting}
-                title="Delete Policy"
-                message={`Are you sure you want to delete ${selectedLeavePolicy?.name}? This action is permanent.`}
-            />
+            <AnimatePresence>
+                {isDeleteModalOpen && (
+                    <ModalConfirmation
+                        key="delete-confirmation"
+                        isOpen={isDeleteModalOpen}
+                        onClose={() => setIsDeleteModalOpen(false)}
+                        onConfirm={handleConfirmDelete}
+                        loading={isDeleting}
+                        title="Delete Policy"
+                        message={`Are you sure you want to delete ${selectedLeavePolicy?.name}? This action is permanent.`}
+                    />
+                )}
+            </AnimatePresence>
+            
         </div>
     );
 }

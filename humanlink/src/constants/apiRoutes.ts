@@ -11,6 +11,8 @@ export const API_ROUTES = {
         STORE: '/users',
         UPDATE: (id: number) => `/users/${id}`,
         DELETE: (id: number) => `/users/${id}`,
+        WORKSPACE_USERS: (workspaceId: number) => `/users/workspace/${workspaceId}`,
+        PROJECT_USERS: (projectId: number) => `/users/project/${projectId}`,
     },
     ROLES: {
         LIST: '/roles',
@@ -23,6 +25,38 @@ export const API_ROUTES = {
         STORE: '/permissions',
         UPDATE: (id: number) => `/permissions/${id}`,
         DELETE: (id: number) => `/permissions/${id}`,
+    },
+    WORKSPACES:{
+        LIST: '/workspaces',
+        STORE: '/workspaces',
+        UPDATE: (id: number) => `/workspaces/${id}`,
+        DELETE: (id: number) => `/workspaces/${id}`,
+        GET_BY_SLUG: (slug: string) => `/workspaces/${slug}`,
+    },
+    PROJECTS: {
+        LIST: '/projects',
+        STORE: '/projects',
+        UPDATE: (id: number) => `/projects/${id}`,
+        DELETE: (id: number) => `/projects/${id}`,
+    },
+    TASKS: {
+        LIST: '/tasks',
+        STORE: '/tasks',
+        UPDATE: (id: number) => `/tasks/${id}`,
+        DELETE: (id: number) => `/tasks/${id}`,
+        UPDATE_POSITION: (id: number | string) => `/tasks/${id}/position`,
+    },
+    STATUSES: {
+        LIST: '/statuses',
+    },
+    LEAVES: {
+      LIST: '/leaves'  
+    },
+    LEAVE_BALANCES: {
+        LIST: '/leave-balances',
+        STORE: '/leave-balances',
+        UPDATE: (id: number) => `/leave-balances/${id}`,
+        DELETE: (id: number) => `/leave-balances/${id}`,
     },
     LEAVE_POLICIES: {
         LIST: '/leave-policies',

@@ -1,6 +1,6 @@
 import api from '@/api/axios';
 import { API_ROUTES } from '@/constants';
-import type { Role, RoleFormData } from '@/types/models';
+import type { Role, RoleFormData } from '@/types';
 
 export const RoleService = {
     

@@ -31,3 +31,24 @@ export const formatDisplayDate = (date: string | Date | null | undefined): strin
 
   return displayFormatter.format(d).replace(' at ', ' ');
 };
+
+export const getCurrentYear = (): number => {
+  const parts = isoFormatter.formatToParts(new Date());
+  const yearPart = parts.find(p => p.type === 'year');
+  return yearPart ? parseInt(yearPart.value, 10) : new Date().getFullYear();
+};
+
+const simpleDateFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'long',
+  day: 'numeric',
+  year: 'numeric',
+  timeZone: 'Asia/Manila',
+});
+
+export const formatSimpleDate = (date: string | Date | null | undefined): string => {
+  if (!date) return 'N/A';
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return 'Invalid Date';
+
+  return simpleDateFormatter.format(d);
+};

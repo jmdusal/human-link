@@ -1,11 +1,21 @@
 import api from '@/api/axios';
 import { API_ROUTES } from '@/constants';
-import type { User, UserFormData } from '@/types/models';
+import type { User, UserFormData } from '@/types';
 
 export const UserService = {
     
     async getAllUsers(params?: object): Promise<User[]> {
         const response = await api.get(API_ROUTES.USERS.LIST, { params });
+        return response.data.data;
+    },
+    
+    async getUsersByWorkspace(workspaceId: number): Promise<User[]> {
+        const response = await api.get(API_ROUTES.USERS.WORKSPACE_USERS(workspaceId));
+        return response.data.data;
+    },
+    
+    async getUsersByProject(projectId: number): Promise<User[]> {
+        const response = await api.get(API_ROUTES.USERS.PROJECT_USERS(projectId));
         return response.data.data;
     },
 

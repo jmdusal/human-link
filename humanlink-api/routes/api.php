@@ -9,6 +9,12 @@ use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\LeaveBalanceController;
+use App\Http\Controllers\Api\LeaveController;
+use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\TaskController;
+use App\Http\Controllers\Api\WorkspaceController;
+use App\Http\Controllers\StatusController;
 
 Route::group(['middleware' => ['web']], function () {
     Route::post('/login', [AuthenticationController::class, 'login']);
@@ -45,6 +51,9 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::get('/{user}', 'show')->name('show');
         Route::put('/{user}', 'update')->name('update');
         Route::delete('/{user}', 'destroy')->name('destroy');
+
+        Route::get('/workspace/{workspace}', 'getWorkspaceUsers')->name('workspace');
+        Route::get('/project/{project}', 'getProjectUsers')->name('project');
     });
 
     Route::controller(PermissionController::class)->prefix('permissions')->name('permissions.')->group(function () {
@@ -61,6 +70,41 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::delete('/{role}', 'destroy')->name('destroy');
     });
 
+    Route::controller(WorkspaceController::class)->prefix('workspaces')->name('workspaces.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::put('/{workspace}', 'update')->name('update');
+        Route::delete('/{workspace}', 'destroy')->name('destroy');
+        Route::get('/{slug}', 'showBySlug');
+        // Route::get('/{workspace}/projects', [ProjectController::class, 'index']);
+    });
+
+
+    Route::controller(ProjectController::class)->prefix('projects')->name('projects.')->group(function () {
+        Route::get('/{workspace}', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::put('/{project}', 'update')->name('update');
+        Route::delete('/{project}', 'destroy')->name('destroy');
+        // Route::get('/{workspace}/projects', 'index')->name('index');
+
+    });
+
+    Route::controller(TaskController::class)->prefix('tasks')->name('tasks.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::put('/{task}', 'update')->name('update');
+        Route::delete('/{task}', 'destroy')->name('destroy');
+        Route::patch('/{task}/position', 'updatePosition')->name('updatePosition');
+    });
+
+    Route::controller(StatusController::class)->prefix('statuses')->name('statuses.')->group(function () {
+        Route::get('/', 'index')->name('index');
+    });
+
+    Route::controller(ScheduleController::class)->prefix('schedules')->name('schedules.')->group(function () {
+        Route::get('/', 'index')->name('index');
+    });
+
     Route::controller(LeavePolicyController::class)->prefix('leave-policies')->name('leave-policies.')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/', 'store')->name('store');
@@ -68,8 +112,16 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::delete('/{leavePolicy}', 'destroy')->name('destroy');
     });
 
-    Route::controller(ScheduleController::class)->prefix('schedules')->name('schedules.')->group(function () {
+    Route::controller(LeaveBalanceController::class)->prefix('leave-balances')->name('leave-balances.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::put('/{leaveBalance}', 'update')->name('update');
+        Route::delete('/{leaveBalance}', 'destroy')->name('destroy');
+    });
+
+    Route::controller(LeaveController::class)->prefix('leaves')->name('leaves.')->group(function () {
         Route::get('/', 'index')->name('index');
     });
+
 
 });

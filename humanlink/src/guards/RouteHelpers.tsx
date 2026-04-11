@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
 import { navItems } from '@/routes/routes';
 import { useAuth } from '@/context/AuthContext';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 
 export const TitleUpdater = () => {
     const location = useLocation();
