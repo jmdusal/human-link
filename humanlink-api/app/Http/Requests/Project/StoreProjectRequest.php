@@ -15,12 +15,12 @@ class StoreProjectRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'workspace_id' => ['required', 'exists:workspaces,id'],
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'status' => ['required', 'in:active,completed,on-hold'],
-            'start_date' => ['nullable', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'workspace_id'  => ['required', 'exists:workspaces,id'],
+            'name'          => ['required', 'string', 'max:255'],
+            'description'   => ['nullable', 'string'],
+            'status'        => ['required', 'in:active,completed,on-hold'],
+            'start_date'    => ['nullable', 'date'],
+            'end_date'      => ['nullable', 'date', 'after_or_equal:start_date'],
             // 'projectMembers' => ['required', 'array'],
             // 'projectMembers.*.id' => ['required', 'exists:users,id'],
             // 'projectMembers.*.role' => ['required', 'in:admin,member,viewer'],

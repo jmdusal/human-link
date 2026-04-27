@@ -42,6 +42,10 @@ class ProjectController extends Controller
                         ];
                     })->toArray();
 
+                // $membersWithRoles = collect($request->project_members)->mapWithKeys(fn($m) => [
+                //     $m['id'] => ['role' => $m['pivot']['role'] ?? 'member']
+                // ]);
+
                 $project->projectMembers()->sync($membersWithRoles);
             }
 

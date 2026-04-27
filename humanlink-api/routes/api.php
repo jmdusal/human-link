@@ -12,9 +12,11 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\LeaveBalanceController;
 use App\Http\Controllers\Api\LeaveController;
 use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\WorkspaceController;
-use App\Http\Controllers\StatusController;
+use App\Http\Controllers\Api\StatusController;
+use App\Http\Controllers\Api\TaskCommentController;
 
 Route::group(['middleware' => ['web']], function () {
     Route::post('/login', [AuthenticationController::class, 'login']);
@@ -97,8 +99,26 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::patch('/{task}/position', 'updatePosition')->name('updatePosition');
     });
 
+    Route::controller(TaskCommentController::class)->prefix('taskComments')->name('taskComments.')->group(function () {
+        Route::post('/{task}', 'store')->name('store');
+        Route::put('/{comment}', 'update')->name('update');
+        Route::delete('/{comment}', 'destroy')->name('destroy');
+    });
+
+    Route::controller(TagController::class)->prefix('tags')->name('tags.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::put('/{tag}', 'update')->name('update');
+        Route::delete('/{tag}', 'destroy')->name('destroy');
+    });
+
     Route::controller(StatusController::class)->prefix('statuses')->name('statuses.')->group(function () {
         Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::post('/reorder', 'reorder')->name('reorder');
+        Route::put('/{status}', 'update')->name('update');
+        Route::delete('/{status}', 'destroy')->name('destroy');
+
     });
 
     Route::controller(ScheduleController::class)->prefix('schedules')->name('schedules.')->group(function () {

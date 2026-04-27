@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, ChevronRight, Globe, Search, Bell, Settings as SettingsIcon } from 'lucide-react';
+import { ArrowLeft, Globe, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { WorkspaceTab } from '@/constants/tabs';
@@ -28,7 +28,6 @@ export default function WorkspaceLayout({ data, tabs, activeTab, onTabChange, ch
                         exit={{ opacity: 0, y: -10 }}
                         className="relative z-[10] flex items-center justify-between px-6 py-3 shrink-0"
                     >
-                        {/* Branding Area - Minimal & Clean */}
                         <div className="flex items-center gap-4 min-w-0">
                             <div 
                                 onClick={() => navigate('/workspaces')} 
@@ -45,7 +44,7 @@ export default function WorkspaceLayout({ data, tabs, activeTab, onTabChange, ch
                                 </span>
                             </div>
                         </div>
-
+                        
                         <nav className="flex items-center gap-1 bg-[#EAF1FB] p-1.5 rounded-full px-2">
                             {tabs.map((tab) => {
                                 const isActive = activeTab === tab.id;
@@ -70,7 +69,6 @@ export default function WorkspaceLayout({ data, tabs, activeTab, onTabChange, ch
                                         />
                                         <span className="relative z-20">{tab.label}</span>
                                         
-                                        {/* Active Indicator - Fixed Visibility */}
                                         {isActive && (
                                             <motion.div 
                                                 layoutId="gmailActive" 
@@ -79,7 +77,7 @@ export default function WorkspaceLayout({ data, tabs, activeTab, onTabChange, ch
                                             />
                                         )}
 
-                                        {/* Hover Effect Overlay */}
+                                        
                                         <div className={`
                                             absolute inset-0 rounded-full transition-colors duration-200 z-0
                                             ${isActive ? "hover:bg-black/5" : "hover:bg-transparent"}
@@ -89,36 +87,6 @@ export default function WorkspaceLayout({ data, tabs, activeTab, onTabChange, ch
                             })}
                         </nav>
 
-                        {/* <nav className="flex items-center gap-1 bg-[#EAF1FB] p-1.5 rounded-full px-2">
-                            {tabs.map((tab) => {
-                                const isActive = activeTab === tab.id;
-                                const Icon = tab.icon;
-                                return (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => onTabChange(tab.id)}
-                                        className={`relative px-5 py-2 rounded-full text-[13px] font-medium transition-all duration-200 flex items-center gap-2.5 ${
-                                            isActive 
-                                            ? "text-[#001d35]" 
-                                            : "text-[#444746] hover:bg-[#d3e3fd]"
-                                        }`}
-                                    >
-                                        <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
-                                        {tab.label}
-                                        {isActive && (
-                                            <motion.div 
-                                                layoutId="gmailActive" 
-                                                className="absolute inset-0 bg-[#C2E7FF] rounded-full -z-10" 
-                                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                                            />
-                                        )}
-                                    </button>
-                                    
-                                );
-                            })}
-                        </nav> */}
-
-                        {/* Right Side Actions */}
                         <div className="flex items-center gap-2">
                              <button className="p-2 hover:bg-slate-200/50 rounded-full text-slate-600 transition-colors">
                                 <Search size={20} />

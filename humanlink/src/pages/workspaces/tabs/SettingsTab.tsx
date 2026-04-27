@@ -34,7 +34,7 @@ export default function SettingsTab({ data, searchQuery, setSearchQuery }: Setti
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
                 <div>
                     <h3 className="text-3xl font-bold text-slate-900 tracking-tight">Settings</h3>
-                    <p className="text-slate-400 text-sm mt-1 font-medium italic">
+                    <p className="text-slate-400 text-sm mt-1 font-medium">
                         Configure workflow columns for {data.name}.
                     </p>
                 </div>

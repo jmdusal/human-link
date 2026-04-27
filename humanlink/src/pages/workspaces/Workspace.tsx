@@ -4,9 +4,8 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 //     LayoutDashboard, Users, Settings, Kanban, FolderKanban 
 // } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-
-// Layout & Tabs
 import WorkspaceLayout from '@/components/layouts/WorkspaceLayout';
+
 import ProjectsTab from '@/pages/workspaces/tabs/ProjectsTab';
 import TaskBoardTab from '@/pages/workspaces/tabs/TaskBoardTab';
 import AnalyticsTab from '@/pages/workspaces/tabs/AnalyticsTab';
@@ -14,8 +13,11 @@ import SettingsTab from '@/pages/workspaces/tabs/SettingsTab';
 import OverviewTab from '@/pages/workspaces/tabs/OverviewTab';
 import MembersTab from '@/pages/workspaces/tabs/MembersTab';
 import StatusesTab from '@/pages/workspaces/tabs/StatusesTab';
+import TagsTab from '@/pages/workspaces/tabs/TagsTab';
 import ProjectForm from '@/pages/projects/ProjectForm';
 import TaskForm from '@/pages/tasks/TaskForm';
+import StatusForm from '@/pages/statuses/StatusForm';
+import TagForm from '@/pages/tags/TagForm';
 import ModalConfirmation from '@/components/modals/ModalConfirmation';
 
 import { ProjectService } from '@/services/ProjectService';
@@ -27,6 +29,9 @@ import { useAuth } from '@/context/AuthContext';
 import { WORKSPACE_TABS, type WorkspaceTab } from '@/constants/tabs';
 import { usePageTitle } from '@/hooks/use-title';
 import { useWorkspaces } from '@/hooks/use-workspace';
+import { TaskService } from '@/services/TaskService';
+import type { Status } from '@/types';
+import { TagService } from '@/services/TagService';
 
 
 export default function Workspace() {
@@ -41,7 +46,9 @@ export default function Workspace() {
         data, setData, 
         projects, setProjects,
         tasks, setTasks,
-        workspaceMembers, setWorkspaceMembers, 
+        workspaceMembers, setWorkspaceMembers,
+        statuses, setStatuses,
+        tags, setTags,
         fetchWorkspaceBySlug,
     } = useWorkspaces(true, user, location.state?.workspace);
     // } = useWorkspaces(true, user);
@@ -55,20 +62,27 @@ export default function Workspace() {
     
     usePageTitle(data?.name || "Workspace");
     
-    const [loading, setLoading] = useState(true);
+    
+    // const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeBoardProjectId, setActiveBoardProjectId] = useState<string | null>(null);
+    const [activeBoardProjectId, setActiveBoardProjectId] = useState<number | null>(null);
     const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
     const [selectedProject, setSelectedProject] = useState<any | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     
+    const [deleteType, setDeleteType] = useState<'project' | 'status'| 'tag' | 'task' | null>(null);
+    
     // const [tasks, setTasks] = useState<any[]>(workspaceFromState?.projects?.flatMap((project: any) => project.tasks) || [])
     const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState<any | null>(null);
+
+    const [isStatusFormOpen, setIsStatusFormOpen] = useState(false);
+    const [selectedStatus, setSelectedStatus] = useState<any | null>(null);
     
-    const [statuses, setStatuses] = useState<any[]>([]);
-    
+    const [isTagFormOpen, setIsTagFormOpen] = useState(false);
+    const [selectedTag, setSelectedTag] = useState<any | null>(null);
+
     const [activeTab, setActiveTab] = useState<WorkspaceTab['id']>(() => {
         const hash = window.location.hash.replace('#', '') as WorkspaceTab['id'];
         return WORKSPACE_TABS.find(t => t.id === hash) ? hash : 'overview';
@@ -83,7 +97,7 @@ export default function Workspace() {
     
     const handleProjectSuccess = (newProject: any) => {
         if (selectedProject) {
-            setProjects(prev => prev.map(p => p.id === newProject.id ? newProject : p));
+            setProjects(prev => prev.map(project => project.id === newProject.id ? newProject : project));
         } else {
             setProjects(prev => [newProject, ...prev]);
         }
@@ -97,6 +111,7 @@ export default function Workspace() {
     };
     
     const handleDeleteProject = (project: any) => {
+        setDeleteType('project');
         setSelectedProject(project);
         setIsDeleteModalOpen(true);
     };
@@ -133,41 +148,149 @@ export default function Workspace() {
     };
     
     const handleDeleteTask = (task: any) => {
+        setDeleteType('task');
         setSelectedTask(task);
         setIsDeleteModalOpen(true);
     };
     
-    // const handleTaskSuccess = (newTask: any) => {
-    //     if (selectedTask) {
-    //         setTasks(prev => prev.map(task => task.id === newTask.id ? newTask : task));
-    //     } else {
-    //         setTasks(prev => [newTask, ...prev]);
-    //     }
-    //     setIsProjectFormOpen(false);
-    //     setSelectedProject(null);
+    const handleStatusSuccess = (newStatus: any) => {
+        if (selectedStatus) {
+            setStatuses(prev => prev.map(status => status.id === newStatus.id ? newStatus : status));
+        } else {
+            setStatuses(prev => [...prev, newStatus]);
+        }
+        setIsStatusFormOpen(false);
+        setSelectedStatus(null);
+    };
+
+    const handleEditStatus = (status: any) => {
+        setSelectedStatus(status);
+        setIsStatusFormOpen(true);
+    };
+    
+    const handleDeleteStatus = (status: any) => {
+        setDeleteType('status');
+        setSelectedStatus(status);
+        setIsDeleteModalOpen(true);
+    };
+    
+    const handleTagSuccess = (newTag: any) => {
+        if (selectedTag) {
+            setTags(prev => prev.map(tag => tag.id === newTag.id ? newTag : tag));
+        } else {
+            setTags(prev => [...prev, newTag]);
+        }
+        setIsTagFormOpen(false);
+        setSelectedTag(null);
+    }
+    
+    const handleEditTag = (tag: any) => {
+        setSelectedTag(tag);
+        setIsTagFormOpen(true);
+    };
+    
+    const handleDeleteTag = (tag: any) => {
+        setDeleteType('tag');
+        setSelectedTag(tag);
+        setIsDeleteModalOpen(true);
+    };
+    
+    const handleReorderSuccess = (newList: any[]) => {
+        const sanitizedList = newList.map((item, index) => ({
+            ...item,
+            position: index
+        }));
+
+        setStatuses(sanitizedList);
+    };
+    
+    // const handleReorderSuccess = (newList: any[]) => {
+    //     setStatuses([...newList]);
     // };
     
     const handleConfirmDelete = async () => {
-        if (!selectedProject) return;
+        if (!deleteType) return;
         setIsDeleting(true);
+
         try {
-            await ProjectService.deleteProject(selectedProject.id);
-            const updatedProjects = projects.filter(p => p.id !== selectedProject.id);
-            setProjects(updatedProjects);
-            data.projects = updatedProjects;
-            toast.success('Project deleted successfully.');
+            if (deleteType === 'project' && selectedProject) {
+                await ProjectService.deleteProject(selectedProject.id);
+                setProjects(prev => prev.filter(p => p.id !== selectedProject.id));
+                toast.success("Project deleted successfully");
+            }
+            
+            // else if (deleteType === 'task' && selectedTask) {
+            //     await TaskService.deleteTask(selectedTask.id);
+            //     setTasks(prev => prev.filter(task => task.id !== selectedTask.id));
+            //     toast.success("Task deleted successfully");
+            // }
+            
+            else if (deleteType === 'task' && selectedTask) {
+                await TaskService.deleteTask(selectedTask.id);
+
+                setTasks(prev => prev.filter(task => task.id !== selectedTask.id));
+                setProjects(prevProjects => prevProjects.map(project => {
+                    if (project.id === selectedTask.projectId || project.id === selectedTask.project_id) {
+                        return {
+                            ...project,
+                            tasks: (project.tasks || []).filter((t: any) => t.id !== selectedTask.id)
+                        };
+                    }
+                    return project;
+                }));
+
+                toast.success("Task deleted successfully");
+            }
+            
+            else if (deleteType === 'status' && selectedStatus) {
+                await StatusService.deleteStatus(selectedStatus.id);
+                
+                setStatuses(prev => 
+                    prev
+                        .filter(s => s.id !== selectedStatus.id)
+                        .sort((a, b) => a.position - b.position)
+                        .map((s, index) => ({ ...s, position: index }))
+                );
+                // setStatuses(prev => prev.filter(s => s.id !== selectedStatus.id));
+                toast.success("Status deleted successfully");
+            }
+            
+            if (deleteType === 'tag' && selectedTag) {
+                await TagService.deleteTag(selectedTag.id);
+                setTags(prev => prev.filter(tag => tag.id !== selectedTag.id));
+                toast.success("Tag deleted successfully");
+            }
+            
             setIsDeleteModalOpen(false);
-        } catch (err) {
-            toast.error('Failed to delete project.');
+            setDeleteType(null);
+        } catch (error) {
+            toast.error("Failed to delete");
         } finally {
             setIsDeleting(false);
-            setSelectedProject(null);
         }
     };
     
+    // const handleConfirmDelete = async () => {
+    //     if (!selectedProject) return;
+    //     setIsDeleting(true);
+    //     try {
+    //         await ProjectService.deleteProject(selectedProject.id);
+    //         const updatedProjects = projects.filter(p => p.id !== selectedProject.id);
+    //         setProjects(updatedProjects);
+    //         data.projects = updatedProjects;
+    //         toast.success('Project deleted successfully.');
+    //         setIsDeleteModalOpen(false);
+    //     } catch (err) {
+    //         toast.error('Failed to delete project.');
+    //     } finally {
+    //         setIsDeleting(false);
+    //         setSelectedProject(null);
+    //     }
+    // };
+    
     const handleTaskMove = (taskId: string | number, newStatusId: number, newPosition: number) => {
         const updatedProjects = projects.map(project => {
-            const taskIndex = project.tasks?.findIndex((t) => String(t.id) === String(taskId));
+            const taskIndex = project.tasks?.findIndex((task) => String(task.id) === String(taskId));
 
             if (taskIndex !== undefined && taskIndex !== -1) {
                 const updatedTasks = [...(project.tasks || [])]; 
@@ -208,7 +331,6 @@ export default function Workspace() {
         }
     };
 
-    // console.log('Current Data:', data);
     useEffect(() => {
         if (slug) fetchWorkspaceBySlug(slug);
     }, [slug, fetchWorkspaceBySlug]);
@@ -225,30 +347,13 @@ export default function Workspace() {
         return () => window.removeEventListener('hashchange', syncTabWithHash);
     }, []);
     
-    useEffect(() => {
-        const fetchStatuses = async () => {
-            if (data?.id) {
-                try {
-                    const response = await StatusService.getWorkspaceStatuses(data.id);
-                    // console.log('darrrrr', response)
-                    setStatuses(response);
-                } catch (err) {
-                    console.error("Failed to fetch statuses", err);
-                }
-            }
-        };
-
-        fetchStatuses();
-    }, [data?.id]);
-
-    // if (!data && loading) return <div className="p-10 text-center font-bold">Loading Workspace...</div>;
     if (!data) return null;
 
     return (
         <WorkspaceLayout 
             data={data}
             activeTab={activeTab}
-            tabs={WORKSPACE_TABS} 
+            tabs={WORKSPACE_TABS}
             onTabChange={handleTabChange}
         >
             {activeTab === 'overview' && (
@@ -276,6 +381,8 @@ export default function Workspace() {
                 <TaskBoardTab
                     // data={data}
                     data={{ ...data, projects: projects }}
+                    statuses={statuses}
+                    tags={tags}
                     // data={projects}
                     // taskStatuses={data.taskStatuses}
                     searchQuery={searchQuery}
@@ -293,7 +400,6 @@ export default function Workspace() {
             )}
             
             {activeTab === 'analytics' && (
-                
                 <AnalyticsTab 
                     workspace={data}
                 />
@@ -310,10 +416,29 @@ export default function Workspace() {
             )}
             
             {activeTab === 'statuses' && (
-                <StatusesTab 
+                <StatusesTab
+                    statuses={statuses}
                     data={data}
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
+                    handleEditStatus={handleEditStatus}
+                    handleDeleteStatus={handleDeleteStatus}
+                    setSelectedStatus={setSelectedStatus}
+                    setIsStatusFormOpen={setIsStatusFormOpen}
+                    onSuccess={handleReorderSuccess}
+                />
+            )}
+            
+            {activeTab === 'tags' && (
+                <TagsTab
+                    tags={tags}
+                    data={data}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    handleEditTag={handleEditTag}
+                    handleDeleteTag={handleDeleteTag}
+                    setSelectedTag={setSelectedTag}
+                    setIsTagFormOpen={setIsTagFormOpen}
                 />
             )}
             
@@ -343,22 +468,79 @@ export default function Workspace() {
                     selectedTask={selectedTask}
                     projectId={data?.id}
                     statuses={statuses}
+                    tags={tags}
                     tasks={tasks}
                     // TODO: fetch data of statuses base on workspace id
                     // statusId={1}
-                    statusId={selectedTask?.status_id || statuses[0]?.id || 1}
+                    statusId={selectedTask?.statusId || statuses[0]?.id || 1}
                     // statusId={activeStatusId}
+                />
+            )}
+            
+            {isStatusFormOpen && (
+                <StatusForm
+                    isOpen={isStatusFormOpen}
+                    onClose={() => setIsStatusFormOpen(false)}
+                    onSuccess={handleStatusSuccess}
+                    workspaceId={data.id}
+                    selectedStatus={selectedStatus}
+                    currentCount={statuses.length}
+                    existingStatuses={statuses}
+                />
+            )}
+            
+            {isTagFormOpen && (
+                <TagForm
+                    isOpen={isTagFormOpen}
+                    onClose={() => setIsTagFormOpen(false)}
+                    onSuccess={handleTagSuccess}
+                    workspaceId={data.id}
+                    selectedTag={selectedTag}
                 />
             )}
             
             <ModalConfirmation
                 isOpen={isDeleteModalOpen}
+                onClose={() => {
+                    setIsDeleteModalOpen(false);
+                    setDeleteType(null);
+                }}
+                onConfirm={handleConfirmDelete}
+                loading={isDeleting}
+                title={`Delete ${deleteType}`}
+                message={`Are you sure you want to delete "${
+                    deleteType === 'project'
+                        ? selectedProject?.name
+                        : deleteType === 'task'
+                        ? selectedTask?.title
+                        : deleteType === 'tag'
+                        ? selectedTag?.name  
+                        : selectedStatus?.name
+                }"? This action cannot be undone.`}
+            />
+            
+            {/* <ModalConfirmation
+                isOpen={isDeleteModalOpen}
+                onClose={() => {
+                    setIsDeleteModalOpen(false);
+                    setDeleteType(null);
+                }}
+                onConfirm={handleConfirmDelete}
+                loading={isDeleting}
+                title={`Delete ${deleteType}`}
+                message={`Are you sure you want to delete "${deleteType === 'project' ? selectedProject?.name : selectedStatus?.name
+                }"? This action cannot be undone.`}
+            /> */}
+
+            {/* <ModalConfirmation
+                isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={handleConfirmDelete}
                 loading={isDeleting}
-                title="Delete Project"
+                title="Delete"
                 message={`Are you sure you want to delete ${selectedProject?.name}?`}
-            />
+            /> */}
+            
         </WorkspaceLayout>
     );
 }

@@ -17,17 +17,18 @@ import { useAuth } from '@/context/AuthContext';
 import { getInitials } from '@/utils/userUtils'
 import { usePageTitle } from '@/hooks/use-title';
 import { AnimatePresence } from 'framer-motion';
+import type { Project } from '@/types';
 
 interface ProjectsTabProps {
-    projects: any[];
+    projects: Project[];
     searchQuery: string;
     setSearchQuery: (query: string) => void;
     data: any;
-    handleEditProject: (project: any) => void;
-    handleDeleteProject: (project: any) => void;
-    setSelectedProject: (project: any | null) => void;
+    handleEditProject: (project: Project) => void;
+    handleDeleteProject: (project: Project) => void;
+    setSelectedProject: (project: Project | null) => void;
     setIsProjectFormOpen: (open: boolean) => void;
-    onViewBoard: (projectId: string) => void;
+    onViewBoard: (projectId: number) => void;
 }
 
 export default function ProjectsTab({ projects, searchQuery, setSearchQuery, data, handleEditProject, handleDeleteProject, setSelectedProject, setIsProjectFormOpen, onViewBoard, }: ProjectsTabProps) {
@@ -41,11 +42,11 @@ export default function ProjectsTab({ projects, searchQuery, setSearchQuery, dat
     const isWorkspaceAdminOrOwner = workspaceRole === 'owner' || workspaceRole === 'admin';
     const canEditInWorkspace = can('projects-edit') && isWorkspaceAdminOrOwner;
     
-    const filteredProjects = projects.filter((project: any) =>
+    const filteredProjects = projects.filter((project: Project) =>
             project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (project.description && project.description.toLowerCase().includes(searchQuery.toLowerCase()))
         )
-        .sort((a: any, b: any) => {
+        .sort((a, b) => {
             return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         });
 
@@ -112,7 +113,7 @@ export default function ProjectsTab({ projects, searchQuery, setSearchQuery, dat
                     // GRID VIEW
                     viewMode === 'grid' ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-4">
-                            {paginatedProjects.map((project: any) => (
+                            {paginatedProjects.map((project: Project) => (
                                 <div
                                     key={project.id}
                                     onClick={() => {
@@ -187,10 +188,10 @@ export default function ProjectsTab({ projects, searchQuery, setSearchQuery, dat
                                                 </div>
                                             ))}
                                             
-                                            {project.projectMembers?.length > 3 && (
+                                            {(project.projectMembers?.length || 0) > 3 && (
                                                 <div className="w-7 h-7 rounded-full bg-slate-900 border-2 border-white flex items-center justify-center shrink-0">
                                                     <span className="text-[9px] font-bold text-white">
-                                                        +{project.projectMembers.length - 3}
+                                                        +{(project.projectMembers?.length || 0) - 3}
                                                     </span>
                                                 </div>
                                             )}
@@ -198,7 +199,7 @@ export default function ProjectsTab({ projects, searchQuery, setSearchQuery, dat
 
                                         <div className="flex items-center gap-1">
                                             {can('projects-delete') && isWorkspaceAdminOrOwner && (
-                                                <button 
+                                                <button
                                                     onClick={(e) => { e.stopPropagation(); handleDeleteProject(project); }}
                                                     className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                                                 >
@@ -217,7 +218,6 @@ export default function ProjectsTab({ projects, searchQuery, setSearchQuery, dat
                                                         <ExternalLink size={16} />
                                                     </button>
                                                 )}
-                                                {/* <ArrowUpRight size={18} /> */}
                                             </div>
                                         </div>
                                     </div>
@@ -235,7 +235,7 @@ export default function ProjectsTab({ projects, searchQuery, setSearchQuery, dat
                                 <div className="w-10"></div>
                             </div>
 
-                            {paginatedProjects.map((project: any) => (
+                            {paginatedProjects.map((project: Project) => (
                                 <div 
                                     key={project.id}
                                     onClick={() => {
@@ -271,16 +271,15 @@ export default function ProjectsTab({ projects, searchQuery, setSearchQuery, dat
                                                 </div>
                                             ))}
                                             
-                                            {project.projectMembers?.length > 3 && (
+                                           {(project.projectMembers?.length || 0) > 3 && (
                                                 <div className="w-6 h-6 rounded-full bg-slate-50 border-2 border-white ring-1 ring-slate-100 flex items-center justify-center shrink-0">
                                                     <span className="text-[8px] font-black text-slate-400">
-                                                        +{project.projectMembers.length - 3}
+                                                        +{(project.projectMembers?.length || 0) - 3}
                                                     </span>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
-                                    
 
                                     <div className="flex-1 flex justify-center">
                                         <div className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter border

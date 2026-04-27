@@ -53,6 +53,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Task onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Task withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Task withoutTrashed()
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Tag> $tags
+ * @property-read int|null $tags_count
  * @mixin \Eloquent
  */
 /**
@@ -100,6 +102,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Task onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Task withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Task withoutTrashed()
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Tag> $tags
+ * @property-read int|null $tags_count
  * @mixin \Eloquent
  */
 class Task extends Model
@@ -155,14 +159,36 @@ class Task extends Model
     //     return $this->hasMany(Task::class, 'parent_id');
     // }
 
-
     public function subtasks(): HasMany
     {
-        return $this->hasMany(Task::class, 'parent_id')->orderBy('position', 'asc');
+        // return $this->hasMany(Task::class, 'parent_id')->orderBy('position', 'asc');
+        return $this->hasMany(Task::class, 'parent_id');
     }
 
     public function activities(): HasMany
     {
         return $this->hasMany(TaskActivity::class);
+    }
+
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class, 'task_tags');
+    }
+
+    // task comments
+    public function comments(): HasMany
+    {
+        // Only get top-level comments; replies will be nested inside them
+        return $this->hasMany(TaskComment::class)->whereNull('parent_id')->with('replies.user');
+    }
+
+    public function replies(): HasMany
+    {
+        return $this->hasMany(TaskComment::class, 'parent_id')->with('user');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

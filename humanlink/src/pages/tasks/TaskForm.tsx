@@ -5,7 +5,7 @@ import Select from '@/components/ui/Select';
 import Textarea from '@/components/ui/Textarea';
 import DateInput from '@/components/ui/DateInput';
 
-import type { Task, TaskFormData, TaskPriority } from '@/types';
+import type { Task, TaskFormData, TaskPriority, Status, Tag } from '@/types';
 import { TaskService } from '@/services/TaskService';
 import { INITIAL_TASK_FORM_STATE, formatTaskFormData } from '@/utils/taskUtils';
 import { useForm } from '@/hooks/use-form';
@@ -21,11 +21,12 @@ interface TaskFormProps {
     selectedTask: Task | null;
     projectId: number;
     statusId: number;
-    statuses: any[];
+    statuses: Status[];
+    tags: Tag[];
     tasks: Task[];
 }
 
-export default function TaskForm({ isOpen, onClose, onSuccess, selectedTask, projectId, statusId, statuses, tasks }: TaskFormProps) {
+export default function TaskForm({ isOpen, onClose, onSuccess, selectedTask, projectId, statuses, statusId, tags, tasks }: TaskFormProps) {
     const form = useForm<TaskFormData>(INITIAL_TASK_FORM_STATE(projectId, statusId));
     const { userOptions, fetchProjectUsers } = useUsers(false);
     
@@ -42,14 +43,27 @@ export default function TaskForm({ isOpen, onClose, onSuccess, selectedTask, pro
         );
     };
     
-    const statusOptions = statuses.map(s => ({
-        label: s.name,
-        value: s.id.toString()
+    const statusOptions = statuses.map(status => ({
+        label: status.name,
+        value: status.id.toString()
+    }));
+    
+    const tagOptions = tags.map(tag => ({
+        label: tag.name,
+        value: Number(tag.id),
+        // value: tag.id.toString()
+    }));
+    
+    const taskOptions = tasks
+    .filter(t => t.id !== selectedTask?.id)
+    .map(task => ({ 
+        label: task.title, 
+        value: task.id.toString() 
     }));
     
     useEffect(() => {
         const state = selectedTask
-            ? formatTaskFormData(selectedTask) 
+            ? formatTaskFormData(selectedTask)
             // : INITIAL_TASK_FORM_STATE;
             : INITIAL_TASK_FORM_STATE(projectId, statusId);
 
@@ -68,7 +82,7 @@ export default function TaskForm({ isOpen, onClose, onSuccess, selectedTask, pro
             onClose={onClose}
             onSubmit={onSubmit}
             title={selectedTask ? "Edit Task" : "Create New Task"}
-            description={selectedTask ? "MODIFY EXISTING CREDENTIALS" : "SETUP A NEW TASK"}
+            description={selectedTask ? "MODIFY EXISTING" : "SETUP A NEW TASK"}
             isUpdate={!!selectedTask}
             loading={form.isSubmitting}
         >
@@ -127,11 +141,32 @@ export default function TaskForm({ isOpen, onClose, onSuccess, selectedTask, pro
                 </div>
                 
                 <MultiSelect
+                    label="Tag"
+                    placeholder="Tags"
+                    options={tagOptions}
+                    // selectedValues={form.formData.tagIds || []}
+                    // onChange={(tagIds) => form.handleChange('tagIds', tagIds)}
+                    selectedValues={(form.formData.tagIds || []).map(id => {
+                        const tag = tags.find(t => t.id === id);
+                        return {
+                            id: id,
+                            name: tag ? tag.name : '' 
+                        };
+                    })}
+                    onChange={(selectedTags) => {
+                        const ids = selectedTags.map((t: any) => t.id);
+                        form.handleChange('tagIds', ids);
+                    }}
+                    
+                />
+                
+                <MultiSelect
                     label="Assignee"
                     placeholder="Project members"
                     options={userOptions}
                     selectedValues={form.formData.assignees || []}
                     onChange={(assignees) => form.handleChange('assignees', assignees)}
+                    showInitials={true}
                 />
     
             </div>

@@ -83,6 +83,8 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read int|null $created_tasks_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Project> $projects
  * @property-read int|null $projects_count
+ * @property int $is_active
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereIsActive($value)
  * @mixin \Eloquent
  */
 class User extends Authenticatable
@@ -111,6 +113,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 
@@ -189,8 +192,8 @@ class User extends Authenticatable
                     ->exists();
     }
 
-    // public function workspaces(): HasMany
-    // {
-    //     return $this->hasMany(Workspace::class);
-    // }
+    public function taskComments(): HasMany
+    {
+        return $this->hasMany(TaskComment::class);
+    }
 }

@@ -19,7 +19,13 @@ class UserController extends Controller
 {
     public function index(): JsonResponse
     {
-        $users = User::with(['roles', 'rate', 'schedule'])->latest()->get();
+        // $users = User::with(['roles', 'rate', 'schedule'])->latest()->get();
+        $users = User::with(['roles', 'rate', 'schedule'])
+        ->whereDoesntHave('roles', function ($query) {
+            $query->where('name', 'super-admin');
+        })
+        ->latest()
+        ->get();
 
         return response()->json([
             'data' => $users

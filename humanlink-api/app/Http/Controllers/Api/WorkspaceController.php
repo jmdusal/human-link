@@ -20,7 +20,20 @@ class WorkspaceController extends Controller
 {
     public function index(): JsonResponse
     {
-        $workspaces = Workspace::with('owner', 'members', 'statuses', 'taskStatuses', 'projects.projectMembers', 'projects.tasks.assignees')->latest()->get();
+        $workspaces = Workspace::with([
+            'owner',
+            'members',
+            'tags',
+            'statuses',
+            'projects.projectMembers',
+            'projects.tasks.assignees',
+            'projects.tasks.tags:id,name,color',
+            'projects.tasks.comments' => function($query) {
+                $query->whereNull('parent_id')->with('user', 'replies.user')->latest();
+            }
+        ])
+        ->latest()
+        ->get();
 
         return response()->json([
             'data' => $workspaces
@@ -65,21 +78,27 @@ class WorkspaceController extends Controller
                 // }
             }
 
+            // statuses default
             $workspace->statuses()->createMany([
-                ['name' => 'Backlog', 'color_hex' => '#64748b', 'position' => 0],
-                ['name' => 'Todo', 'color_hex' => '#3b82f6', 'position' => 1],
-                ['name' => 'In Progress', 'color_hex' => '#f59e0b', 'position' => 2],
-                ['name' => 'Done', 'color_hex' => '#10b981', 'position' => 3],
+                ['name' => 'Todo', 'color_hex' => '#3b82f6', 'position' => 0],
+                ['name' => 'In Progress', 'color_hex' => '#f59e0b', 'position' => 1],
+                ['name' => 'Done', 'color_hex' => '#10b981', 'position' => 2],
             ]);
 
-
+            // tags default
+            $workspace->tags()->createMany([
+                ['name' => 'Bug', 'color' => '#ef4444'],
+                ['name' => 'Enhancement', 'color' => '#3b82f6'],
+                ['name' => 'Feature', 'color' => '#10b981'],
+                ['name' => 'Refactor', 'color' => '#8b5cf6'],
+            ]);
 
             return $workspace;
         });
 
         return response()->json([
             'message' => 'Workspace created successfully.',
-            'data' => $workspace->load('statuses', 'taskStatuses', 'members', 'projects')
+            'data' => $workspace->load('statuses', 'tags', 'members', 'projects')
         ], 201);
     }
 
@@ -127,13 +146,31 @@ class WorkspaceController extends Controller
 
         return response()->json([
             'message' => 'Workspace updated successfully.',
-            'data' => $workspace->load(['statuses', 'taskStatuses', 'members', 'projects'])
+            'data' => $workspace->load(['statuses', 'tags', 'members', 'projects'])
         ], 200);
     }
 
     public function showBySlug(string $slug): JsonResponse
     {
-        $workspace = Workspace::with(['owner', 'members', 'statuses', 'taskStatuses', 'projects.projectMembers', 'projects.tasks.assignees'])
+        $workspace = Workspace::with([
+            'owner',
+            'members',
+            'tags',
+            'statuses',
+            'projects.projectMembers',
+            // 'projects.tasks.assignees',
+            // 'projects.tasks.tags:id,name,color',
+            'projects.tasks' => function($query) {
+                $query->with(['assignees', 'tags:id,name,color', 'subtasks']);
+            },
+
+
+            'projects.tasks.comments' => function($query) {
+                $query->whereNull('parent_id')->with('user', 'replies.user')->latest();
+            }
+
+
+            ])
             ->where('slug', $slug)
             ->firstOrFail();
 

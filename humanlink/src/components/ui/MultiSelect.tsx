@@ -17,7 +17,8 @@ interface MultiSelectProps {
     helperText?: string;
     id?: string;
     lockedIds?: number[];
-    showRole?: boolean
+    showRole?: boolean;
+    showInitials?: boolean;
 }
 
 export default function MultiSelect({ 
@@ -30,7 +31,8 @@ export default function MultiSelect({
     helperText, 
     id, 
     lockedIds = [],
-    showRole = false
+    showRole = false,
+    showInitials = false
 }: MultiSelectProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
@@ -48,7 +50,8 @@ export default function MultiSelect({
     }, [options, search]);
 
     const handleSelect = (option: Option) => {
-        const exists = selectedValues.some(v => v.id === option.value);
+        // const exists = selectedValues.some(v => v.id === option.value);
+        const exists = selectedValues.some(v => (typeof v === 'object' ? v.id : v) === option.value);
         if (exists) {
             if (isLocked(option.value)) return;
             onChange(selectedValues.filter(v => v.id !== option.value));
@@ -132,7 +135,7 @@ export default function MultiSelect({
                     )}
                     
                     {selectedValues.map(val => (
-                        <div 
+                        <div
                             key={val.id} 
                             className={`flex items-center gap-1.5 pl-1 pr-1 py-0.5 rounded border transition-all duration-200 ${
                                 isLocked(val.id) 
@@ -140,11 +143,13 @@ export default function MultiSelect({
                                 : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300'
                             }`}
                         >
-                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white uppercase shrink-0 ${
-                                isLocked(val.id) ? 'bg-slate-800' : 'bg-blue-500'
-                            }`}>
-                                {getInitials(val.name)}
-                            </div>
+                            {showInitials && (
+                                <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white uppercase shrink-0 ${
+                                    isLocked(val.id) ? 'bg-slate-800' : 'bg-blue-500'
+                                }`}>
+                                    {getInitials(val.name)}
+                                </div>
+                            )}
 
                             <span className="text-[11px] font-semibold tracking-tight">{val.name}</span>
                             
@@ -191,7 +196,7 @@ export default function MultiSelect({
                         <input
                             autoFocus
                             className="w-full text-sm outline-none bg-transparent placeholder:text-slate-400 text-slate-900"
-                            placeholder="Search members..."
+                            placeholder="Search..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             onClick={(e) => e.stopPropagation()}
@@ -216,9 +221,12 @@ export default function MultiSelect({
                                         `}
                                     >
                                         <div className="flex items-center gap-2">
-                                            <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[9px] text-slate-600 font-bold">
-                                                {getInitials(option.label)}
-                                            </div>
+                                            {showInitials && (
+                                                <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[9px] text-slate-600 font-bold">
+                                                    {getInitials(option.label)}
+                                                </div>
+                                            )}
+                                            
                                             {option.label}
                                         </div>
                                         {isSelected && <Check size={14} strokeWidth={2.5} className="text-blue-600" />}

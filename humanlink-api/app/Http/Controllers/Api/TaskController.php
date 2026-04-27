@@ -29,7 +29,7 @@ class TaskController extends Controller
     public function store(StoreTaskRequest $request): JsonResponse
     {
         $task = DB::transaction(function () use ($request) {
-            $data = $request->safe()->except(['assignees']);
+            $data = $request->safe()->except(['assignees', 'tag_ids']);
             $data['creator_id'] = Auth::id();
             $data['due_date'] = now();
 
@@ -49,7 +49,17 @@ class TaskController extends Controller
                 $task->assignees()->sync($assigneesToSync);
             }
 
-            return $task->load(['assignees', 'status']);
+            if ($request->has('tag_ids')) {
+                $tagsToSync = collect($request->tag_ids)
+                    ->mapWithKeys(function ($tag) {
+                        $id = is_array($tag) ? $tag['id'] : $tag;
+                        return [$id => []];
+                    })->toArray();
+
+                $task->tags()->sync($tagsToSync);
+            }
+
+            return $task->load(['assignees', 'status', 'tags']);
         });
 
         return response()->json([
@@ -65,7 +75,7 @@ class TaskController extends Controller
             $oldStatusId = $task->status_id;
             $oldPriority = $task->priority;
 
-            $data = $request->safe()->except(['assignees']);
+            $data = $request->safe()->except(['assignees', 'tag_ids']);
 
             if (isset($data['status_id']) && $data['status_id'] != $oldStatusId) {
                 TaskActivity::create([
@@ -103,7 +113,20 @@ class TaskController extends Controller
                 $task->assignees()->sync($assigneesToSync);
             }
 
-            return $task->fresh(['assignees', 'status', 'activities.user']);
+            if ($request->has('tag_ids')) {
+                $tagsToSync = collect($request->tag_ids)
+                    ->mapWithKeys(function ($tag) {
+                        $id = is_array($tag) ? $tag['id'] : $tag;
+                        return [$id => [
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]];
+                    })->toArray();
+
+                $task->tags()->sync($tagsToSync);
+            }
+
+            return $task->fresh(['assignees', 'status', 'tags', 'activities.user']);
         });
 
         return response()->json([

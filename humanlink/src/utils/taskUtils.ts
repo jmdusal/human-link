@@ -11,6 +11,7 @@ export const INITIAL_TASK_FORM_STATE = (projectId: number, statusId: number): Ta
     estimateMinutes: 0,
     parentId: null,
     assignees: [],
+    tagIds: [],
 });
 
 export const formatTaskFormData = (task: Task): TaskFormData => ({
@@ -24,5 +25,6 @@ export const formatTaskFormData = (task: Task): TaskFormData => ({
     estimateMinutes: task.estimateMinutes ?? 0,
     parentId: task.parentId,
     assignees: task.assignees || [],
+    tagIds: task.tags?.map(tag => tag.id) || [],
 });
 

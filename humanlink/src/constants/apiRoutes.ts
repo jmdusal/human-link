@@ -33,6 +33,20 @@ export const API_ROUTES = {
         DELETE: (id: number) => `/workspaces/${id}`,
         GET_BY_SLUG: (slug: string) => `/workspaces/${slug}`,
     },
+    STATUSES: {
+        LIST: '/statuses',
+        STORE: '/statuses',
+        REORDER: '/statuses/reorder',
+        UPDATE: (id: number) => `/statuses/${id}`,
+        DELETE: (id: number) => `/statuses/${id}`,
+        
+    },
+    TAGS: {
+        LIST: '/tags',
+        STORE: '/tags',
+        UPDATE: (id: number) => `/tags/${id}`,
+        DELETE: (id: number) => `/tags/${id}`,
+    },
     PROJECTS: {
         LIST: '/projects',
         STORE: '/projects',
@@ -46,8 +60,10 @@ export const API_ROUTES = {
         DELETE: (id: number) => `/tasks/${id}`,
         UPDATE_POSITION: (id: number | string) => `/tasks/${id}/position`,
     },
-    STATUSES: {
-        LIST: '/statuses',
+    TASK_COMMENTS: {
+        STORE: (id: number) => `/taskComments/${id}`,
+        UPDATE: (id: number) => `/taskComments/${id}`,
+        DELETE: (id: number) => `/taskComments/${id}`,
     },
     LEAVES: {
       LIST: '/leaves'  

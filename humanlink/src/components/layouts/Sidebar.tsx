@@ -47,7 +47,61 @@ export default function Sidebar() {
                 </AnimatePresence>
             </div>
             
-            <nav className="flex-1 overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar space-y-6">
+            {/* flex-1 overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar space-y-6 */}
+            <nav className="flex-1 overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar space-y-1">
+                {allowedItems.map((item: any) => {
+                    if (item.children && item.children.length > 0) {
+                        return (
+                            <NavParent 
+                                key={item.label} 
+                                icon={item.icon} 
+                                label={item.label} 
+                                isCollapsed={isCollapsed}
+                                items={item.children}
+                                parentPath={item.path}
+                            >
+                                {item.children.map((child: any) => {
+                                    const fullPath = child.path?.startsWith('/') 
+                                        ? child.path 
+                                        : `${item.path}/${child.path}`.replace(/\/+/g, '/');
+                                    return (
+                                        <NavItem 
+                                            key={fullPath} 
+                                            to={fullPath}
+                                            label={child.label || 'Overview'} 
+                                            isChild 
+                                            isCollapsed={isCollapsed} 
+                                        />
+                                    );
+                                })}
+                            </NavParent>
+                        );
+                    }
+
+                    return (
+                        <NavItem 
+                            key={item.path} 
+                            to={item.path} 
+                            icon={item.icon} 
+                            label={item.label} 
+                            isCollapsed={isCollapsed} 
+                        />
+                    );
+                })}
+
+                {/* Manual Security Section */}
+                <div className="pt-2">
+                    {!isCollapsed && <p className="px-4 text-[10px] font-bold text-black/40 uppercase tracking-widest mb-2">Security</p>}
+                    <NavParent icon={<Settings size={18}/>} label="Configuration" isCollapsed={isCollapsed} parentPath="" items={[{path: '/settings'}, {path: '/security'}]}>
+                        <NavItem to="/settings" icon={<Globe size={14}/>} label="Global Settings" isChild isCollapsed={isCollapsed} />
+                        <NavItem to="/security" icon={<Lock size={14}/>} label="Security Keys" isChild isCollapsed={isCollapsed} />
+                    </NavParent>
+                </div>
+            </nav>
+
+            
+            {/* old */}
+            {/* <nav className="flex-1 overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar space-y-6">
                 {Object.entries(groupedNav).map(([category, items]: [string, any]) => (
                     <div key={category} className="space-y-1 mb-4">
                         
@@ -63,12 +117,6 @@ export default function Sidebar() {
                                 </motion.p>
                             )}
                         </AnimatePresence>
-                        
-                        {/* {!isCollapsed && (
-                            <p className="px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
-                                {category === 'Main' ? 'General' : category}
-                            </p>
-                        )} */}
                         
                         {items.map((item: any) => {
                             if (item.children && item.children.length > 0) {
@@ -120,7 +168,11 @@ export default function Sidebar() {
                         <NavItem to="/security" icon={<Lock size={14}/>} label="Security Keys" isChild isCollapsed={isCollapsed} />
                     </NavParent>
                 </div>
-            </nav>
+            </nav> */}
+            
+            
+            
+            
             {/* {!isCollapsed && (
                 <div className="mt-auto p-4 bg-white/40 rounded-2xl border border-white/60 shadow-sm backdrop-blur-sm">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">System</p>

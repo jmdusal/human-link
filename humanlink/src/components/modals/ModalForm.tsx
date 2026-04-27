@@ -15,9 +15,10 @@ interface ModalFormProps {
     loading?: boolean;
     isUpdate?: boolean;
     size?: ModalSize;
+    showFooter?: boolean;
 }
 
-export default function ModalForm({ isOpen, onClose, onSubmit, title, description, children, loading, isUpdate, size = '3xl' }: ModalFormProps) {
+export default function ModalForm({ isOpen, onClose, onSubmit, title, description, children, loading, isUpdate, size = '3xl', showFooter = true }: ModalFormProps) {
     if (!isOpen) return null;
 
     const sizeClasses: Record<ModalSize, string> = {
@@ -89,26 +90,28 @@ export default function ModalForm({ isOpen, onClose, onSubmit, title, descriptio
                     </form>
                 </div>
 
-                <div className="px-10 py-6 border-t border-slate-100 bg-slate-50/50 shrink-0 flex justify-end items-center gap-3">
-                    <button 
-                        onClick={onClose}
-                        type="button"
-                        className="px-5 py-2.5 text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors"
-                    >
-                        Cancel
-                    </button>
-                    
-                    <Button
-                        variant="primary"
-                        loading={loading}
-                        // className="px-8 py-2.5 bg-slate-950 hover:bg-slate-800 text-white rounded-xl text-sm font-bold shadow-lg shadow-slate-950/20 transition-all active:scale-95"
-                        type="submit"
-                        form="modal-form"
-                        disabled={loading}
-                    >
-                        {loading ? (isUpdate ? 'Updating...' : 'Creating...') : (isUpdate ? 'Save Changes' : 'Create')}
-                    </Button>
-                </div>
+                {showFooter && (
+                    <div className="px-10 py-6 border-t border-slate-100 bg-slate-50/50 shrink-0 flex justify-end items-center gap-3">
+                        <button 
+                            onClick={onClose}
+                            type="button"
+                            className="px-5 py-2.5 text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        
+                        <Button
+                            variant="primary"
+                            loading={loading}
+                            // className="px-8 py-2.5 bg-slate-950 hover:bg-slate-800 text-white rounded-xl text-sm font-bold shadow-lg shadow-slate-950/20 transition-all active:scale-95"
+                            type="submit"
+                            form="modal-form"
+                            disabled={loading}
+                        >
+                            {loading ? (isUpdate ? 'Updating...' : 'Creating...') : (isUpdate ? 'Save Changes' : 'Create')}
+                        </Button>
+                    </div>
+                )}
             </motion.div>
         </div>
     );

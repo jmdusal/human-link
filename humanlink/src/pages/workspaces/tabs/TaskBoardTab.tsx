@@ -1,48 +1,60 @@
 import type { DropResult } from '@hello-pangea/dnd';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { toast } from 'react-hot-toast';
-import { Kanban, MoreVertical } from 'lucide-react';
+import { Kanban, Pencil, Trash2 } from 'lucide-react';
 import Searchbar from '@/components/shared/Searchbar';
 import Button from '@/components/ui/Button';
 import { TaskService } from '@/services/TaskService';
 import { useAuth } from '@/context/AuthContext';
-import { useEffect } from 'react';
 import Select from '@/components/ui/Select';
 import { usePageTitle } from '@/hooks/use-title';
+import type { Status, Task, Project, Tag } from '@/types';
+import { TaskViewModal } from '@/components/modals/tasks/TaskViewModal';
+import { useState } from 'react';
 
 interface TaskBoardTabProps {
     data: any;
+    statuses: Status[];
+    tags: Tag[];
     searchQuery: string;
     setSearchQuery: (query: string) => void;
-    // activeBoardProjectId: string | null;
     activeBoardProjectId: any;
     setActiveBoardProjectId: (id: any) => void;
-    handleEditTask: (task: any) => void;
-    handleDeleteTask: (task: any) => void;
+    handleEditTask: (task: Task) => void;
+    handleDeleteTask: (task: Task) => void;
     setSelectedTask: (task: any | null) => void;
     setIsTaskFormOpen: (open: boolean) => void;
     onTaskMove: (taskId: string | number, newStatusId: number, newPosition: number) => void;
 }
 
-export default function TaskBoardTab({ data, searchQuery, setSearchQuery, activeBoardProjectId, handleEditTask, handleDeleteTask, onTaskMove, setIsTaskFormOpen, setSelectedTask, setActiveBoardProjectId }: TaskBoardTabProps) {
+export default function TaskBoardTab({ data, statuses, searchQuery, setSearchQuery, activeBoardProjectId, handleEditTask, handleDeleteTask, onTaskMove, setIsTaskFormOpen, setSelectedTask, setActiveBoardProjectId }: TaskBoardTabProps) {
     usePageTitle("Kanban Board")
     const { can } = useAuth();
     
-    const allTasks = (data.projects || []).filter((project: any) => {
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [viewedTask, setViewedTask] = useState<Task | null>(null);
+    
+    const handleViewTask = (task: Task) => {
+        console.log('task data', task)
+        setViewedTask(task);
+        setIsViewModalOpen(true);
+    };
+    
+    const allTasks = (data.projects || []).filter((project: Project) => {
         return activeBoardProjectId ? project.id === activeBoardProjectId : false;
     })
-    .flatMap((project: any) =>
-        (project.tasks || []).map((task: any) => ({
+    .flatMap((project: Project) =>
+        (project.tasks || []).map((task: Task) => ({
             ...task,
             projectName: project.name
         }))
     );
 
-    const filteredTasks = allTasks.filter((task: any) =>
+    const filteredTasks = allTasks.filter((task: Task) =>
         task.title?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const currentProject = data.projects?.find((p: any) => p.id === activeBoardProjectId);
+    const currentProject = data.projects?.find((project: Project) => project.id === activeBoardProjectId);
     
     const onDragEnd = async (result: DropResult) => {
         const { destination, source, draggableId } = result;
@@ -87,15 +99,16 @@ export default function TaskBoardTab({ data, searchQuery, setSearchQuery, active
                     </p>
                 </div>
                 
-                {/* this select of project */}
+                
                 <div className="flex items-center gap-3">
+                    
                     <div className="min-w-[300px]">
                         <Select
                             value={activeBoardProjectId ? activeBoardProjectId.toString() : ''}
                             onChange={(val: string) => setActiveBoardProjectId(val ? Number(val) : null)}
-                            options={(data.projects || []).map((p: any) => ({
-                                label: p.name,
-                                value: p.id.toString()
+                            options={(data.projects || []).map((project: Project) => ({
+                                label: project.name,
+                                value: project.id.toString()
                             }))}
                         />
                     </div>
@@ -108,44 +121,18 @@ export default function TaskBoardTab({ data, searchQuery, setSearchQuery, active
                         <Button
                             disabled={!activeBoardProjectId}
                             onClick={() => {
-                                setSelectedTask({
-                                    projectId: activeBoardProjectId,
-                                });
+                                // setSelectedTask({
+                                //     projectId: activeBoardProjectId,
+                                // });
+                                setSelectedTask(null);
                                 setIsTaskFormOpen(true);
                             }}
+                            className="disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             + New Task
                         </Button>
                     )}
                 </div>
-                {/* <div className="flex items-center gap-3">
-                    <Select
-                        value={activeBoardProjectId ? activeBoardProjectId.toString() : ''}
-                        onChange={(val: string) => setActiveBoardProjectId(val ? Number(val) : null)}
-                        options={(data.projects || []).map((p: any) => ({
-                            label: p.name,
-                            value: p.id.toString()
-                        }))}
-                    />
-
-                    <Searchbar value={searchQuery} onChange={setSearchQuery} placeholder="Search tasks..." />
-
-                    {can('tasks-create') && (
-                        <Button
-                            disabled={!activeBoardProjectId}
-                            className="active:scale-[0.98] cursor-pointer font-bold text-xs uppercase tracking-widest px-6"
-                            onClick={() => {
-                                setSelectedTask({
-                                    projectId: activeBoardProjectId,
-                                });
-                                // setSelectedTask(null);
-                                setIsTaskFormOpen(true);
-                            }}
-                        >
-                            + New Task
-                        </Button>
-                    )}
-                </div> */}
             </div>
 
             {!activeBoardProjectId ? (
@@ -157,20 +144,20 @@ export default function TaskBoardTab({ data, searchQuery, setSearchQuery, active
                     <p className="text-slate-500 text-sm mt-1">Select a project from the Projects tab to view its tasks or you can select option on the top.</p>
                 </div>
             ) : (
+
                 <DragDropContext onDragEnd={onDragEnd}>
                     <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar pb-2 min-h-0">
-                        <div className="flex gap-6 h-full min-h-0">
-                            {(data.statuses || [])
-                                .sort((a: any, b: any) => a.position - b.position)
-                                .map((status: any) => {
+                        <div className="flex gap-6 h-full min-h-0 w-full">
+                            {statuses
+                                .sort((a, b) => a.position - b.position)
+                                .map((status) => {
                                     const statusTasks = filteredTasks
                                         .filter((task: any) => task.statusId === status.id)
                                         .sort((a: any, b: any) => a.position - b.position);
-
                                     return (
-                                        <div 
-                                            key={status.id} 
-                                            className="flex-1 min-w-[320px] max-w-[450px] flex flex-col h-full bg-slate-50/40 rounded-[32px] p-4 border border-slate-100 shrink-0 overflow-hidden"
+                                        <div
+                                            key={status.id}
+                                            className="flex-1 min-w-[300px] flex flex-col h-full bg-slate-50/40 rounded-[32px] p-4 border border-slate-100 shrink-0 overflow-hidden transition-all duration-300"
                                         >
                                             <div className="flex items-center justify-between mb-4 px-2 shrink-0">
                                                 <div className="flex items-center gap-3">
@@ -183,38 +170,100 @@ export default function TaskBoardTab({ data, searchQuery, setSearchQuery, active
                                                     </span>
                                                 </div>
                                             </div>
-
+                                        
                                             <Droppable droppableId={status.id.toString()}>
                                                 {(provided) => (
                                                     <div
                                                         {...provided.droppableProps}
                                                         ref={provided.innerRef}
                                                         className="flex-1 overflow-y-auto px-1 custom-scrollbar space-y-4 min-h-0"
+                                                        
                                                     >
-                                                        {statusTasks.map((task: any, index: number) => (
+                                                        {statusTasks.map((task: Task, index: number) => (
                                                             <Draggable key={task.id} draggableId={task.id.toString()} index={index}>
                                                                 {(provided) => (
                                                                     <div
                                                                         ref={provided.innerRef}
                                                                         {...provided.draggableProps}
                                                                         {...provided.dragHandleProps}
-                                                                        className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all group/card"
-                                                                        onClick={() => {
-                                                                            handleEditTask(task)
-                                                                            console.log('test', data)
-                                                                            // console.log('test', task)
-                                                                            
-                                                                        }}
+                                                                        className="group relative bg-white p-5 rounded-[22px] border border-slate-200/60 shadow-[0_2px_4px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_20px_rgba(0,0,0,0.06)] hover:border-slate-300/50 transition-all duration-300 ease-out cursor-grab active:cursor-grabbing active:scale-[0.98]"
+                                                                        onClick={() => handleViewTask(task)}
                                                                     >
-                                                                        <div className="flex items-start justify-between mb-2">
-                                                                            <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest">
-                                                                                {task.projectName}
-                                                                            </span>
-                                                                            <MoreVertical size={14} className="text-slate-300 group-hover/card:text-slate-500 cursor-pointer" />
+                                                                        
+                                                                        <div className="absolute top-4 right-4 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out translate-y-1 group-hover:translate-y-0">
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleEditTask(task);
+                                                                                }}
+                                                                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:shadow-sm active:scale-90 active:bg-blue-100"
+                                                                                title="Edit Task"
+                                                                            >
+                                                                                <Pencil size={13} strokeWidth={2.5} />
+                                                                            </button>
+                                                                            
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleDeleteTask(task);
+                                                                                }}
+                                                                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200 hover:shadow-sm active:scale-90 active:bg-red-100"
+                                                                                title="Delete Task"
+                                                                            >
+                                                                                <Trash2 size={13} strokeWidth={2.5} />
+                                                                            </button>
                                                                         </div>
-                                                                        <h5 className="text-sm font-bold text-slate-800 leading-snug">
-                                                                            {task.title}
-                                                                        </h5>
+
+                                                                        <div className="flex flex-col h-full justify-between gap-4">
+                                                                            <div className="space-y-2">
+                                                                                {/* <div className="flex items-center gap-2">
+                                                                                    <span className="text-[10px] font-bold text-blue-500/80 uppercase tracking-[0.15em] py-0.5 px-2 bg-blue-50/50 rounded-md">
+                                                                                        {task.projectName || 'General'}
+                                                                                    </span>
+                                                                                </div> */}
+                                                                                
+                                                                                <h5 className="text-[14px] font-semibold text-slate-800 leading-relaxed group-hover:text-blue-600 transition-colors duration-200">
+                                                                                    {task.title}
+                                                                                </h5>
+                                                                            </div>
+
+                                                                            <div className="flex items-center justify-between mt-1 pt-4 border-t border-slate-50">
+                                                                                {task.tags && task.tags.length > 0 && (
+                                                                                    <div className="flex flex-wrap gap-1.5">
+                                                                                        {task.tags.slice(0, 2).map((tag) => (
+                                                                                            <div
+                                                                                                key={tag.id}
+                                                                                                className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white border border-slate-100 shadow-sm transition-all hover:border-slate-200"
+                                                                                            >
+                                                                                                <div 
+                                                                                                    className="w-1.5 h-1.5 rounded-full shrink-0" 
+                                                                                                    style={{ backgroundColor: tag.color }} 
+                                                                                                />
+                                                                                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">
+                                                                                                    {tag.name}
+                                                                                                </span>
+                                                                                            </div>
+                                                                                        ))}
+                                                                                        {task.tags.length > 2 && (
+                                                                                            <span className="text-[9px] font-bold text-slate-300 ml-0.5">
+                                                                                                +{task.tags.length - 2}
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                )}
+
+                                                                                <div className="flex -space-x-2">
+                                                                                    {task.assignees?.slice(0, 3).map((user, i) => (
+                                                                                        <div 
+                                                                                            key={i}
+                                                                                            className="w-6 h-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[8px] font-bold text-slate-500 uppercase shadow-sm"
+                                                                                        >
+                                                                                            {user.name.charAt(0)}
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
                                                                 )}
                                                             </Draggable>
@@ -224,7 +273,6 @@ export default function TaskBoardTab({ data, searchQuery, setSearchQuery, active
                                                 )}
                                             </Droppable>
 
-                                            {/* Footer - Fixed */}
                                             <button
                                                 className="mt-4 shrink-0 py-2.5 text-[10px] font-bold text-slate-400 hover:text-slate-900 border border-dashed border-slate-200 rounded-xl transition-all"
                                                 onClick={() => {
@@ -240,7 +288,17 @@ export default function TaskBoardTab({ data, searchQuery, setSearchQuery, active
                         </div>
                     </div>
                 </DragDropContext>
+                
             )}
+            
+            <TaskViewModal
+                isOpen={isViewModalOpen} 
+                task={viewedTask} 
+                onClose={() => {
+                    setIsViewModalOpen(false);
+                    setViewedTask(null);
+                }} 
+            />
         </div>
     );
 }

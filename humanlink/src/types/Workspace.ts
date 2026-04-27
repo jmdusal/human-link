@@ -1,7 +1,16 @@
-import type { User } from '@/types/User';
-import type { Project } from '@/types/Project';
-import type { Status } from '@/types/Status';
-import type { WorkspaceMember } from '@/types/WorkspaceMember';
+// import type { User } from '@/types/User';
+// import type { Project } from '@/types/Project';
+// import type { Status } from '@/types/Status';
+// import type { WorkspaceMember } from '@/types/WorkspaceMember';
+// import type { Tag } from '@/types/Tag';
+
+import type {
+    User,
+    Project,
+    Status,
+    Tag,
+    WorkspaceMember
+ } from '@/types';
 
 export interface Workspace {
     id: number;
@@ -11,6 +20,7 @@ export interface Workspace {
     owner?: Partial<User>;
     members?: WorkspaceMember[];
     statuses?: Status[];
+    tags?: Tag[];
     projects?: Project[];
     createdAt: string;
 }

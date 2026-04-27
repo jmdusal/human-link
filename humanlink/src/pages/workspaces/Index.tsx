@@ -25,7 +25,7 @@ export default function WorkspaceIndex() {
     const { can, user } = useAuth();
     const { workspaces, setWorkspaces, loading } = useWorkspaces(true);
     
-    const [viewMode, setViewMode] = useState<'grid' | 'list' | 'timeline'>('grid');
+    const [viewMode, setViewMode] = useState<'grid' | 'list' | 'timeline'>('list');
     const [globalFilter, setGlobalFilter] = useState('');
     
     const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);

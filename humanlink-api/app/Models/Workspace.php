@@ -33,6 +33,8 @@ use Str;
  * @property-read int|null $members_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Status> $statuses
  * @property-read int|null $statuses_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Tag> $tags
+ * @property-read int|null $tags_count
  * @mixin \Eloquent
  */
 /**
@@ -60,6 +62,8 @@ use Str;
  * @property-read int|null $members_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Status> $statuses
  * @property-read int|null $statuses_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Tag> $tags
+ * @property-read int|null $tags_count
  * @mixin \Eloquent
  */
 class Workspace extends Model
@@ -84,7 +88,7 @@ class Workspace extends Model
 
     public function statuses(): HasMany
     {
-        return $this->hasMany(Status::class)->select(['id', 'workspace_id', 'name', 'color_hex', 'position']);
+        return $this->hasMany(Status::class)->select(['id', 'workspace_id', 'name', 'color_hex', 'position'])->orderBy('position', 'asc');
     }
 
     public function projects(): HasMany
@@ -98,6 +102,11 @@ class Workspace extends Model
             ->select(['users.id', 'users.name', 'users.email', 'users.status'])
             ->withPivot('role')
             ->withTimestamps();
+    }
+
+    public function tags(): HasMany
+    {
+        return $this->hasMany(Tag::class);
     }
 
     // protected static function booted()
