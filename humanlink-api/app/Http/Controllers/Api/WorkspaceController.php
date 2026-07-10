@@ -59,4 +59,14 @@ class WorkspaceController extends Controller
             'message' => 'Workspace deleted successfully',
         ], 200);
     }
+
+    public function acceptInvitation(string $token): JsonResponse
+    {
+        $workspace = $this->workspaceService->acceptInvitation($token);
+
+        return response()->json([
+            'message' => 'Invitation accepted. You are now a member of this workspace.',
+            'data' => $workspace,
+        ], 200);
+    }
 }

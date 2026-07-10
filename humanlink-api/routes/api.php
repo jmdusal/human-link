@@ -76,6 +76,7 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
     Route::controller(WorkspaceController::class)->prefix('workspaces')->name('workspaces.')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/', 'store')->name('store');
+        Route::post('/invitations/{token}/accept', 'acceptInvitation')->name('acceptInvitation');
         Route::put('/{workspace}', 'update')->name('update');
         Route::delete('/{workspace}', 'destroy')->name('destroy');
         Route::get('/{slug}', 'showBySlug')->name('show');

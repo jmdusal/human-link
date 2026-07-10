@@ -15,7 +15,7 @@
                                 HumanLink
                             </p>
                             <h1 style="color: #ffffff; font-size: 28px; font-weight: 400; letter-spacing: -0.02em; margin: 0; line-height: 1.25;">
-                                Workspace invitation
+                                You're in
                             </h1>
                         </td>
                     </tr>
@@ -25,20 +25,19 @@
                                 Hi <strong style="color: #0f172a;">{{ $user->name }}</strong>,
                             </p>
                             <p style="color: #475569; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 15px; line-height: 1.6; margin: 0 0 28px;">
-                                You've been invited to join
+                                Your invitation was accepted. You are now a confirmed member of
                                 <strong style="color: #0f172a;">{{ $workspace->name }}</strong>
-                                on HumanLink. Accept the invitation to become a member of this workspace.
+                                and can start collaborating with the team.
                             </p>
 
                             <div style="text-align: center; margin: 0 0 32px;">
-                                <a href="{{ $acceptUrl }}" style="background-color: #2563eb; border-radius: 6px; color: #ffffff; display: inline-block; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0.02em; padding: 14px 32px; text-decoration: none;">
-                                    Accept invitation
+                                <a href="{{ $workspaceUrl }}" style="background-color: #2563eb; border-radius: 6px; color: #ffffff; display: inline-block; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0.02em; padding: 14px 32px; text-decoration: none;">
+                                    Open workspace
                                 </a>
                             </div>
 
                             <p style="color: #94a3b8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 12px; line-height: 1.5; margin: 0; text-align: center;">
-                                This invitation was sent to {{ $user->email }}.<br>
-                                If you weren't expecting this, you can ignore this email.
+                                Confirmation sent to {{ $user->email }}.
                             </p>
                         </td>
                     </tr>

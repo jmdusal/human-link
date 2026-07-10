@@ -6,6 +6,7 @@ namespace App\Services\Workspace;
 
 use App\Contracts\WorkspaceServiceInterface;
 use App\Models\Workspace;
+use App\Models\WorkspaceUser;
 use App\Services\Workspace\Concerns\CreatesDefaultWorkspaceSetup;
 use App\Services\Workspace\Concerns\ManagesWorkspaceAccess;
 use App\Services\Workspace\Concerns\ManagesWorkspaceMembers;
@@ -37,7 +38,11 @@ class WorkspaceService implements WorkspaceServiceInterface
             ]);
 
         if (! $this->isSuperAdmin()) {
-            $query->whereHas('members', fn ($q) => $q->where('users.id', Auth::id()));
+            $query->whereHas(
+                'members',
+                fn ($q) => $q->where('users.id', Auth::id())
+                    ->where('workspace_users.status', WorkspaceUser::STATUS_ACCEPTED)
+            );
         }
 
         return $query->latest()->get();

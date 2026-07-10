@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, ArrowRight, Loader2, Eye, EyeOff, Shield } from 'lucide-react';
 import api from '@/api/axios';
@@ -10,16 +10,18 @@ import { usePageTitle } from '@/hooks/use-title';
 const Login = () => {
     usePageTitle("Login")
     const navigate = useNavigate();
+    const location = useLocation();
     const { user, loading, checkAuth } = useAuth();
     const [email, setEmail] = useState('admin@admin.com');
     const [password, setPassword] = useState('password');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const redirectTo = (location.state as { from?: string } | null)?.from || '/dashboard';
 
     useEffect(() => {
-        if (!loading && user) navigate('/dashboard', { replace: true });
-    }, [user, loading, navigate]);
+        if (!loading && user) navigate(redirectTo, { replace: true });
+    }, [user, loading, navigate, redirectTo]);
     
     useEffect(() => {
         if (error) {
@@ -36,7 +38,7 @@ const Login = () => {
             await api.get('../sanctum/csrf-cookie'); 
             await api.post(API_ROUTES.AUTH.LOGIN, { email, password });
             await checkAuth();
-            navigate('/dashboard');
+            navigate(redirectTo, { replace: true });
         } catch (err: any) {
             setError(err.response?.data?.message || 'Authentication failed.');
         } finally {

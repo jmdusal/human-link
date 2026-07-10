@@ -12,27 +12,27 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class WorkspaceInvitation extends Mailable
+class WorkspaceInvitationAccepted extends Mailable
 {
     use Queueable, SerializesModels;
 
     public function __construct(
         public Workspace $workspace,
         public User $user,
-        public string $acceptUrl,
+        public string $workspaceUrl,
     ) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "You've been invited to {$this->workspace->name}",
+            subject: "You're now a member of {$this->workspace->name}",
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            view: 'emails.workspace-invitation',
+            view: 'emails.workspace-invitation-accepted',
         );
     }
 }

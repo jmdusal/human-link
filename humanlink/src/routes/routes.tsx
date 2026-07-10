@@ -13,6 +13,7 @@ const LeaveBalanceIndex = lazy(() => import('@/pages/leave-balances/Index'));
 const ScheduleIndex = lazy(() => import('@/pages/schedules/Index'));
 
 const Workspace = lazy(() => import('@/pages/workspaces/Workspace'));
+const AcceptInvitation = lazy(() => import('@/pages/workspaces/AcceptInvitation'));
 
 
 export const navItems = [
@@ -107,6 +108,14 @@ export const navItems = [
         label: 'Activity aghahaha',
         title: 'Workspace Dashboard',
         component: <Workspace />,
+        permission: 'workspaces-view',
+        hidden: true
+    },
+    {
+        path: '/invitations/accept/:token',
+        label: 'Accept Invitation',
+        title: 'Accept Invitation',
+        component: <AcceptInvitation />,
         permission: 'workspaces-view',
         hidden: true
     },

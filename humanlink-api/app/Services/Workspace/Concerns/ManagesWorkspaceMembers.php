@@ -5,16 +5,25 @@ declare(strict_types=1);
 namespace App\Services\Workspace\Concerns;
 
 use App\Mail\WorkspaceInvitation;
+use App\Mail\WorkspaceInvitationAccepted;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceUser;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 trait ManagesWorkspaceMembers
 {
     protected function attachOwner(Workspace $workspace): void
     {
-        $workspace->members()->attach(Auth::id(), ['role' => 'owner']);
+        $workspace->members()->attach(Auth::id(), [
+            'role' => 'owner',
+            'status' => WorkspaceUser::STATUS_ACCEPTED,
+            'accepted_at' => now(),
+        ]);
     }
 
     protected function syncMembersOnCreate(Workspace $workspace, array $members): void
@@ -28,42 +37,149 @@ trait ManagesWorkspaceMembers
             return;
         }
 
-        $membersWithRoles = $memberIds->mapWithKeys(
-            fn ($id) => [$id => ['role' => 'member']]
-        )->all();
+        $invitees = User::query()->whereIn('id', $memberIds)->get();
 
-        $workspace->members()->syncWithoutDetaching($membersWithRoles);
+        foreach ($invitees as $user) {
+            $token = Str::random(64);
+
+            $workspace->members()->attach($user->id, [
+                'role' => 'member',
+                'status' => WorkspaceUser::STATUS_PENDING,
+                'invitation_token' => $token,
+                'invited_at' => now(),
+            ]);
+
+            $this->queueInvitationEmail($workspace, $user, $token);
+        }
     }
 
     protected function syncMembersOnUpdate(Workspace $workspace, array $members): void
     {
-        $existingMemberIds = $workspace->members()->pluck('users.id')->all();
+        $existingPivots = WorkspaceUser::query()
+            ->where('workspace_id', $workspace->id)
+            ->get()
+            ->keyBy('user_id');
 
-        $syncData = collect($members)->mapWithKeys(function (array $member) use ($workspace): array {
-            $id = $member['id'];
+        $syncData = [];
 
-            if ($id == $workspace->owner_id) {
-                return [$id => ['role' => 'owner']];
+        foreach ($members as $member) {
+            $id = (int) $member['id'];
+            $existing = $existingPivots->get($id);
+
+            if ($id === (int) $workspace->owner_id) {
+                $syncData[$id] = [
+                    'role' => 'owner',
+                    'status' => WorkspaceUser::STATUS_ACCEPTED,
+                    'invitation_token' => null,
+                    'invited_at' => $existing?->invited_at,
+                    'accepted_at' => $existing?->accepted_at ?? now(),
+                ];
+
+                continue;
             }
 
-            return [$id => ['role' => $member['pivot']['role'] ?? 'member']];
-        })->all();
+            $role = $member['pivot']['role'] ?? $existing?->role ?? 'member';
+
+            if ($existing && $existing->status === WorkspaceUser::STATUS_ACCEPTED) {
+                $syncData[$id] = [
+                    'role' => $role === 'owner' ? 'member' : $role,
+                    'status' => WorkspaceUser::STATUS_ACCEPTED,
+                    'invitation_token' => null,
+                    'invited_at' => $existing->invited_at,
+                    'accepted_at' => $existing->accepted_at,
+                ];
+
+                continue;
+            }
+
+            $token = $existing?->invitation_token ?? Str::random(64);
+
+            $syncData[$id] = [
+                'role' => $role === 'owner' ? 'member' : $role,
+                'status' => WorkspaceUser::STATUS_PENDING,
+                'invitation_token' => $token,
+                'invited_at' => $existing?->invited_at ?? now(),
+                'accepted_at' => null,
+            ];
+        }
 
         if (! isset($syncData[$workspace->owner_id])) {
-            $syncData[$workspace->owner_id] = ['role' => 'owner'];
+            $ownerPivot = $existingPivots->get($workspace->owner_id);
+
+            $syncData[$workspace->owner_id] = [
+                'role' => 'owner',
+                'status' => WorkspaceUser::STATUS_ACCEPTED,
+                'invitation_token' => null,
+                'invited_at' => $ownerPivot?->invited_at,
+                'accepted_at' => $ownerPivot?->accepted_at ?? now(),
+            ];
         }
 
         $workspace->members()->sync($syncData);
 
-        $newMemberIds = array_diff(array_keys($syncData), $existingMemberIds);
+        $newInviteeIds = collect($syncData)
+            ->filter(fn (array $pivot, int $userId) => ! $existingPivots->has($userId)
+                && ($pivot['status'] ?? null) === WorkspaceUser::STATUS_PENDING)
+            ->keys()
+            ->all();
 
-        if ($newMemberIds === []) {
+        if ($newInviteeIds === []) {
             return;
         }
 
         User::query()
-            ->whereIn('id', $newMemberIds)
+            ->whereIn('id', $newInviteeIds)
             ->get()
-            ->each(fn (User $user) => Mail::to($user->email)->queue(new WorkspaceInvitation($workspace, $user)));
+            ->each(function (User $user) use ($workspace, $syncData): void {
+                $this->queueInvitationEmail(
+                    $workspace,
+                    $user,
+                    $syncData[$user->id]['invitation_token'],
+                );
+            });
+    }
+
+    public function acceptInvitation(string $token): Workspace
+    {
+        $membership = WorkspaceUser::query()
+            ->where('invitation_token', $token)
+            ->first();
+
+        if (! $membership) {
+            throw new NotFoundHttpException('Invitation not found or already used.');
+        }
+
+        if ((int) $membership->user_id !== (int) Auth::id()) {
+            throw new AccessDeniedHttpException('This invitation was sent to a different account.');
+        }
+
+        $workspace = $membership->workspace()->with(['members', 'statuses', 'tags', 'projects'])->firstOrFail();
+
+        if ($membership->status === WorkspaceUser::STATUS_ACCEPTED) {
+            return $workspace;
+        }
+
+        $membership->update([
+            'status' => WorkspaceUser::STATUS_ACCEPTED,
+            'accepted_at' => now(),
+        ]);
+
+        $user = Auth::user();
+
+        Mail::to($user->email)->queue(new WorkspaceInvitationAccepted(
+            $workspace->fresh(['members', 'statuses', 'tags', 'projects']),
+            $user,
+            rtrim((string) config('app.frontend_url'), '/').'/workspaces/'.$workspace->slug,
+        ));
+
+        return $workspace->fresh(['members', 'statuses', 'tags', 'projects']);
+    }
+
+    protected function queueInvitationEmail(Workspace $workspace, User $user, string $token): void
+    {
+        $acceptUrl = rtrim((string) config('app.frontend_url'), '/')
+            .'/invitations/accept/'.$token;
+
+        Mail::to($user->email)->queue(new WorkspaceInvitation($workspace, $user, $acceptUrl));
     }
 }

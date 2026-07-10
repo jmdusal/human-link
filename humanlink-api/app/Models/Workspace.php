@@ -35,6 +35,8 @@ use Str;
  * @property-read int|null $statuses_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Tag> $tags
  * @property-read int|null $tags_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $acceptedMembers
+ * @property-read int|null $accepted_members_count
  * @mixin \Eloquent
  */
 /**
@@ -64,6 +66,8 @@ use Str;
  * @property-read int|null $statuses_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Tag> $tags
  * @property-read int|null $tags_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $acceptedMembers
+ * @property-read int|null $accepted_members_count
  * @mixin \Eloquent
  */
 class Workspace extends Model
@@ -100,8 +104,13 @@ class Workspace extends Model
     {
         return $this->belongsToMany(User::class, 'workspace_users')
             ->select(['users.id', 'users.name', 'users.email', 'users.status'])
-            ->withPivot('role')
+            ->withPivot(['role', 'status', 'invitation_token', 'invited_at', 'accepted_at'])
             ->withTimestamps();
+    }
+
+    public function acceptedMembers(): BelongsToMany
+    {
+        return $this->members()->wherePivot('status', WorkspaceUser::STATUS_ACCEPTED);
     }
 
     public function tags(): HasMany

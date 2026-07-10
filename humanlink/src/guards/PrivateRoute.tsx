@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Lock } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
@@ -12,10 +12,13 @@ interface PrivateRouteProps {
 export default function PrivateRoute({ children, permission }: PrivateRouteProps) {
     const { user, loading, can } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
 
     if (loading) return <LoadingSpinner />;
     
-    if (!user) return <Navigate to="/login" replace />;
+    if (!user) {
+        return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+    }
 
     if (permission && !can(permission)) {
         return (

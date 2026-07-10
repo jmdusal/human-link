@@ -6,6 +6,7 @@ namespace App\Services\Workspace\Concerns;
 
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceUser;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -27,8 +28,10 @@ trait ManagesWorkspaceAccess
             return null;
         }
 
-        $member = $workspace->members->firstWhere('id', $user->id)
-            ?? $workspace->members()->where('users.id', $user->id)->first();
+        $member = $workspace->members->first(
+            fn (User $member) => $member->id === $user->id
+                && ($member->pivot->status ?? WorkspaceUser::STATUS_ACCEPTED) === WorkspaceUser::STATUS_ACCEPTED
+        ) ?? $workspace->acceptedMembers()->where('users.id', $user->id)->first();
 
         return $member?->pivot?->role;
     }
@@ -52,10 +55,12 @@ trait ManagesWorkspaceAccess
             throw new AccessDeniedHttpException('You must be logged in to access this workspace.');
         }
 
-        $isMember = $workspace->members->contains('id', $user->id)
-            || $workspace->members()->where('users.id', $user->id)->exists();
+        $isAcceptedMember = $workspace->members->contains(
+            fn (User $member) => $member->id === $user->id
+                && ($member->pivot->status ?? WorkspaceUser::STATUS_ACCEPTED) === WorkspaceUser::STATUS_ACCEPTED
+        ) || $workspace->acceptedMembers()->where('users.id', $user->id)->exists();
 
-        if (! $isMember) {
+        if (! $isAcceptedMember) {
             throw new NotFoundHttpException('Workspace not found.');
         }
     }

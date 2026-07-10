@@ -34,5 +34,10 @@ export const WorkspaceService = {
     
     async deleteWorkspace(id: number): Promise<void> {
         await api.delete(API_ROUTES.WORKSPACES.DELETE(id));
-    }
+    },
+
+    async acceptInvitation(token: string): Promise<Workspace> {
+        const response = await api.post(API_ROUTES.WORKSPACES.ACCEPT_INVITATION(token));
+        return response.data.data;
+    },
 }

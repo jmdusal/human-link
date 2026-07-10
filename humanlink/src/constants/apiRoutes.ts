@@ -32,6 +32,7 @@ export const API_ROUTES = {
         UPDATE: (id: number) => `/workspaces/${id}`,
         DELETE: (id: number) => `/workspaces/${id}`,
         GET_BY_SLUG: (slug: string) => `/workspaces/${slug}`,
+        ACCEPT_INVITATION: (token: string) => `/workspaces/invitations/${token}/accept`,
     },
     STATUSES: {
         LIST: '/statuses',

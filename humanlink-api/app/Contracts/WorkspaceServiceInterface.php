@@ -18,4 +18,6 @@ interface WorkspaceServiceInterface
     public function update(Workspace $workspace, array $data): Workspace;
 
     public function delete(Workspace $workspace): void;
+
+    public function acceptInvitation(string $token): Workspace;
 }

@@ -22,6 +22,19 @@ function roleBadgeClass(role?: string) {
     return 'bg-slate-50 border-slate-200 text-slate-600';
 }
 
+function membershipStatusBadgeClass(status?: string) {
+    if (status === 'pending') return 'bg-amber-50 border-amber-200 text-amber-700';
+    if (status === 'accepted') return 'bg-emerald-50 border-emerald-100 text-emerald-600';
+    return 'bg-slate-50 border-slate-200 text-slate-400';
+}
+
+function membershipStatusLabel(member: any) {
+    const inviteStatus = member.pivot?.status;
+    if (inviteStatus === 'pending') return 'Pending';
+    if (inviteStatus === 'accepted') return 'Accepted';
+    return member.status || 'Active';
+}
+
 export default function MembersTab({ data, userOptions, searchQuery, setSearchQuery, onUpdateMembers }: MembersTabProps) {
     usePageTitle('Workspace Members');
     const { user } = useAuth();
@@ -29,7 +42,9 @@ export default function MembersTab({ data, userOptions, searchQuery, setSearchQu
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
     const itemsPerPage = viewMode === 'grid' ? 8 : 10;
 
-    const workspaceRole = data.members.find((m: any) => m.id === user?.id)?.pivot?.role;
+    const workspaceRole = data.members.find(
+        (m: any) => m.id === user?.id && (m.pivot?.status ?? 'accepted') === 'accepted'
+    )?.pivot?.role;
     const isWorkspaceAdminOrOwner = workspaceRole === 'owner' || workspaceRole === 'admin';
 
     const handleToggleRole = (userId: number) => {
@@ -140,7 +155,7 @@ export default function MembersTab({ data, userOptions, searchQuery, setSearchQu
                                     ...item,
                                     email: item.email || fullUser?.email,
                                     status: item.status || fullUser?.status || 'active',
-                                    pivot: item.pivot || { role: 'member' },
+                                    pivot: item.pivot || { role: 'member', status: 'pending' },
                                 };
                             });
                             onUpdateMembers(fullMemberData);
@@ -189,16 +204,12 @@ export default function MembersTab({ data, userOptions, searchQuery, setSearchQu
 
                                         <div className="mt-auto pt-5 flex items-center justify-between border-t border-slate-100">
                                             <span className="text-[11px] font-medium text-slate-400">
-                                                {isOwner ? 'Full access' : 'Workspace access'}
+                                                {isOwner ? 'Full access' : member.pivot?.status === 'pending' ? 'Awaiting acceptance' : 'Workspace access'}
                                             </span>
                                             <span
-                                                className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md border ${
-                                                    member.status === 'active' || !member.status
-                                                        ? 'bg-emerald-50 border-emerald-100 text-emerald-600'
-                                                        : 'bg-slate-50 border-slate-200 text-slate-400'
-                                                }`}
+                                                className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md border ${membershipStatusBadgeClass(member.pivot?.status)}`}
                                             >
-                                                {member.status || 'Active'}
+                                                {membershipStatusLabel(member)}
                                             </span>
                                         </div>
                                     </Card>
@@ -247,13 +258,9 @@ export default function MembersTab({ data, userOptions, searchQuery, setSearchQu
 
                                         <div className="flex-1 flex justify-center">
                                             <span
-                                                className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md border ${
-                                                    member.status === 'active' || !member.status
-                                                        ? 'bg-emerald-50 border-emerald-100 text-emerald-600'
-                                                        : 'bg-slate-50 border-slate-200 text-slate-400'
-                                                }`}
+                                                className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md border ${membershipStatusBadgeClass(member.pivot?.status)}`}
                                             >
-                                                {member.status || 'Active'}
+                                                {membershipStatusLabel(member)}
                                             </span>
                                         </div>
                                     </div>
