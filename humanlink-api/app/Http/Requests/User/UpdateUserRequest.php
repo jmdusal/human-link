@@ -21,6 +21,8 @@ class UpdateUserRequest extends FormRequest
             'email'    => ['sometimes', 'email', Rule::unique('users', 'email')->ignore($userId)],
             'password' => ['nullable', 'string', 'min:6'],
             'status'   => ['sometimes', Rule::in(['active', 'inactive'])],
+            'role'     => ['sometimes', 'string', 'exists:roles,name'],
+            'start_date' => ['sometimes', 'nullable', 'date'],
 
             // user rates
             'monthly_rate'      => ['sometimes', 'numeric', 'min:0'],

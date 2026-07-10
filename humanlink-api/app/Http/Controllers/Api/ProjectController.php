@@ -1,96 +1,54 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
+use App\Contracts\ProjectServiceInterface;
 use App\Http\Controllers\Controller;
-// use App\Http\Requests\Project\StoreProjectRequest;
 use App\Http\Requests\Project\StoreProjectRequest;
 use App\Http\Requests\Project\UpdateProjectRequest;
 use App\Models\Project;
-use App\Models\User;
 use App\Models\Workspace;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Symfony\Component\HttpFoundation\JsonResponse;
+use Illuminate\Http\JsonResponse;
 
 class ProjectController extends Controller
 {
-    public function index(Workspace $workspace)
-    {
-        $projects = $workspace->projects()
-            ->select(['id', 'name', 'description', 'status', 'start_date', 'end_date'])
-            ->with('projectMembers')
-            ->latest()
-            ->get();
+    public function __construct(
+        private ProjectServiceInterface $projectService
+    ) {}
 
-        return response()->json($projects);
+    public function index(Workspace $workspace): JsonResponse
+    {
+        return response()->json($this->projectService->listByWorkspace($workspace));
     }
 
     public function store(StoreProjectRequest $request): JsonResponse
     {
-        $project = DB::transaction(function () use ($request) {
-            $project = Project::create($request->validated());
-
-            if ($request->has('project_members')) {
-                $membersWithRoles = collect($request->project_members)
-                    ->mapWithKeys(function ($member) {
-                        return [
-                            $member['id'] => [
-                                'role' => $member['pivot']['role'] ?? 'member'
-                            ]
-                        ];
-                    })->toArray();
-
-                // $membersWithRoles = collect($request->project_members)->mapWithKeys(fn($m) => [
-                //     $m['id'] => ['role' => $m['pivot']['role'] ?? 'member']
-                // ]);
-
-                $project->projectMembers()->sync($membersWithRoles);
-            }
-
-            return $project;
-        });
+        $project = $this->projectService->create($request->validated());
 
         return response()->json([
             'message' => 'Project created successfully.',
-            'data' => $project->load('projectMembers', 'workspace')
+            'data' => $project,
         ], 201);
     }
 
     public function update(UpdateProjectRequest $request, Project $project): JsonResponse
     {
-        $project = DB::transaction(function () use ($request, $project) {
-            $project->update($request->validated());
-
-            if ($request->has('project_members')) {
-                $membersWithRoles = collect($request->project_members)
-                    ->mapWithKeys(function ($member) {
-                        return [
-                            $member['id'] => [
-                                'role' => $member['pivot']['role'] ?? 'member'
-                            ]
-                        ];
-                    })->toArray();
-
-                $project->projectMembers()->sync($membersWithRoles);
-            }
-
-            return $project;
-        });
+        $project = $this->projectService->update($project, $request->validated());
 
         return response()->json([
             'message' => 'Project updated successfully.',
-            'data' => $project->load('projectMembers', 'workspace')
+            'data' => $project,
         ], 200);
     }
 
-    public function destroy(Project $project)
+    public function destroy(Project $project): JsonResponse
     {
-        $project->delete();
+        $this->projectService->delete($project);
 
         return response()->json([
-            'message' => 'Project deleted successfully.'
+            'message' => 'Project deleted successfully.',
         ], 200);
     }
 }

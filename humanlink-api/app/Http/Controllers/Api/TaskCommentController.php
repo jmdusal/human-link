@@ -1,57 +1,44 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
+use App\Contracts\TaskCommentServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\TaskComment\StoreTaskCommentRequest;
 use App\Http\Requests\TaskComment\UpdateTaskCommentRequest;
 use App\Models\Task;
 use App\Models\TaskComment;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class TaskCommentController extends Controller
 {
-    public function index()
+    public function __construct(
+        private TaskCommentServiceInterface $taskCommentService
+    ) {}
+
+    public function index(): void
     {
         //
     }
 
-    public function store(StoreTaskCommentRequest $request, Task $task)
+    public function store(StoreTaskCommentRequest $request, Task $task): TaskComment
     {
-        $comment = $task->comments()->create([
-            'user_id'   => Auth::id(),
-            'content'   => $request->content,
-            'parent_id' => $request->parent_id,
-        ]);
-
-        return $comment->load('user');
-
-        // return response()->json([
-        //     'message'   => 'Comment deleted',
-        //     'data'      => $comment->load('user')
-        // ]);
+        return $this->taskCommentService->create($task, $request->validated());
     }
 
-    public function update(UpdateTaskCommentRequest $request, TaskComment $comment)
+    public function update(UpdateTaskCommentRequest $request, TaskComment $comment): JsonResponse
     {
-        if ($comment->user_id !== Auth::id()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
+        $comment = $this->taskCommentService->update($comment, $request->validated());
 
-        $comment->update($request->validated());
-
-        return response()->json($comment->load('user'));
+        return response()->json($comment);
     }
 
     public function destroy(TaskComment $comment): JsonResponse
     {
-        if ($comment->user_id !== Auth::id()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
+        $this->taskCommentService->delete($comment);
 
-        $comment->delete();
         return response()->json(['message' => 'Comment deleted']);
     }
 }

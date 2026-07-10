@@ -19,6 +19,8 @@ class StoreUserRequest extends FormRequest
             'email'    => ['required', 'email', Rule::unique('users', 'email')],
             'password' => ['required', 'string', 'min:6'],
             'status'   => ['required', Rule::in(['active', 'inactive'])],
+            'role'     => ['nullable', 'string', 'exists:roles,name'],
+            'start_date' => ['nullable', 'date'],
 
             // rates
             'monthly_rate'      => ['required', 'numeric', 'min:0'],

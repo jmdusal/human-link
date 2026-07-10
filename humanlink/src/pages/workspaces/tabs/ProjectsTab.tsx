@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { 
-    FolderKanban, 
-
+    FolderKanban,
     Plus, 
     Trash2, 
     LayoutGrid, 

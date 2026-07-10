@@ -1,58 +1,59 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
+use App\Contracts\TagServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tag\StoreTagRequest;
 use App\Http\Requests\Tag\UpdateTagRequest;
 use App\Models\Tag;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Symfony\Component\HttpFoundation\JsonResponse;
 
 class TagController extends Controller
 {
+    public function __construct(
+        private TagServiceInterface $tagService
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
-        $tag = Tag::where('workspace_id', $request->workspace_id)->get();
-
         return response()->json([
-            'data' => $tag
+            'data' => $this->tagService->listByWorkspace(
+                $request->integer('workspace_id') ?: null
+            ),
         ], 200);
     }
 
     public function store(StoreTagRequest $request): JsonResponse
     {
-        $tag = DB::transaction(function () use ($request) {
-            return Tag::create($request->validated());
-        });
+        $tag = $this->tagService->create($request->validated());
 
         return response()->json([
             'message' => 'Tag created successfully.',
-            'data' => $tag
+            'data' => $tag,
         ], 201);
     }
 
     public function update(UpdateTagRequest $request, Tag $tag): JsonResponse
     {
-        $tag = DB::transaction(function () use ($request, $tag) {
-            $tag->update($request->validated());
-            return $tag;
-        });
+        $tag = $this->tagService->update($tag, $request->validated());
 
         return response()->json([
             'message' => 'Tag updated successfully.',
-            'data' => $tag
+            'data' => $tag,
         ], 200);
     }
 
     public function destroy(Tag $tag): JsonResponse
     {
-        $tag->delete();
+        $this->tagService->delete($tag);
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Tag deleted successfully'
+            'message' => 'Tag deleted successfully',
         ], 200);
     }
 }

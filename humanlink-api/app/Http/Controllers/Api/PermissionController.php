@@ -1,61 +1,57 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
+use App\Contracts\PermissionServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Permission\StorePermissionRequest;
 use App\Http\Requests\Permission\UpdatePermissionRequest;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-// use Spatie\Permission\Models\Permission;
 use App\Models\Permission;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\JsonResponse;
 
 class PermissionController extends Controller
 {
+    public function __construct(
+        private PermissionServiceInterface $permissionService
+    ) {}
+
     public function index(): JsonResponse
     {
-        $permissions = Permission::latest()->get();
-
         return response()->json([
-            'data' => $permissions
+            'data' => $this->permissionService->list(),
         ], 200);
     }
 
     public function store(StorePermissionRequest $request): JsonResponse
     {
-        $permission = DB::transaction(function () use ($request) {
-            $data = array_merge($request->validated(), ['guard_name' => 'web']);
-            return Permission::create($data);
-        });
+        $permission = $this->permissionService->create($request->validated());
 
         return response()->json([
             'status' => 'success',
             'message' => 'Permission created successfully',
-            'data' => $permission
+            'data' => $permission,
         ], 201);
     }
 
     public function update(UpdatePermissionRequest $request, Permission $permission): JsonResponse
     {
-        $permission = DB::transaction(function () use ($request, $permission) {
-            $permission->update($request->validated());
-            return $permission;
-        });
+        $permission = $this->permissionService->update($permission, $request->validated());
 
         return response()->json([
             'status' => 'success',
             'message' => 'Permission updated successfully',
-            'data' => $permission
+            'data' => $permission,
         ], 200);
     }
 
     public function destroy(Permission $permission): JsonResponse
     {
-        DB::transaction(fn () => $permission->delete());
+        $this->permissionService->delete($permission);
 
         return response()->json([
-            'message' => 'Permission deleted successfully'
+            'message' => 'Permission deleted successfully',
         ], 200);
     }
 }

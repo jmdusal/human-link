@@ -1,71 +1,38 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
+use App\Contracts\AuthServiceInterface;
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
 
 class AuthenticationController extends Controller
 {
-    // public function login(Request $request)
-    // {
-    //     $credentials = $request->validate([
-    //         'email' => ['required', 'email'],
-    //         'password' => ['required'],
-    //     ]);
+    public function __construct(
+        private AuthServiceInterface $authService
+    ) {}
 
-    //     if (Auth::attempt($credentials)) {
-    //         $request->session()->regenerate();
-
-    //         return response()->json([
-    //             'message' => 'Login successful',
-    //             'user' => Auth::user(),
-    //         ]);
-    //     }
-
-    //     throw ValidationException::withMessages([
-    //         'email' => ['The provided credentials do not match our records.'],
-    //     ]);
-    // }
-
-    public function login(Request $request)
+    public function login(Request $request): JsonResponse
     {
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
 
-        if (Auth::attempt(['email' => $credentials['email'], 'password' => $credentials['password'], 'is_active' => true])) {
-            $request->session()->regenerate();
+        $user = $this->authService->login($request, $credentials);
 
-            return response()->json([
-                'message' => 'Login successful',
-                'user' => Auth::user(),
-            ]);
-        }
-
-        $user = User::where('email', $credentials['email'])->first();
-
-        if ($user && !$user->is_active) {
-            throw ValidationException::withMessages([
-                'email' => ['Your account is deactivated. Please contact an administrator.'],
-            ]);
-        }
-
-        throw ValidationException::withMessages([
-            'email' => ['The provided credentials do not match our records.'],
+        return response()->json([
+            'message' => 'Login successful',
+            'user' => $user,
         ]);
     }
 
-    public function logout(Request $request)
+    public function logout(Request $request): JsonResponse
     {
-        Auth::guard('web')->logout();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        $this->authService->logout($request);
 
         return response()->json(['message' => 'Logged out successfully']);
     }

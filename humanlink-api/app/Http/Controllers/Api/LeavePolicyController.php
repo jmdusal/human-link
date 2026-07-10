@@ -1,70 +1,55 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
+use App\Contracts\LeavePolicyServiceInterface;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Http\Requests\LeavePolicy\StoreLeavePolicyRequest;
 use App\Http\Requests\LeavePolicy\UpdateLeavePolicyRequest;
-use Illuminate\Http\JsonResponse;
 use App\Models\LeavePolicy;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-
+use Illuminate\Http\JsonResponse;
 
 class LeavePolicyController extends Controller
 {
+    public function __construct(
+        private LeavePolicyServiceInterface $leavePolicyService
+    ) {}
+
     public function index(): JsonResponse
     {
-        $leavePolicy = LeavePolicy::latest()->get();
-
         return response()->json([
-            'data' => $leavePolicy
+            'data' => $this->leavePolicyService->list(),
         ], 200);
     }
 
     public function store(StoreLeavePolicyRequest $request): JsonResponse
     {
-        $leavePolicy = DB::transaction(function () use ($request) {
-            $data = array_merge($request->validated(), [
-                'slug' => Str::slug($request->name)
-            ]);
-
-            return LeavePolicy::create($data);
-        });
+        $leavePolicy = $this->leavePolicyService->create($request->validated());
 
         return response()->json([
             'message' => 'Leave policy created successfully.',
-            'data' => $leavePolicy
+            'data' => $leavePolicy,
         ], 201);
     }
 
     public function update(UpdateLeavePolicyRequest $request, LeavePolicy $leavePolicy): JsonResponse
     {
-        $leavePolicy = DB::transaction(function () use ($request, $leavePolicy) {
-            $data = $request->validated();
-
-            if ($request->has('name')) {
-                $data['slug'] = Str::slug($request->name);
-            }
-
-            $leavePolicy->update($data);
-
-            return $leavePolicy;
-        });
+        $leavePolicy = $this->leavePolicyService->update($leavePolicy, $request->validated());
 
         return response()->json([
             'message' => 'Leave policy updated successfully.',
-            'data' => $leavePolicy
+            'data' => $leavePolicy,
         ], 200);
     }
 
     public function destroy(LeavePolicy $leavePolicy): JsonResponse
     {
-        $leavePolicy->delete();
+        $this->leavePolicyService->delete($leavePolicy);
 
         return response()->json([
-            'message' => 'Leave Policy deleted successfully'
+            'message' => 'Leave Policy deleted successfully',
         ], 200);
     }
 }
