@@ -92,7 +92,6 @@ export default function Workspace() {
         setActiveTab(tabId);
         window.location.hash = tabId;
         setSearchQuery('');
-        if (tabId !== 'board') setActiveBoardProjectId(null);
     };
     
     const handleProjectSuccess = (newProject: any) => {
@@ -117,22 +116,23 @@ export default function Workspace() {
     };
     
     const handleTaskSuccess = (newTask: any) => {
-        if (selectedTask) {
-            setTasks(prev => prev.map(task => task.id === newTask.id ? newTask : task));
-        } else {
-            setTasks(prev => [newTask, ...prev]);
-        }
+        setTasks((prev) => {
+            const exists = prev.some((task) => task.id === newTask.id);
+            return exists
+                ? prev.map((task) => (task.id === newTask.id ? newTask : task))
+                : [newTask, ...prev];
+        });
 
-        setProjects(prevProjects => prevProjects.map(project => {
+        setProjects((prevProjects) => prevProjects.map((project) => {
             if (project.id === newTask.projectId || project.id === newTask.project_id) {
                 const existingTasks = project.tasks || [];
                 const taskExists = existingTasks.find((t: any) => t.id === newTask.id);
 
                 return {
                     ...project,
-                    tasks: taskExists 
-                        ? existingTasks.map((t: any) => t.id === newTask.id ? newTask : t)
-                        : [newTask, ...existingTasks]
+                    tasks: taskExists
+                        ? existingTasks.map((t: any) => (t.id === newTask.id ? newTask : t))
+                        : [newTask, ...existingTasks],
                 };
             }
             return project;
@@ -369,6 +369,8 @@ export default function Workspace() {
                     onViewBoard={(id) => {
                         setActiveBoardProjectId(id);
                         setActiveTab('board');
+                        window.location.hash = 'board';
+                        setSearchQuery('');
                     }}
                     handleEditProject={handleEditProject}
                     handleDeleteProject={handleDeleteProject}
@@ -379,23 +381,19 @@ export default function Workspace() {
             
             {activeTab === 'board' && (
                 <TaskBoardTab
-                    // data={data}
                     data={{ ...data, projects: projects }}
                     statuses={statuses}
                     tags={tags}
-                    // data={projects}
-                    // taskStatuses={data.taskStatuses}
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
                     activeBoardProjectId={activeBoardProjectId}
                     setActiveBoardProjectId={setActiveBoardProjectId}
                     onTaskMove={handleTaskMove}
-                    
                     handleEditTask={handleEditTask}
                     handleDeleteTask={handleDeleteTask}
-                    
                     setIsTaskFormOpen={setIsTaskFormOpen}
                     setSelectedTask={setSelectedTask}
+                    onTaskUpdate={handleTaskSuccess}
                 />
             )}
             
@@ -460,20 +458,19 @@ export default function Workspace() {
                 />
             )}
             
-            {isTaskFormOpen && (
+            {isTaskFormOpen && activeBoardProjectId && (
                 <TaskForm
                     isOpen={isTaskFormOpen}
                     onClose={() => setIsTaskFormOpen(false)}
                     onSuccess={handleTaskSuccess}
                     selectedTask={selectedTask}
-                    projectId={data?.id}
+                    projectId={selectedTask?.projectId || activeBoardProjectId}
                     statuses={statuses}
                     tags={tags}
-                    tasks={tasks}
-                    // TODO: fetch data of statuses base on workspace id
-                    // statusId={1}
+                    tasks={tasks.filter((task) =>
+                        (task.projectId || (task as any).project_id) === (selectedTask?.projectId || activeBoardProjectId)
+                    )}
                     statusId={selectedTask?.statusId || statuses[0]?.id || 1}
-                    // statusId={activeStatusId}
                 />
             )}
             

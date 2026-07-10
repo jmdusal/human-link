@@ -1,7 +1,7 @@
 // import { TaskAssignment } from './TaskAssignment';
 // import type { User } from '@/types/User';
 import type { TaskAssignment } from '@/types/TaskAssignment';
-// import type { Tag } from '@/types';
+import type { TaskAttachment } from '@/types/TaskAttachment';
 import type { TaskComment, Tag, User } from '@/types';
 
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
@@ -25,6 +25,7 @@ export interface Task {
     assignees?: TaskAssignment[];
     tags?: Tag[];
     comments?: TaskComment[];
+    attachments?: TaskAttachment[];
 }
 
 export interface TaskFormData {

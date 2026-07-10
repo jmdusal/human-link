@@ -6,7 +6,9 @@ namespace App\Services\Schedule;
 
 use App\Contracts\ScheduleServiceInterface;
 use App\Models\Schedule;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Auth;
 
 class ScheduleService implements ScheduleServiceInterface
 {
@@ -18,7 +20,7 @@ class ScheduleService implements ScheduleServiceInterface
         $start ??= now()->startOfMonth()->toDateString();
         $end ??= now()->endOfMonth()->toDateString();
 
-        $schedules = Schedule::query()
+        $query = Schedule::query()
             ->with('user:id,name')
             ->where(function ($q) use ($start, $end): void {
                 $q->where('start_date', '<=', $end)
@@ -26,9 +28,13 @@ class ScheduleService implements ScheduleServiceInterface
                         $query->whereNull('end_date')
                             ->orWhere('end_date', '>=', $start);
                     });
-            })
-            ->latest()
-            ->get();
+            });
+
+        if (! $this->canManageSchedules()) {
+            $query->where('user_id', Auth::id());
+        }
+
+        $schedules = $query->latest()->get();
 
         return [
             'data' => $schedules,
@@ -37,5 +43,18 @@ class ScheduleService implements ScheduleServiceInterface
                 'end' => $end,
             ],
         ];
+    }
+
+    protected function canManageSchedules(?User $user = null): bool
+    {
+        $user ??= Auth::user();
+
+        if (! $user) {
+            return false;
+        }
+
+        return $user->hasRole('super-admin')
+            || $user->hasRole('hr-manager')
+            || $user->can('users-edit');
     }
 }

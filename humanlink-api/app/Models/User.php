@@ -85,6 +85,8 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read int|null $projects_count
  * @property int $is_active
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereIsActive($value)
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\TaskComment> $taskComments
+ * @property-read int|null $task_comments_count
  * @mixin \Eloquent
  */
 class User extends Authenticatable

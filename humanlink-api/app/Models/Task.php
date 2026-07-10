@@ -55,6 +55,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Task withoutTrashed()
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Tag> $tags
  * @property-read int|null $tags_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\TaskAttachment> $attachments
+ * @property-read int|null $attachments_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\TaskComment> $comments
+ * @property-read int|null $comments_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\TaskComment> $replies
+ * @property-read int|null $replies_count
+ * @property-read \App\Models\User|null $user
  * @mixin \Eloquent
  */
 /**
@@ -104,6 +111,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Task withoutTrashed()
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Tag> $tags
  * @property-read int|null $tags_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\TaskAttachment> $attachments
+ * @property-read int|null $attachments_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\TaskComment> $comments
+ * @property-read int|null $comments_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\TaskComment> $replies
+ * @property-read int|null $replies_count
+ * @property-read \App\Models\User|null $user
  * @mixin \Eloquent
  */
 class Task extends Model
@@ -180,6 +194,11 @@ class Task extends Model
     {
         // Only get top-level comments; replies will be nested inside them
         return $this->hasMany(TaskComment::class)->whereNull('parent_id')->with('replies.user');
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(TaskAttachment::class)->latest();
     }
 
     public function replies(): HasMany

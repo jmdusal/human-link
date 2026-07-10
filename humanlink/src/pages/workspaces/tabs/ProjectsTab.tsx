@@ -43,7 +43,7 @@ export default function ProjectsTab({
     usePageTitle('Projects');
     const { can, user } = useAuth();
     const [currentPage, setCurrentPage] = useState(1);
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
     const itemsPerPage = viewMode === 'grid' ? 8 : 10;
 
     const workspaceRole = data.members.find((m: any) => m.id === user?.id)?.pivot?.role;
@@ -100,7 +100,7 @@ export default function ProjectsTab({
                         placeholder="Filter projects..."
                     />
 
-                    {can('projects-create') && isWorkspaceAdminOrOwner && (
+                    {isWorkspaceAdminOrOwner && (
                         <Button
                             variant="primary"
                             icon={Plus}

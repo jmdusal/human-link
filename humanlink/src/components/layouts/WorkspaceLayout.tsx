@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ChevronDown, Settings2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import Button from '@/components/ui/Button';
+import { useAuth } from '@/context/AuthContext';
 import type { WorkspaceTab } from '@/constants/tabs';
 import { WORKSPACE_MANAGE_TABS } from '@/constants/tabs';
 
@@ -26,9 +27,15 @@ export default function WorkspaceLayout({
     hideHeader,
 }: WorkspaceLayoutProps) {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const isBoard = activeTab === 'board';
     const [isManageOpen, setIsManageOpen] = useState(false);
     const manageRef = useRef<HTMLDivElement>(null);
+
+    const isWorkspaceAdminOrOwner = useMemo(() => {
+        const role = data?.members?.find((m: any) => m.id === user?.id)?.pivot?.role;
+        return role === 'owner' || role === 'admin';
+    }, [data?.members, user?.id]);
 
     const activeManageTab = manageTabs.find((tab) => tab.id === activeTab);
     const isManageActive = Boolean(activeManageTab);
@@ -53,6 +60,12 @@ export default function WorkspaceLayout({
             document.removeEventListener('keydown', handleEscape);
         };
     }, [isManageOpen]);
+
+    useEffect(() => {
+        if (!isWorkspaceAdminOrOwner && isManageActive) {
+            onTabChange('overview');
+        }
+    }, [isWorkspaceAdminOrOwner, isManageActive, onTabChange]);
 
     const handlePrimaryTabChange = (tabId: WorkspaceTab['id']) => {
         setIsManageOpen(false);
@@ -90,61 +103,63 @@ export default function WorkspaceLayout({
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <div className="relative" ref={manageRef}>
-                                <Button
-                                    variant={isManageActive ? 'primary' : 'secondary'}
-                                    icon={Settings2}
-                                    onClick={() => setIsManageOpen((open) => !open)}
-                                    aria-expanded={isManageOpen}
-                                    aria-haspopup="menu"
-                                >
-                                    {activeManageTab?.label ?? 'Manage'}
-                                    <ChevronDown
-                                        size={16}
-                                        strokeWidth={2.5}
-                                        className={`transition-transform ${isManageOpen ? 'rotate-180' : ''}`}
-                                    />
-                                </Button>
+                            {isWorkspaceAdminOrOwner && (
+                                <div className="relative" ref={manageRef}>
+                                    <Button
+                                        variant={isManageActive ? 'primary' : 'secondary'}
+                                        icon={Settings2}
+                                        onClick={() => setIsManageOpen((open) => !open)}
+                                        aria-expanded={isManageOpen}
+                                        aria-haspopup="menu"
+                                    >
+                                        {activeManageTab?.label ?? 'Manage'}
+                                        <ChevronDown
+                                            size={16}
+                                            strokeWidth={2.5}
+                                            className={`transition-transform ${isManageOpen ? 'rotate-180' : ''}`}
+                                        />
+                                    </Button>
 
-                                <AnimatePresence>
-                                    {isManageOpen && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 4 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: 4 }}
-                                            transition={{ duration: 0.12 }}
-                                            className="absolute top-full right-0 mt-2 w-56 rounded-lg bg-white border border-slate-200 shadow-lg p-1.5 z-50"
-                                            role="menu"
-                                        >
-                                            <p className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                                                Workspace
-                                            </p>
-                                            {manageTabs.map((tab) => {
-                                                const Icon = tab.icon;
-                                                const isActive = activeTab === tab.id;
-                                                return (
-                                                    <button
-                                                        key={tab.id}
-                                                        role="menuitem"
-                                                        onClick={() => handleManageTabChange(tab.id)}
-                                                        className={`
-                                                            w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-left
-                                                            transition-colors
-                                                            ${isActive
-                                                                ? 'bg-blue-50 text-blue-700'
-                                                                : 'text-slate-700 hover:bg-slate-50'
-                                                            }
-                                                        `}
-                                                    >
-                                                        <Icon size={16} strokeWidth={isActive ? 2.5 : 2} />
-                                                        {tab.label}
-                                                    </button>
-                                                );
-                                            })}
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
+                                    <AnimatePresence>
+                                        {isManageOpen && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 4 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: 4 }}
+                                                transition={{ duration: 0.12 }}
+                                                className="absolute top-full right-0 mt-2 w-56 rounded-lg bg-white border border-slate-200 shadow-lg p-1.5 z-50"
+                                                role="menu"
+                                            >
+                                                <p className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                                                    Workspace
+                                                </p>
+                                                {manageTabs.map((tab) => {
+                                                    const Icon = tab.icon;
+                                                    const isActive = activeTab === tab.id;
+                                                    return (
+                                                        <button
+                                                            key={tab.id}
+                                                            role="menuitem"
+                                                            onClick={() => handleManageTabChange(tab.id)}
+                                                            className={`
+                                                                w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-left
+                                                                transition-colors
+                                                                ${isActive
+                                                                    ? 'bg-blue-50 text-blue-700'
+                                                                    : 'text-slate-700 hover:bg-slate-50'
+                                                                }
+                                                            `}
+                                                        >
+                                                            <Icon size={16} strokeWidth={isActive ? 2.5 : 2} />
+                                                            {tab.label}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            )}
 
                             <Button
                                 variant="secondary"
@@ -190,7 +205,7 @@ export default function WorkspaceLayout({
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.15 }}
-                            className={isBoard ? 'flex-1 w-full flex flex-col min-h-0 p-6' : 'flex-1 w-full p-6'}
+                            className={isBoard ? 'flex-1 w-full flex flex-col min-h-0 p-4' : 'flex-1 w-full p-6'}
                         >
                             {children}
                         </motion.div>

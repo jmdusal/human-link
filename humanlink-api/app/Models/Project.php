@@ -93,11 +93,11 @@ class Project extends Model
                     ->withTimestamps();
     }
 
-    public function isAdmin($userId): bool
+    public function isAdmin(int $userId): bool
     {
-        return $this->members()
-                    ->where('user_id', $userId)
-                    ->wherePivot('role', 'admin')
-                    ->exists();
+        return $this->projectMembers()
+            ->where('users.id', $userId)
+            ->wherePivot('role', 'admin')
+            ->exists();
     }
 }

@@ -24,6 +24,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskComment whereTaskId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskComment whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskComment whereUserId($value)
+ * @property-read TaskComment|null $parent
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, TaskComment> $replies
+ * @property-read int|null $replies_count
+ * @property-read \App\Models\User $user
  * @mixin \Eloquent
  */
 /**
@@ -44,6 +48,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskComment whereTaskId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskComment whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskComment whereUserId($value)
+ * @property-read TaskComment|null $parent
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, TaskComment> $replies
+ * @property-read int|null $replies_count
+ * @property-read \App\Models\User $user
  * @mixin \Eloquent
  */
 class TaskComment extends Model

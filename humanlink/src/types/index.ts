@@ -7,6 +7,7 @@ export type { Permission, PermissionFormData } from '@/types/Permission';
 export type { Workspace, WorkspaceFormData } from '@/types/Workspace';
 export type { Project, ProjectFormData } from '@/types/Project';
 export type { Task, TaskFormData, TaskPriority, TaskPositionUpdate } from '@/types/Task';
+export type { TaskAttachment } from '@/types/TaskAttachment';
 export type { TaskComment } from '@/types/TaskComment';
 export type { Status, StatusFormData } from '@/types/Status';
 export type { Tag, TagFormData } from '@/types/Tag';

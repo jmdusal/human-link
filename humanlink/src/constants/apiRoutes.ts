@@ -65,6 +65,11 @@ export const API_ROUTES = {
         UPDATE: (id: number) => `/taskComments/${id}`,
         DELETE: (id: number) => `/taskComments/${id}`,
     },
+    TASK_ATTACHMENTS: {
+        LIST: (taskId: number) => `/tasks/${taskId}/attachments`,
+        STORE: (taskId: number) => `/tasks/${taskId}/attachments`,
+        DELETE: (id: number) => `/tasks/attachments/${id}`,
+    },
     LEAVES: {
       LIST: '/leaves'  
     },

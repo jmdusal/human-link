@@ -9,8 +9,12 @@ import ScheduleCalendar from '@/components/features/schedules/ScheduleCalendar';
 import ScheduleForm from '@/pages/schedules/ScheduleForm';
 import Searchbar from '@/components/shared/Searchbar';
 import Card from '@/components/ui/Card';
+import { useAuth } from '@/context/AuthContext';
 
 export default function ScheduleIndex() {
+    const { can, hasRole } = useAuth();
+    const canManageSchedules = hasRole('super-admin') || hasRole('hr-manager') || can('users-edit');
+
     const [schedules, setSchedules] = useState<Schedule[]>([]);
     const [globalFilter, setGlobalFilter] = useState('');
     const [loading, setLoading] = useState(true);
@@ -65,6 +69,7 @@ export default function ScheduleIndex() {
     };
 
     const handleEditSchedule = (schedule: Schedule) => {
+        if (!canManageSchedules) return;
         setSelectedSchedule(schedule);
         setIsFormOpen(true);
     };
@@ -74,18 +79,26 @@ export default function ScheduleIndex() {
             <div className="flex items-center justify-between mb-8">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Schedules</h1>
-                    <p className="text-slate-400 text-sm font-medium">Visualize shifts and rest days.</p>
+                    <p className="text-slate-400 text-sm font-medium">
+                        {canManageSchedules
+                            ? 'Visualize shifts and rest days.'
+                            : 'View your weekly shifts and rest days.'}
+                    </p>
                 </div>
             </div>
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                <div className="relative flex-1 max-w-sm">
-                    <Searchbar
-                        value={globalFilter}
-                        onChange={setGlobalFilter}
-                        placeholder="Search users..."
-                    />
-                </div>
+                {canManageSchedules ? (
+                    <div className="relative flex-1 max-w-sm">
+                        <Searchbar
+                            value={globalFilter}
+                            onChange={setGlobalFilter}
+                            placeholder="Search users..."
+                        />
+                    </div>
+                ) : (
+                    <div className="flex-1" />
+                )}
 
                 <Card className="!p-1.5 flex items-center gap-1 w-fit">
                     <Button
@@ -117,11 +130,12 @@ export default function ScheduleIndex() {
                 currentDate={currentDate}
                 loading={loading}
                 scrollToDay={scrollToDay}
+                canEdit={canManageSchedules}
                 onEditSchedule={handleEditSchedule}
             />
 
             <AnimatePresence>
-                {isFormOpen && (
+                {isFormOpen && canManageSchedules && (
                     <ScheduleForm
                         key={selectedSchedule ? `schedule-${selectedSchedule.id}` : 'schedule-form'}
                         isOpen={isFormOpen}

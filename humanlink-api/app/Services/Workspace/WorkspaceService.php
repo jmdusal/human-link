@@ -7,6 +7,7 @@ namespace App\Services\Workspace;
 use App\Contracts\WorkspaceServiceInterface;
 use App\Models\Workspace;
 use App\Services\Workspace\Concerns\CreatesDefaultWorkspaceSetup;
+use App\Services\Workspace\Concerns\ManagesWorkspaceAccess;
 use App\Services\Workspace\Concerns\ManagesWorkspaceMembers;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -16,11 +17,12 @@ use Illuminate\Support\Str;
 class WorkspaceService implements WorkspaceServiceInterface
 {
     use CreatesDefaultWorkspaceSetup;
+    use ManagesWorkspaceAccess;
     use ManagesWorkspaceMembers;
 
     public function list(): Collection
     {
-        return Workspace::query()
+        $query = Workspace::query()
             ->with([
                 'owner',
                 'members',
@@ -32,14 +34,18 @@ class WorkspaceService implements WorkspaceServiceInterface
                 'projects.tasks.comments' => function ($query): void {
                     $query->whereNull('parent_id')->with('user', 'replies.user')->latest();
                 },
-            ])
-            ->latest()
-            ->get();
+            ]);
+
+        if (! $this->isSuperAdmin()) {
+            $query->whereHas('members', fn ($q) => $q->where('users.id', Auth::id()));
+        }
+
+        return $query->latest()->get();
     }
 
     public function findBySlug(string $slug): Workspace
     {
-        return Workspace::query()
+        $workspace = Workspace::query()
             ->with([
                 'owner',
                 'members',
@@ -55,6 +61,10 @@ class WorkspaceService implements WorkspaceServiceInterface
             ])
             ->where('slug', $slug)
             ->firstOrFail();
+
+        $this->assertCanAccessWorkspace($workspace);
+
+        return $this->filterProjectsForCurrentUser($workspace);
     }
 
     public function create(array $data): Workspace
@@ -81,6 +91,8 @@ class WorkspaceService implements WorkspaceServiceInterface
 
     public function update(Workspace $workspace, array $data): Workspace
     {
+        $this->assertCanManageWorkspace($workspace);
+
         return DB::transaction(function () use ($workspace, $data): Workspace {
             $payload = $this->workspacePayload($data);
 
@@ -100,6 +112,8 @@ class WorkspaceService implements WorkspaceServiceInterface
 
     public function delete(Workspace $workspace): void
     {
+        $this->assertCanManageWorkspace($workspace);
+
         $workspace->delete();
     }
 

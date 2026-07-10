@@ -1,0 +1,91 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services\Workspace\Concerns;
+
+use App\Models\User;
+use App\Models\Workspace;
+use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
+trait ManagesWorkspaceAccess
+{
+    protected function isSuperAdmin(?User $user = null): bool
+    {
+        $user ??= Auth::user();
+
+        return $user?->hasRole('super-admin') ?? false;
+    }
+
+    protected function workspaceRoleFor(Workspace $workspace, ?User $user = null): ?string
+    {
+        $user ??= Auth::user();
+
+        if (! $user) {
+            return null;
+        }
+
+        $member = $workspace->members->firstWhere('id', $user->id)
+            ?? $workspace->members()->where('users.id', $user->id)->first();
+
+        return $member?->pivot?->role;
+    }
+
+    protected function isWorkspaceAdminOrOwner(Workspace $workspace, ?User $user = null): bool
+    {
+        $role = $this->workspaceRoleFor($workspace, $user);
+
+        return in_array($role, ['owner', 'admin'], true);
+    }
+
+    protected function assertCanAccessWorkspace(Workspace $workspace): void
+    {
+        if ($this->isSuperAdmin()) {
+            return;
+        }
+
+        $user = Auth::user();
+
+        if (! $user) {
+            throw new AccessDeniedHttpException('You must be logged in to access this workspace.');
+        }
+
+        $isMember = $workspace->members->contains('id', $user->id)
+            || $workspace->members()->where('users.id', $user->id)->exists();
+
+        if (! $isMember) {
+            throw new NotFoundHttpException('Workspace not found.');
+        }
+    }
+
+    protected function assertCanManageWorkspace(Workspace $workspace): void
+    {
+        if ($this->isSuperAdmin()) {
+            return;
+        }
+
+        if (! $this->isWorkspaceAdminOrOwner($workspace)) {
+            throw new AccessDeniedHttpException('Only workspace owners and admins can manage this workspace.');
+        }
+    }
+
+    protected function filterProjectsForCurrentUser(Workspace $workspace): Workspace
+    {
+        if ($this->isSuperAdmin() || $this->isWorkspaceAdminOrOwner($workspace)) {
+            return $workspace;
+        }
+
+        $userId = Auth::id();
+
+        $workspace->setRelation(
+            'projects',
+            $workspace->projects
+                ->filter(fn ($project) => $project->projectMembers->contains('id', $userId))
+                ->values()
+        );
+
+        return $workspace;
+    }
+}

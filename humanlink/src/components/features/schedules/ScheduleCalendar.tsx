@@ -9,6 +9,7 @@ interface Props {
     currentDate: Date;
     loading?: boolean;
     scrollToDay?: number | 'start';
+    canEdit?: boolean;
     onEditSchedule?: (schedule: Schedule) => void;
 }
 
@@ -27,6 +28,7 @@ export default function ScheduleCalendar({
     currentDate,
     loading,
     scrollToDay = 'start',
+    canEdit = false,
     onEditSchedule,
 }: Props) {
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -141,23 +143,39 @@ export default function ScheduleCalendar({
                             data.map((schedule) => (
                                 <tr key={schedule.id} className="group">
                                     <td className="sticky left-0 z-20 bg-white group-hover:bg-slate-50 border-b border-r border-slate-100 px-5 py-3.5 transition-colors shadow-[4px_0_12px_-8px_rgba(15,23,42,0.12)]">
-                                        <button
-                                            type="button"
-                                            onClick={() => onEditSchedule?.(schedule)}
-                                            className="flex items-center gap-3 w-full text-left rounded-xl hover:bg-blue-50/70 px-2 py-1.5 -mx-2 transition-colors"
-                                        >
-                                            <div className="h-10 w-10 shrink-0 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-[11px] uppercase shadow-sm">
-                                                {getInitials(schedule.user?.name || '?')}
+                                        {canEdit ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => onEditSchedule?.(schedule)}
+                                                className="flex items-center gap-3 w-full text-left rounded-xl hover:bg-blue-50/70 px-2 py-1.5 -mx-2 transition-colors"
+                                            >
+                                                <div className="h-10 w-10 shrink-0 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-[11px] uppercase shadow-sm">
+                                                    {getInitials(schedule.user?.name || '?')}
+                                                </div>
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="text-sm font-semibold text-slate-800 truncate">
+                                                        {schedule.user?.name}
+                                                    </span>
+                                                    <span className="text-[11px] text-slate-400 font-medium">
+                                                        Click to edit schedule
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        ) : (
+                                            <div className="flex items-center gap-3 px-2 py-1.5 -mx-2">
+                                                <div className="h-10 w-10 shrink-0 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-[11px] uppercase shadow-sm">
+                                                    {getInitials(schedule.user?.name || '?')}
+                                                </div>
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="text-sm font-semibold text-slate-800 truncate">
+                                                        {schedule.user?.name}
+                                                    </span>
+                                                    <span className="text-[11px] text-slate-400 font-medium">
+                                                        Your schedule
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <div className="flex flex-col min-w-0">
-                                                <span className="text-sm font-semibold text-slate-800 truncate">
-                                                    {schedule.user?.name}
-                                                </span>
-                                                <span className="text-[11px] text-slate-400 font-medium">
-                                                    Click to edit schedule
-                                                </span>
-                                            </div>
-                                        </button>
+                                        )}
                                     </td>
 
                                     {days.map((day) => {

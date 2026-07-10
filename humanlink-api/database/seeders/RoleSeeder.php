@@ -29,12 +29,30 @@ class RoleSeeder extends Seeder
 
         $manager->syncPermissions([
             'users-view',
+            'workspaces-view',
+            'workspaces-create',
+            'workspaces-edit',
+            'projects-view',
+            'projects-create',
+            'projects-edit',
+            'tasks-view',
+            'tasks-create',
+            'tasks-edit',
             'schedules-view',
             'leave-policies-view',
             'activity-logs-view',
         ]);
 
+        // Workspace members use the same login; access is scoped by workspace/project membership.
         $userRole->syncPermissions([
+            'workspaces-view',
+            'projects-view',
+            'projects-create',
+            'projects-edit',
+            'projects-delete',
+            'tasks-view',
+            'tasks-create',
+            'tasks-edit',
             'schedules-view',
             'leave-policies-view',
         ]);

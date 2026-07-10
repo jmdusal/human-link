@@ -26,7 +26,7 @@ export default function MembersTab({ data, userOptions, searchQuery, setSearchQu
     usePageTitle('Workspace Members');
     const { user } = useAuth();
     const [currentPage, setCurrentPage] = useState(1);
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
     const itemsPerPage = viewMode === 'grid' ? 8 : 10;
 
     const workspaceRole = data.members.find((m: any) => m.id === user?.id)?.pivot?.role;

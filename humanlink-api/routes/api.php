@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\WorkspaceController;
 use App\Http\Controllers\Api\StatusController;
 use App\Http\Controllers\Api\TaskCommentController;
+use App\Http\Controllers\Api\TaskAttachmentController;
 
 Route::group(['middleware' => ['web']], function () {
     Route::post('/login', [AuthenticationController::class, 'login']);
@@ -77,10 +78,8 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::post('/', 'store')->name('store');
         Route::put('/{workspace}', 'update')->name('update');
         Route::delete('/{workspace}', 'destroy')->name('destroy');
-        Route::get('/{slug}', 'showBySlug');
-        // Route::get('/{workspace}/projects', [ProjectController::class, 'index']);
+        Route::get('/{slug}', 'showBySlug')->name('show');
     });
-
 
     Route::controller(ProjectController::class)->prefix('projects')->name('projects.')->group(function () {
         Route::get('/{workspace}', 'index')->name('index');
@@ -97,6 +96,12 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::put('/{task}', 'update')->name('update');
         Route::delete('/{task}', 'destroy')->name('destroy');
         Route::patch('/{task}/position', 'updatePosition')->name('updatePosition');
+    });
+
+    Route::controller(TaskAttachmentController::class)->prefix('tasks')->name('tasks.')->group(function () {
+        Route::get('/{task}/attachments', 'index')->name('attachmentsIndex');
+        Route::post('/{task}/attachments', 'store')->name('storeAttachment');
+        Route::delete('/attachments/{attachment}', 'destroy')->name('destroyAttachment');
     });
 
     Route::controller(TaskCommentController::class)->prefix('taskComments')->name('taskComments.')->group(function () {
