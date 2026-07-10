@@ -1,118 +1,196 @@
-import React from 'react';
-import { ArrowLeft, Globe, Search } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ArrowLeft, ChevronDown, Settings2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import Button from '@/components/ui/Button';
 import type { WorkspaceTab } from '@/constants/tabs';
+import { WORKSPACE_MANAGE_TABS } from '@/constants/tabs';
 
 interface WorkspaceLayoutProps {
     data: any;
     activeTab: WorkspaceTab['id'];
     tabs: readonly WorkspaceTab[] | WorkspaceTab[];
+    manageTabs?: readonly WorkspaceTab[] | WorkspaceTab[];
     onTabChange: (tabId: WorkspaceTab['id']) => void;
     children: React.ReactNode;
-    hideHeader?: boolean; 
+    hideHeader?: boolean;
 }
 
-export default function WorkspaceLayout({ data, tabs, activeTab, onTabChange, children, hideHeader }: WorkspaceLayoutProps) {
+export default function WorkspaceLayout({
+    data,
+    tabs,
+    manageTabs = WORKSPACE_MANAGE_TABS,
+    activeTab,
+    onTabChange,
+    children,
+    hideHeader,
+}: WorkspaceLayoutProps) {
     const navigate = useNavigate();
     const isBoard = activeTab === 'board';
+    const [isManageOpen, setIsManageOpen] = useState(false);
+    const manageRef = useRef<HTMLDivElement>(null);
+
+    const activeManageTab = manageTabs.find((tab) => tab.id === activeTab);
+    const isManageActive = Boolean(activeManageTab);
+
+    useEffect(() => {
+        if (!isManageOpen) return;
+
+        const handlePointerDown = (event: MouseEvent) => {
+            if (manageRef.current && !manageRef.current.contains(event.target as Node)) {
+                setIsManageOpen(false);
+            }
+        };
+
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setIsManageOpen(false);
+        };
+
+        document.addEventListener('mousedown', handlePointerDown);
+        document.addEventListener('keydown', handleEscape);
+        return () => {
+            document.removeEventListener('mousedown', handlePointerDown);
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [isManageOpen]);
+
+    const handlePrimaryTabChange = (tabId: WorkspaceTab['id']) => {
+        setIsManageOpen(false);
+        onTabChange(tabId);
+    };
+
+    const handleManageTabChange = (tabId: WorkspaceTab['id']) => {
+        setIsManageOpen(false);
+        onTabChange(tabId);
+    };
 
     return (
-        <div className="fixed inset-0 z-[50] bg-[#F6F8FC] flex flex-col font-sans antialiased text-slate-900 overflow-hidden">
-
-            <AnimatePresence>
-                {!hideHeader && (
-                    <motion.header 
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="relative z-[10] flex items-center justify-between px-6 py-3 shrink-0"
-                    >
-                        <div className="flex items-center gap-4 min-w-0">
-                            <div 
-                                onClick={() => navigate('/workspaces')} 
-                                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-200/50 cursor-pointer transition-colors"
+        <div className="fixed inset-0 z-[50] bg-slate-50 flex flex-col font-sans antialiased text-slate-900 overflow-hidden">
+            {!hideHeader && (
+                <header className="shrink-0 bg-white border-b border-slate-200">
+                    <div className="flex items-center justify-between gap-4 px-6 py-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <Button
+                                variant="secondary"
+                                icon={ArrowLeft}
+                                onClick={() => navigate('/workspaces')}
+                                aria-label="Back to workspaces"
                             >
-                                <Globe size={22} className="text-blue-600" />
-                            </div>
+                                Back
+                            </Button>
+                            <div className="h-8 w-px bg-slate-200 shrink-0" />
                             <div className="flex flex-col min-w-0">
-                                <h2 className="text-[16px] font-medium text-[#1f1f1f] truncate leading-tight">
+                                <h2 className="text-base font-semibold text-slate-900 truncate leading-tight">
                                     {data.name}
                                 </h2>
-                                <span className="text-[11px] font-medium text-slate-500 uppercase tracking-tight opacity-70">
+                                <span className="text-xs font-medium text-slate-500 truncate">
                                     {data.slug}
                                 </span>
                             </div>
                         </div>
-                        
-                        <nav className="flex items-center gap-1 bg-[#EAF1FB] p-1.5 rounded-full px-2">
-                            {tabs.map((tab) => {
-                                const isActive = activeTab === tab.id;
-                                const Icon = tab.icon;
-                                return (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => onTabChange(tab.id)}
-                                        className={`
-                                            relative px-5 py-2 rounded-full text-[13px] font-semibold
-                                            transition-all duration-200 flex items-center gap-2.5 outline-none
-                                            ${isActive 
-                                                ? "text-[#001d35]" 
-                                                : "text-[#444746] hover:bg-[#d3e3fd]/60"
-                                            }
-                                        `}
-                                    >
-                                        <Icon 
-                                            size={18} 
-                                            strokeWidth={isActive ? 2.5 : 2} 
-                                            className="relative z-20"
-                                        />
-                                        <span className="relative z-20">{tab.label}</span>
-                                        
-                                        {isActive && (
-                                            <motion.div 
-                                                layoutId="gmailActive" 
-                                                className="absolute inset-0 bg-[#C2E7FF] rounded-full z-10 shadow-[0_1px_2px_rgba(0,0,0,0.05)]" 
-                                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                                            />
-                                        )}
-
-                                        
-                                        <div className={`
-                                            absolute inset-0 rounded-full transition-colors duration-200 z-0
-                                            ${isActive ? "hover:bg-black/5" : "hover:bg-transparent"}
-                                        `} />
-                                    </button>
-                                );
-                            })}
-                        </nav>
 
                         <div className="flex items-center gap-2">
-                             <button className="p-2 hover:bg-slate-200/50 rounded-full text-slate-600 transition-colors">
-                                <Search size={20} />
-                            </button>
-                            <button 
-                                onClick={() => navigate('/workspaces')} 
-                                className="flex items-center gap-2 ml-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-[13px] font-medium text-slate-600 hover:shadow-sm transition-all"
-                            >
-                                <ArrowLeft size={16} />
-                                Exit
-                            </button>
-                        </div>
-                    </motion.header>
-                )}
-            </AnimatePresence>
+                            <div className="relative" ref={manageRef}>
+                                <Button
+                                    variant={isManageActive ? 'primary' : 'secondary'}
+                                    icon={Settings2}
+                                    onClick={() => setIsManageOpen((open) => !open)}
+                                    aria-expanded={isManageOpen}
+                                    aria-haspopup="menu"
+                                >
+                                    {activeManageTab?.label ?? 'Manage'}
+                                    <ChevronDown
+                                        size={16}
+                                        strokeWidth={2.5}
+                                        className={`transition-transform ${isManageOpen ? 'rotate-180' : ''}`}
+                                    />
+                                </Button>
 
-            <main className={`flex-1 relative flex flex-col min-h-0 mx-4 mb-4 bg-white rounded-[24px] shadow-sm overflow-hidden ${hideHeader ? 'mt-4' : ''}`}>
-                <div className={`relative z-[20] flex-1 w-full h-full flex flex-col min-h-0 ${isBoard ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+                                <AnimatePresence>
+                                    {isManageOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 4 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: 4 }}
+                                            transition={{ duration: 0.12 }}
+                                            className="absolute top-full right-0 mt-2 w-56 rounded-lg bg-white border border-slate-200 shadow-lg p-1.5 z-50"
+                                            role="menu"
+                                        >
+                                            <p className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                                                Workspace
+                                            </p>
+                                            {manageTabs.map((tab) => {
+                                                const Icon = tab.icon;
+                                                const isActive = activeTab === tab.id;
+                                                return (
+                                                    <button
+                                                        key={tab.id}
+                                                        role="menuitem"
+                                                        onClick={() => handleManageTabChange(tab.id)}
+                                                        className={`
+                                                            w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-left
+                                                            transition-colors
+                                                            ${isActive
+                                                                ? 'bg-blue-50 text-blue-700'
+                                                                : 'text-slate-700 hover:bg-slate-50'
+                                                            }
+                                                        `}
+                                                    >
+                                                        <Icon size={16} strokeWidth={isActive ? 2.5 : 2} />
+                                                        {tab.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+
+                            <Button
+                                variant="secondary"
+                                onClick={() => navigate('/workspaces')}
+                            >
+                                Exit
+                            </Button>
+                        </div>
+                    </div>
+
+                    <nav className="flex items-center gap-1 px-6 overflow-x-auto">
+                        {tabs.map((tab) => {
+                            const isActive = activeTab === tab.id;
+                            const Icon = tab.icon;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => handlePrimaryTabChange(tab.id)}
+                                    className={`
+                                        relative flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap
+                                        border-b-2 transition-colors outline-none
+                                        ${isActive
+                                            ? 'border-blue-600 text-blue-700'
+                                            : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
+                                        }
+                                    `}
+                                >
+                                    <Icon size={16} strokeWidth={isActive ? 2.5 : 2} />
+                                    {tab.label}
+                                </button>
+                            );
+                        })}
+                    </nav>
+                </header>
+            )}
+
+            <main className="flex-1 relative flex flex-col min-h-0 overflow-hidden">
+                <div className={`flex-1 w-full h-full flex flex-col min-h-0 ${isBoard ? 'overflow-hidden' : 'overflow-y-auto'}`}>
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={activeTab}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className={isBoard ? "flex-1 w-full flex flex-col min-h-0 p-8" : "flex-1 w-full p-8"}
+                            transition={{ duration: 0.15 }}
+                            className={isBoard ? 'flex-1 w-full flex flex-col min-h-0 p-6' : 'flex-1 w-full p-6'}
                         >
                             {children}
                         </motion.div>

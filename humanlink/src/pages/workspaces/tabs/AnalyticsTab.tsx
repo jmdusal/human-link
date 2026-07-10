@@ -1,10 +1,10 @@
 import { usePageTitle } from '@/hooks/use-title';
 import { getInitials } from '@/utils/userUtils';
 import { Target, Users2, Layers, CheckCircle2, ArrowUpRight, PieChart, Trophy } from 'lucide-react';
-import { useEffect } from 'react';
+import Card from '@/components/ui/Card';
 
 interface AnalyticsProps {
-    workspace: any; 
+    workspace: any;
 }
 
 export default function AnalyticsTab({ workspace }: AnalyticsProps) {
@@ -20,7 +20,6 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
     const totalTasks = projects.reduce((acc: number, p: any) => acc + (p.tasks?.length || 0), 0);
     const completedTasks = projects.reduce((acc: number, p: any) => {
         const doneInProject = p.tasks?.filter((t: any) => t.statusId === doneStatusId).length || 0;
-        // return acc + doneInProject;
         return acc + doneInProject;
     }, 0);
 
@@ -28,7 +27,7 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
 
     const memberStats = members.map((member: any) => {
         const completedCount = projects.reduce((acc: number, project: any) => {
-            const memberDone = project.tasks?.filter((t: any) => 
+            const memberDone = project.tasks?.filter((t: any) =>
                 t.statusId === doneStatusId && t.assigned_to === member.id
             ).length || 0;
             return acc + memberDone;
@@ -37,33 +36,28 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
     }).sort((a: any, b: any) => b.completedCount - a.completedCount).slice(0, 5);
 
     const statusCounts = statuses.map((status: any) => {
-        const count = projects.reduce((acc: number, p: any) => 
+        const count = projects.reduce((acc: number, p: any) =>
             acc + (p.tasks?.filter((t: any) => t.statusId === status.id).length || 0), 0
         );
         return { ...status, count };
     });
-    
+
     const workloadData = members.map((member: any) => {
         const activeTasksCount = projects.reduce((acc: number, project: any) => {
-            const memberActive = project.tasks?.filter((t: any) => 
+            const memberActive = project.tasks?.filter((t: any) =>
                 t.statusId !== doneStatusId && t.assigned_to === member.id
             ).length || 0;
             return acc + memberActive;
         }, 0);
 
-        const capacityLimit = 8; 
+        const capacityLimit = 8;
         const workloadPercentage = Math.min(Math.round((activeTasksCount / capacityLimit) * 100), 100);
-        
+
         return { ...member, activeTasksCount, workloadPercentage };
     });
-    
-    useEffect(() => {
-        // console.log('ddddd', workloadData)
-    }, []);
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 h-full flex flex-col overflow-y-auto pr-2 custom-scrollbar">
-            {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
                 <div>
                     <h3 className="text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
@@ -74,11 +68,9 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
                     </p>
                 </div>
             </div>
-            
-            {/* Stats Cards Grid */}
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                {/* Completion Rate Card */}
-                <div className="group p-6 border border-slate-100 rounded-2xl bg-white shadow-sm hover:shadow-md transition-all duration-300">
+                <Card hover className="group">
                     <div className="flex items-center justify-between mb-4">
                         <div className="p-2 bg-emerald-50 rounded-lg group-hover:scale-110 transition-transform">
                             <Target className="w-5 h-5 text-emerald-600" />
@@ -89,21 +81,20 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
                     </div>
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-tight">Task Completion</p>
                     <p className="text-4xl font-extrabold text-slate-900 mt-1">{completionRate}%</p>
-                    
+
                     <div className="w-full bg-slate-100 h-1.5 rounded-full mt-4 overflow-hidden">
-                        <div 
-                            className="bg-emerald-500 h-full rounded-full transition-all duration-1000 ease-out" 
+                        <div
+                            className="bg-emerald-500 h-full rounded-full transition-all duration-1000 ease-out"
                             style={{ width: `${completionRate}%` }}
                         />
                     </div>
                     <p className="text-[11px] text-slate-400 mt-3 flex items-center gap-1.5">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> 
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                         {completedTasks} of {totalTasks} tasks marked as "{doneStatus?.name || 'Done'}"
                     </p>
-                </div>
-                
-                {/* Active Projects Card */}
-                <div className="group p-6 border border-slate-100 rounded-2xl bg-white shadow-sm hover:shadow-md transition-all duration-300">
+                </Card>
+
+                <Card hover className="group">
                     <div className="flex items-center justify-between mb-4">
                         <div className="p-2 bg-blue-50 rounded-lg group-hover:scale-110 transition-transform">
                             <Layers className="w-5 h-5 text-blue-600" />
@@ -114,10 +105,9 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
                     <p className="text-[11px] text-slate-400 mt-4 font-medium italic">
                         Real-time active initiatives
                     </p>
-                </div>
+                </Card>
 
-                {/* Team Size Card */}
-                <div className="group p-6 border border-slate-100 rounded-2xl bg-white shadow-sm hover:shadow-md transition-all duration-300">
+                <Card hover className="group">
                     <div className="flex items-center justify-between mb-4">
                         <div className="p-2 bg-indigo-50 rounded-lg group-hover:scale-110 transition-transform">
                             <Users2 className="w-5 h-5 text-indigo-600" />
@@ -127,8 +117,8 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
                     <p className="text-4xl font-extrabold text-slate-900 mt-1">{members.length}</p>
                     <div className="flex -space-x-2 mt-4">
                         {members.slice(0, 4).map((member: any) => (
-                            <div 
-                                key={member.id} 
+                            <div
+                                key={member.id}
                                 className="h-7 w-7 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600 uppercase"
                                 title={member.name}
                             >
@@ -141,12 +131,11 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
                             </div>
                         )}
                     </div>
-                </div>
+                </Card>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
-                {/* Project Breakdown Section */}
-                <div className="p-8 border border-slate-100 rounded-3xl bg-white shadow-sm h-fit">
+                <Card variant="section" className="h-fit">
                     <div className="flex items-center gap-2 mb-6">
                          <Layers className="w-5 h-5 text-slate-400" />
                          <h4 className="text-lg font-bold text-slate-900">Project Progress</h4>
@@ -167,8 +156,8 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
                                         <span className="text-sm font-bold text-slate-500">{pRate}%</span>
                                     </div>
                                     <div className="w-full bg-slate-50 h-2 rounded-full overflow-hidden">
-                                        <div 
-                                            className="bg-indigo-500 h-full rounded-full" 
+                                        <div
+                                            className="bg-indigo-500 h-full rounded-full"
                                             style={{ width: `${pRate}%` }}
                                         />
                                     </div>
@@ -176,30 +165,28 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
                             );
                         })}
                     </div>
-                </div>
+                </Card>
 
-                {/* Status Distribution (New Section) */}
-                <div className="p-8 border border-slate-100 rounded-3xl bg-white shadow-sm h-fit">
+                <Card variant="section" className="h-fit">
                     <div className="flex items-center gap-2 mb-6">
                          <PieChart className="w-5 h-5 text-slate-400" />
                          <h4 className="text-lg font-bold text-slate-900">Task Distribution</h4>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         {statusCounts.map((status: any) => (
-                            <div key={status.id} className="p-4 rounded-2xl bg-slate-50/50 border border-slate-100">
+                            <Card key={status.id} className="!p-4 bg-slate-50/50">
                                 <div className="flex items-center gap-2 mb-1">
                                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: status.colorHex }} />
                                     <span className="text-xs font-bold text-slate-500 uppercase tracking-tight">{status.name}</span>
                                 </div>
                                 <p className="text-2xl font-bold text-slate-900">{status.count}</p>
-                            </div>
+                            </Card>
                         ))}
                     </div>
-                </div>
+                </Card>
             </div>
 
-            {/* Top Contributors (New Section) */}
-            <div className="p-8 border border-slate-100 rounded-3xl bg-white shadow-sm mb-10">
+            <Card variant="section" className="mb-10">
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-2">
                         <Trophy className="w-5 h-5 text-amber-500" />
@@ -225,11 +212,9 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
                         </div>
                     ))}
                 </div>
-            </div>
-            
-            
-            
-            <div className="p-8 border border-slate-100 rounded-3xl bg-white shadow-sm mb-10">
+            </Card>
+
+            <Card variant="section" className="mb-10">
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-2">
                         <Users2 className="w-5 h-5 text-indigo-500" />
@@ -252,18 +237,17 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
                                     </div>
                                 </div>
                                 <span className={`text-xs font-bold ${
-                                    member.workloadPercentage > 80 ? 'text-rose-500' : 
+                                    member.workloadPercentage > 80 ? 'text-rose-500' :
                                     member.workloadPercentage > 50 ? 'text-amber-500' : 'text-emerald-500'
                                 }`}>
                                     {member.workloadPercentage}% Cap
                                 </span>
                             </div>
-                            
-                            {/* Heatmap Bar */}
+
                             <div className="relative w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                                <div 
+                                <div
                                     className={`h-full rounded-full transition-all duration-1000 ease-out ${
-                                        member.workloadPercentage > 80 ? 'bg-rose-500' : 
+                                        member.workloadPercentage > 80 ? 'bg-rose-500' :
                                         member.workloadPercentage > 50 ? 'bg-amber-500' : 'bg-emerald-500'
                                     }`}
                                     style={{ width: `${member.workloadPercentage}%` }}
@@ -272,10 +256,7 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
                         </div>
                     ))}
                 </div>
-            </div>
-            
-            
-            
+            </Card>
         </div>
     );
 }

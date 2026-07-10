@@ -12,6 +12,38 @@ class UpdateUserRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (! $this->has('weekly_data') || ! is_array($this->weekly_data)) {
+            return;
+        }
+
+        $this->merge([
+            'weekly_data' => collect($this->weekly_data)
+                ->map(function (mixed $day): array {
+                    $day = (array) $day;
+
+                    foreach (['shift_start', 'shift_end'] as $key) {
+                        if (! empty($day[$key]) && is_string($day[$key])) {
+                            $day[$key] = substr($day[$key], 0, 5);
+                        }
+                    }
+
+                    if (! array_key_exists('is_rest_day', $day) && array_key_exists('is_rest', $day)) {
+                        $day['is_rest_day'] = $day['is_rest'];
+                    }
+
+                    if (! array_key_exists('is_night_shift', $day) && array_key_exists('is_night', $day)) {
+                        $day['is_night_shift'] = $day['is_night'];
+                    }
+
+                    return $day;
+                })
+                ->values()
+                ->all(),
+        ]);
+    }
+
     public function rules(): array
     {
         $userId = $this->route('user')?->id;
@@ -24,7 +56,6 @@ class UpdateUserRequest extends FormRequest
             'role'     => ['sometimes', 'string', 'exists:roles,name'],
             'start_date' => ['sometimes', 'nullable', 'date'],
 
-            // user rates
             'monthly_rate'      => ['sometimes', 'numeric', 'min:0'],
             'daily_rate'        => ['sometimes', 'numeric', 'min:0'],
             'hourly_rate'       => ['sometimes', 'numeric', 'min:0'],
@@ -32,28 +63,12 @@ class UpdateUserRequest extends FormRequest
             'effective_date'    => ['sometimes', 'date'],
             'is_active'         => ['sometimes', 'boolean'],
 
-            // schedules
-            'weekly_data'           => ['sometimes', 'array', 'size:7'],
-            'weekly_data.*.day_of_week'     => ['required_with:weekly_data', 'integer', 'between:0,6'],
-            'weekly_data.*.shift_start'   => ['required_with:weekly_data', 'date_format:H:i'],
-            'weekly_data.*.shift_end'     => ['required_with:weekly_data', 'date_format:H:i'],
-            'weekly_data.*.is_rest' => ['sometimes', 'boolean'],
-
-            // 'weeklyData'                => ['sometimes', 'array', 'size:7'],
-            // 'weeklyData.*.dayOfWeek'    => ['required_with:weeklyData', 'integer', 'between:0,6'],
-            // 'weeklyData.*.shiftStart'   => ['required_with:weeklyData', 'date_format:H:i'],
-            // 'weeklyData.*.shiftEnd'     => ['required_with:weeklyData', 'date_format:H:i'],
-            // 'weeklyData.*.isRestDay'    => ['sometimes', 'boolean'],
-            // 'weeklyData.*.isNightShift' => ['sometimes', 'boolean'],
-
-
-
-            // 'schedules.*.id'          => ['sometimes', 'exists:schedules,id'],
-            // 'schedules.*.day_of_week'    => ['required_with:schedules', 'integer', 'between:0,6'],
-            // 'schedules.*.shift_start' => ['required_with:schedules', 'date_format:H:i'],
-            // 'schedules.*.shift_end'   => ['required_with:schedules', 'date_format:H:i'],
-            // 'schedules.*.is_rest_day' => ['sometimes', 'boolean'],
-            // 'schedules.*.is_night_shift' => ['sometimes', 'boolean'],
+            'weekly_data'                       => ['sometimes', 'array', 'size:7'],
+            'weekly_data.*.day_of_week'         => ['required_with:weekly_data', 'integer', 'between:0,6'],
+            'weekly_data.*.shift_start'         => ['required_with:weekly_data', 'date_format:H:i'],
+            'weekly_data.*.shift_end'           => ['required_with:weekly_data', 'date_format:H:i'],
+            'weekly_data.*.is_rest_day'         => ['sometimes', 'boolean'],
+            'weekly_data.*.is_night_shift'      => ['sometimes', 'boolean'],
         ];
     }
 }

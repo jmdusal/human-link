@@ -12,6 +12,38 @@ class StoreUserRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (! $this->has('weekly_data') || ! is_array($this->weekly_data)) {
+            return;
+        }
+
+        $this->merge([
+            'weekly_data' => collect($this->weekly_data)
+                ->map(function (mixed $day): array {
+                    $day = (array) $day;
+
+                    foreach (['shift_start', 'shift_end'] as $key) {
+                        if (! empty($day[$key]) && is_string($day[$key])) {
+                            $day[$key] = substr($day[$key], 0, 5);
+                        }
+                    }
+
+                    if (! array_key_exists('is_rest_day', $day) && array_key_exists('is_rest', $day)) {
+                        $day['is_rest_day'] = $day['is_rest'];
+                    }
+
+                    if (! array_key_exists('is_night_shift', $day) && array_key_exists('is_night', $day)) {
+                        $day['is_night_shift'] = $day['is_night'];
+                    }
+
+                    return $day;
+                })
+                ->values()
+                ->all(),
+        ]);
+    }
+
     public function rules(): array
     {
         return [
@@ -30,33 +62,12 @@ class StoreUserRequest extends FormRequest
             'effective_date'    => ['required', 'date'],
             'is_active'         => ['boolean'],
 
-            // schedules
-            // 'startDate'                 => ['required', 'date'],
-            // 'endDate'                   => ['nullable', 'date'],
-            // 'weeklyData'                => ['required', 'array', 'size:7'],
-            // 'weeklyData.*.dayOfWeek'    => ['required', 'integer', 'between:0,6'],
-            // 'weeklyData.*.shiftStart'   => ['required', 'date_format:H:i'],
-            // 'weeklyData.*.shiftEnd'     => ['required', 'date_format:H:i'],
-            // 'weeklyData.*.breakMinutes' => ['nullable', 'integer', 'min:0'],
-            // 'weeklyData.*.isRestDay'    => ['boolean'],
-            // 'weeklyData.*.isNightShift' => ['boolean'],
-            'weekly_data'           => ['required', 'array', 'size:7'],
-            'weekly_data.*.day_of_week'     => ['required', 'integer', 'between:0,6'],
-            'weekly_data.*.shift_start'   => ['required', 'date_format:H:i'],
-            'weekly_data.*.shift_end'     => ['required', 'date_format:H:i'],
-            'weekly_data.*.break'   => ['nullable', 'integer', 'min:0'],
-            'weekly_data.*.is_rest' => ['boolean'],
-            'weekly_data.*.is_night'=> ['boolean'],
-
-            // 'schedules'                 => ['required', 'array', 'min:1'],
-            // 'schedules.*.day_of_week' => ['required', 'integer', 'between:0,6'],
-            // 'schedules.*.start_date'    => ['required_with:schedules', 'date'],
-            // 'schedules.*.end_date'      => ['nullable', 'date'],
-            // 'schedules.*.shift_start'   => ['required', 'date_format:H:i'],
-            // 'schedules.*.shift_end'     => ['required', 'date_format:H:i'],
-            // 'schedules.*.break_minutes' => ['nullable', 'integer', 'min:0'],
-            // 'schedules.*.is_rest_day'   => ['boolean'],
-            // 'schedules.*.is_night_shift'=> ['boolean'],
+            'weekly_data'                       => ['required', 'array', 'size:7'],
+            'weekly_data.*.day_of_week'         => ['required', 'integer', 'between:0,6'],
+            'weekly_data.*.shift_start'         => ['required', 'date_format:H:i'],
+            'weekly_data.*.shift_end'           => ['required', 'date_format:H:i'],
+            'weekly_data.*.is_rest_day'         => ['sometimes', 'boolean'],
+            'weekly_data.*.is_night_shift'      => ['sometimes', 'boolean'],
         ];
     }
 }

@@ -1,7 +1,7 @@
 import type { DropResult } from '@hello-pangea/dnd';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { toast } from 'react-hot-toast';
-import { Kanban, Pencil, Trash2 } from 'lucide-react';
+import { Kanban, Pencil, Plus, Trash2 } from 'lucide-react';
 import Searchbar from '@/components/shared/Searchbar';
 import Button from '@/components/ui/Button';
 import { TaskService } from '@/services/TaskService';
@@ -119,17 +119,16 @@ export default function TaskBoardTab({ data, statuses, searchQuery, setSearchQue
 
                     {can('tasks-create') && (
                         <Button
+                            variant="primary"
+                            icon={Plus}
                             disabled={!activeBoardProjectId}
                             onClick={() => {
-                                // setSelectedTask({
-                                //     projectId: activeBoardProjectId,
-                                // });
                                 setSelectedTask(null);
                                 setIsTaskFormOpen(true);
                             }}
                             className="disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            + New Task
+                            New Task
                         </Button>
                     )}
                 </div>

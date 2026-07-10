@@ -106,6 +106,47 @@ export default function WorkspaceIndex() {
                 </div>
             ),
         }),
+        columnHelper.display({
+            id: 'members',
+            header: 'Members',
+            cell: (info) => {
+                const members = info.row.original.members || [];
+                if (members.length === 0) {
+                    return <span className="text-xs font-medium text-slate-300">—</span>;
+                }
+
+                return (
+                    <div className="flex items-center gap-2">
+                        <div className="flex -space-x-1.5">
+                            {members.slice(0, 4).map((member: any) => (
+                                <div
+                                    key={member.id}
+                                    className="w-7 h-7 rounded-full bg-blue-50 border-2 border-white flex items-center justify-center shrink-0 shadow-sm"
+                                    title={member.name}
+                                >
+                                    <span className="text-[9px] font-bold text-blue-600 uppercase">
+                                        {getInitials(member.name)}
+                                    </span>
+                                </div>
+                            ))}
+                            {members.length > 4 && (
+                                <div
+                                    className="w-7 h-7 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center shrink-0"
+                                    title={`${members.length - 4} more`}
+                                >
+                                    <span className="text-[8px] font-bold text-slate-500">
+                                        +{members.length - 4}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                        <span className="text-[11px] font-medium text-slate-400 tabular-nums">
+                            {members.length}
+                        </span>
+                    </div>
+                );
+            },
+        }),
         columnHelper.accessor('createdAt', {
             header: 'Created',
             cell: (info) => <DateCell date={info.getValue()} />,

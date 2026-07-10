@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Settings, Plus } from 'lucide-react';
 import Searchbar from '@/components/shared/Searchbar';
 import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
 import Pagination from '@/components/shared/ModalTabPagination';
 import { usePageTitle } from '@/hooks/use-title';
 
@@ -60,39 +61,36 @@ export default function SettingsTab({ data, searchQuery, setSearchQuery }: Setti
                 {paginatedStages.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                         {paginatedStages.map((status: any, index: number) => (
-                            <div 
-                                key={status.id || index} 
-                                className="group relative flex flex-col p-6 rounded-[32px] bg-white hover:bg-slate-50/80 transition-all duration-500 ease-out cursor-pointer border border-transparent hover:border-slate-100"
+                            <Card
+                                key={status.id || index}
+                                hover
+                                className="group relative flex flex-col cursor-pointer"
                             >
-                                <div className="absolute inset-0 rounded-[32px] opacity-0 group-hover:opacity-100 transition-opacity duration-500 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.05)] pointer-events-none" />
-                                
-                                <div className="relative">
-                                    <div className="flex justify-between items-center mb-6">
-                                        <div 
-                                            className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm border border-transparent group-hover:border-white"
-                                            style={{ backgroundColor: `${status.colorHex}15` }} 
-                                        >
-                                            <div 
-                                                className="w-3 h-3 rounded-full shadow-sm" 
-                                                style={{ backgroundColor: status.colorHex}} 
-                                            />
-                                        </div>
-                                        
-                                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 rounded-full group-hover:bg-white transition-colors">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                                                Step {status.position + 1}
-                                            </span>
-                                        </div>
+                                <div className="flex justify-between items-center mb-6">
+                                    <div
+                                        className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm border border-transparent group-hover:border-white"
+                                        style={{ backgroundColor: `${status.colorHex}15` }}
+                                    >
+                                        <div
+                                            className="w-3 h-3 rounded-full shadow-sm"
+                                            style={{ backgroundColor: status.colorHex}}
+                                        />
                                     </div>
 
-                                    <h4 className="text-lg font-bold text-slate-900 mb-1 group-hover:translate-x-1 transition-transform duration-300">
-                                        {status.name}
-                                    </h4>
-                                    <p className="text-sm text-slate-400 font-medium leading-relaxed line-clamp-2">
-                                        Stage color is set to {status.colorHex}.
-                                    </p>
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 rounded-full group-hover:bg-white transition-colors">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                                            Step {status.position + 1}
+                                        </span>
+                                    </div>
                                 </div>
+
+                                <h4 className="text-lg font-bold text-slate-900 mb-1 group-hover:translate-x-1 transition-transform duration-300">
+                                    {status.name}
+                                </h4>
+                                <p className="text-sm text-slate-400 font-medium leading-relaxed line-clamp-2">
+                                    Stage color is set to {status.colorHex}.
+                                </p>
 
                                 <div className="relative mt-8 pt-6 flex items-center justify-between border-t border-slate-50 group-hover:border-slate-100 transition-colors">
                                     <div className="flex items-center gap-1.5 text-slate-400">
@@ -103,7 +101,7 @@ export default function SettingsTab({ data, searchQuery, setSearchQuery }: Setti
                                         ID: {status.id}
                                     </span>
                                 </div>
-                            </div>
+                            </Card>
                         ))}
                     </div>
                 ) : (
@@ -113,7 +111,7 @@ export default function SettingsTab({ data, searchQuery, setSearchQuery }: Setti
                 )}
             </div>
 
-            <Pagination 
+            <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
                 itemsPerPage={itemsPerPage}
@@ -122,17 +120,17 @@ export default function SettingsTab({ data, searchQuery, setSearchQuery }: Setti
             />
 
             <div className="mt-20 border-t border-slate-100 pt-10">
-                <div className="p-10 rounded-[40px] bg-red-50/20 border border-dashed border-red-100 flex flex-col md:flex-row items-center justify-between gap-6">
+                <Card className="bg-red-50/20 border-dashed border-red-100 flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="text-center md:text-left">
                         <h4 className="text-xl font-bold text-red-900">Archive Workspace</h4>
                         <p className="text-red-400 text-sm mt-1 font-medium max-w-sm">
                             Permanently remove this workspace and all associated projects. This cannot be undone.
                         </p>
                     </div>
-                    <button className="px-8 py-4 bg-white text-red-600 rounded-3xl text-sm font-bold shadow-sm hover:bg-red-600 hover:text-white transition-all hover:scale-105 active:scale-95">
+                    <Button variant="danger">
                         Delete Workspace
-                    </button>
-                </div>
+                    </Button>
+                </Card>
             </div>
         </div>
     );

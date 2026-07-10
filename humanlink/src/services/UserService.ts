@@ -28,14 +28,22 @@ export const UserService = {
     },
 
     async saveUser(formData: UserFormData, userId?: number): Promise<User> {
+        const normalizeTime = (time: unknown) => {
+            if (typeof time !== 'string' || !time) return '08:00';
+            return time.slice(0, 5);
+        };
+
         const { scheduleStartDate, weeklyData, ...rest } = formData;
         const payload: any = {
             ...rest,
             startDate: scheduleStartDate,
-            weeklyData: weeklyData.map((day: any) => {
-                const { startDate, ...cleanDay } = day;
-                return cleanDay;
-            })
+            weeklyData: weeklyData.map((day: any) => ({
+                dayOfWeek: Number(day.dayOfWeek),
+                shiftStart: normalizeTime(day.shiftStart),
+                shiftEnd: normalizeTime(day.shiftEnd),
+                isRestDay: Boolean(day.isRestDay),
+                isNightShift: Boolean(day.isNightShift),
+            })),
         };
 
         if (userId && !payload.password) {
@@ -45,6 +53,29 @@ export const UserService = {
         const response = userId
             ? await api.put(API_ROUTES.USERS.UPDATE(userId), payload)
             : await api.post(API_ROUTES.USERS.STORE, payload);
+
+        return response.data.data;
+    },
+
+    async updateUserSchedule(
+        userId: number,
+        data: { startDate: string; weeklyData: Array<Record<string, unknown>> }
+    ): Promise<User> {
+        const normalizeTime = (time: unknown) => {
+            if (typeof time !== 'string' || !time) return '08:00';
+            return time.slice(0, 5);
+        };
+
+        const response = await api.put(API_ROUTES.USERS.UPDATE(userId), {
+            startDate: data.startDate,
+            weeklyData: data.weeklyData.map((day: any) => ({
+                dayOfWeek: Number(day.dayOfWeek),
+                shiftStart: normalizeTime(day.shiftStart),
+                shiftEnd: normalizeTime(day.shiftEnd),
+                isRestDay: Boolean(day.isRestDay),
+                isNightShift: Boolean(day.isNightShift),
+            })),
+        });
 
         return response.data.data;
     },

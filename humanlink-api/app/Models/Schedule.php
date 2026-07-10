@@ -90,7 +90,6 @@ class Schedule extends Model
     ];
 
     protected $casts = [
-        'weekly_data' => 'array',
         'start_date' => 'date:Y-m-d',
         'end_date' => 'date:Y-m-d',
     ];
@@ -102,13 +101,45 @@ class Schedule extends Model
 
     public function getWeeklyDataAttribute($value)
     {
-        $data = json_decode($value, true);
-        return collect($data)->map(fn($day) => [
-            'dayOfWeek'    => $day['day_of_week'] ?? null,
-            'shiftStart'   => $day['shift_start'] ?? '08:00',
-            'shiftEnd'     => $day['shift_end'] ?? '17:00',
-            'isRestDay'    => (bool)($day['is_rest_day'] ?? false),
-            'isNightShift' => (bool)($day['is_night_shift'] ?? false),
-        ]);
+        $data = is_string($value) ? json_decode($value, true) : $value;
+
+        if (! is_array($data)) {
+            return collect();
+        }
+
+        return collect($data)->map(function ($day) {
+            $day = (array) $day;
+
+            $shiftStart = (string) ($day['shift_start'] ?? $day['shiftStart'] ?? '08:00');
+            $shiftEnd = (string) ($day['shift_end'] ?? $day['shiftEnd'] ?? '17:00');
+
+            return [
+                'dayOfWeek' => (int) ($day['day_of_week'] ?? $day['dayOfWeek'] ?? 0),
+                'shiftStart' => substr($shiftStart, 0, 5),
+                'shiftEnd' => substr($shiftEnd, 0, 5),
+                'isRestDay' => (bool) ($day['is_rest_day'] ?? $day['isRestDay'] ?? false),
+                'isNightShift' => (bool) ($day['is_night_shift'] ?? $day['isNightShift'] ?? false),
+            ];
+        });
+    }
+
+    public function setWeeklyDataAttribute($value): void
+    {
+        $normalized = collect(is_array($value) ? $value : [])->map(function ($day) {
+            $day = (array) $day;
+
+            $shiftStart = (string) ($day['shift_start'] ?? $day['shiftStart'] ?? '08:00');
+            $shiftEnd = (string) ($day['shift_end'] ?? $day['shiftEnd'] ?? '17:00');
+
+            return [
+                'day_of_week' => (int) ($day['day_of_week'] ?? $day['dayOfWeek'] ?? 0),
+                'shift_start' => substr($shiftStart, 0, 5),
+                'shift_end' => substr($shiftEnd, 0, 5),
+                'is_rest_day' => (bool) ($day['is_rest_day'] ?? $day['isRestDay'] ?? $day['is_rest'] ?? false),
+                'is_night_shift' => (bool) ($day['is_night_shift'] ?? $day['isNightShift'] ?? $day['is_night'] ?? false),
+            ];
+        })->values()->all();
+
+        $this->attributes['weekly_data'] = json_encode($normalized);
     }
 }

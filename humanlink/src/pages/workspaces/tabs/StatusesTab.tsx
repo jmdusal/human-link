@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, ListTodo, Trash2, Pencil } from 'lucide-react';
 import Searchbar from '@/components/shared/Searchbar';
 import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
 import Pagination from '@/components/shared/ModalTabPagination';
 import { usePageTitle } from '@/hooks/use-title';
 import { useAuth } from '@/context/AuthContext';
@@ -98,16 +99,14 @@ export default function StatusesTab({ statuses, data, searchQuery, setSearchQuer
                 {paginatedStages.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-4">
                         {paginatedStages.map((status: Status) => (
-                            <div 
-                                key={`${status.id}-${status.position}`} 
-                                // key={status.id || index} 
+                            <Card
+                                key={`${status.id}-${status.position}`}
+                                hover
                                 onClick={() => {
                                         // if (!canEditInWorkspace) return;
                                     handleEditStatus(status);
                                 }}
-                                className="group relative flex flex-col p-6 rounded-2xl bg-white border border-slate-200/60 
-                                transition-all duration-300 ease-in-out shadow-sm
-                                hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.07)] hover:border-slate-300 hover:-translate-y-1 cursor-pointer"
+                                className="group relative flex flex-col cursor-pointer"
                             >
                                 <div 
                                     className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none" 
@@ -196,7 +195,7 @@ export default function StatusesTab({ statuses, data, searchQuery, setSearchQuer
                                     </button> */}
 
                                 </div>
-                            </div>
+                            </Card>
                         ))}
                     </div>
                 ) : (

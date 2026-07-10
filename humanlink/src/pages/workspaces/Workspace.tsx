@@ -26,7 +26,7 @@ import { StatusService } from '@/services/StatusService';
 
 import { useUsers } from '@/hooks/use-users';
 import { useAuth } from '@/context/AuthContext';
-import { WORKSPACE_TABS, type WorkspaceTab } from '@/constants/tabs';
+import { WORKSPACE_PRIMARY_TABS, WORKSPACE_TABS, type WorkspaceTab } from '@/constants/tabs';
 import { usePageTitle } from '@/hooks/use-title';
 import { useWorkspaces } from '@/hooks/use-workspace';
 import { TaskService } from '@/services/TaskService';
@@ -353,7 +353,7 @@ export default function Workspace() {
         <WorkspaceLayout 
             data={data}
             activeTab={activeTab}
-            tabs={WORKSPACE_TABS}
+            tabs={WORKSPACE_PRIMARY_TABS}
             onTabChange={handleTabChange}
         >
             {activeTab === 'overview' && (
