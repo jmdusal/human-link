@@ -9,13 +9,17 @@ export interface AppNotification {
     read: boolean;
     type?: string | null;
     leaveRequestId?: number | null;
+    payslipId?: number | null;
     createdAt?: string;
 }
 
 export const NotificationService = {
     async list(): Promise<AppNotification[]> {
         const response = await api.get(API_ROUTES.NOTIFICATIONS.LIST);
-        return response.data.data;
+        return response.data.data.map((item: any) => ({
+            ...item,
+            payslipId: item.payslipId ?? item.payslip_id ?? null,
+        }));
     },
 
     async markAsRead(id: string): Promise<void> {

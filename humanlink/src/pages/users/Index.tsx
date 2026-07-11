@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
-import { createColumnHelper } from "@tanstack/react-table";
-import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
+import { createColumnHelper } from '@tanstack/react-table';
+import { Plus, Eye, Pencil, Trash2, ClipboardList } from 'lucide-react';
 import toast from 'react-hot-toast';
 import UserProfile from '@/components/modals/users/UserProfile';
+import EmployeeLifecycleModal from '@/components/modals/users/EmployeeLifecycleModal';
 import Button from '@/components/ui/Button';
-// import UserForm from '@/pages/users/UserForm';
 import UserForm from '@/components/modals/users/UserForm';
 import ModalConfirmation from '@/components/modals/ModalConfirmation';
 import TableActions from '@/components/shared/TableActions';
@@ -22,10 +22,11 @@ export default function UserIndex() {
     const { can } = useAuth();
     const { users, setUsers, loading } = useUsers(true);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
-    
+
     const [openDropdown, setOpenDropdown] = useState<number | null>(null);
     const [isViewOpen, setIsViewOpen] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [isLifecycleOpen, setIsLifecycleOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
@@ -38,82 +39,62 @@ export default function UserIndex() {
         setSelectedUser(user);
         setIsFormOpen(true);
         setOpenDropdown(null);
-    };   
-    
+    };
+
     const handleView = (user: User) => {
         setSelectedUser(user);
         setIsViewOpen(true);
         setOpenDropdown(null);
     };
 
+    const handleLifecycle = (user: User) => {
+        setSelectedUser(user);
+        setIsLifecycleOpen(true);
+        setOpenDropdown(null);
+    };
+
     const handleSuccess = (userData: User) => {
         if (selectedUser) {
-            setUsers(prev => prev.map(user => user.id === userData.id ? userData : user));
+            setUsers((prev) => prev.map((user) => (user.id === userData.id ? userData : user)));
         } else {
-            setUsers(prev => [userData, ...prev]);
+            setUsers((prev) => [userData, ...prev]);
         }
     };
 
     const handleError = (error: any) => {
-        // alert("Something went wrong. Please try again.");
-        console.error("Form Error:", error);
+        console.error('Form Error:', error);
     };
-    
+
     const handleDeleteClick = (user: User) => {
         setSelectedUser(user);
         setIsDeleteModalOpen(true);
         setOpenDropdown(null);
     };
-    
+
     const handleConfirmDelete = async () => {
         if (!selectedUser) return;
         setIsDeleting(true);
-        // const toastId = toast.loading('Processing...');
-        
+
         try {
             await UserService.deleteUser(selectedUser.id);
-            
-            // toast.success(<b>User removed successfully.</b>, { id: toastId });
-            setUsers(prev => prev.filter(u => u.id !== selectedUser.id));
+            setUsers((prev) => prev.filter((u) => u.id !== selectedUser.id));
             toast.success('User removed successfully.');
             setIsDeleteModalOpen(false);
-            
         } catch (err: any) {
-            console.error("Delete Error:", err);
-
-            // const errorMessage = err.response?.data?.message || 'Failed to delete user.';
-            // toast.error(<b>{errorMessage}</b>, { id: toastId });
-            
+            console.error('Delete Error:', err);
         } finally {
             setIsDeleting(false);
             setSelectedUser(null);
         }
-        
-        // toast.success(`User ${selectedUser ? 'updated' : 'created'} successfully!`);
-        // toast.promise(
-        //     api.delete(API_ROUTES.USERS.DELETE(selectedUser.id)),
-        //     {
-        //         loading: 'Processing deletion...',
-        //         success: () => {
-        //             setUsers(prev => prev.filter(u => u.id !== selectedUser.id));
-        //             setIsDeleteModalOpen(false);
-        //             return <b>User removed successfully.</b>;
-        //         },
-        //         error: (err) => {
-        //             console.error(err);
-        //             return <b>Failed to delete user.</b>;
-        //         },
-        //     }
-        // ).finally(() => setIsDeleting(false));
     };
-    
+
     const columns = useMemo(() => [
         columnHelper.accessor('name', {
             header: 'User Identity',
             cell: (info) => (
                 <UserCell
-                    name={info.getValue()} 
-                    email={info.row.original.email} 
+                    name={info.getValue()}
+                    email={info.row.original.email}
                 />
             ),
         }),
@@ -121,8 +102,8 @@ export default function UserIndex() {
             header: 'Roles',
             cell: (info) => {
                 const roles = info.getValue();
-                const roleName = roles?.[0]?.name; 
-                
+                const roleName = roles?.[0]?.name;
+
                 return <RoleBadge roleName={roleName} />;
             },
         }),
@@ -145,33 +126,37 @@ export default function UserIndex() {
             id: 'actions',
             size: 50,
             header: () => <div className="text-right">Actions</div>,
-            cell: (info) => {
-                return (
-                    <TableActions 
-                        actions={[
-                            {
-                                label: 'View',
-                                icon: Eye,
-                                onClick: () => handleView(info.row.original),
-                                show: true
-                            },
-                            { 
-                                label: 'Edit',
-                                icon: Pencil,
-                                onClick: () => handleEdit(info.row.original),
-                                show: can('users-edit') 
-                            },
-                            { 
-                                label: 'Delete',
-                                icon: Trash2,
-                                onClick: () => handleDeleteClick(info.row.original),
-                                variant: 'danger',
-                                show: can('users-delete')
-                            },
-                        ]}
-                    />
-                );
-            },
+            cell: (info) => (
+                <TableActions
+                    actions={[
+                        {
+                            label: 'View',
+                            icon: Eye,
+                            onClick: () => handleView(info.row.original),
+                            show: true,
+                        },
+                        {
+                            label: 'Edit',
+                            icon: Pencil,
+                            onClick: () => handleEdit(info.row.original),
+                            show: can('users-edit'),
+                        },
+                        {
+                            label: 'Lifecycle',
+                            icon: ClipboardList,
+                            onClick: () => handleLifecycle(info.row.original),
+                            show: can('users-edit') || can('users-view'),
+                        },
+                        {
+                            label: 'Delete',
+                            icon: Trash2,
+                            onClick: () => handleDeleteClick(info.row.original),
+                            variant: 'danger',
+                            show: can('users-delete'),
+                        },
+                    ]}
+                />
+            ),
         }),
     ], [openDropdown, can]);
 
@@ -196,32 +181,49 @@ export default function UserIndex() {
                 loading={loading}
                 showSearch={true}
             />
-            
+
             <AnimatePresence>
                 {isFormOpen && (
-                <UserForm
-                    key={selectedUser ? `edit-${selectedUser.id}` : 'create-user'}
-                    isOpen={isFormOpen}
-                    onClose={() => setIsFormOpen(false)}
-                    onSuccess={handleSuccess}
-                    onError={handleError}
-                    selectedUser={selectedUser}
-                />
-            )}
+                    <UserForm
+                        key={selectedUser ? `edit-${selectedUser.id}` : 'create-user'}
+                        isOpen={isFormOpen}
+                        onClose={() => setIsFormOpen(false)}
+                        onSuccess={handleSuccess}
+                        onError={handleError}
+                        selectedUser={selectedUser}
+                    />
+                )}
             </AnimatePresence>
-            
+
             <AnimatePresence>
-               {isViewOpen && (
-                <UserProfile
-                    key="user-profile-modal"
-                    isOpen={isViewOpen}
-                    onClose={() => setIsViewOpen(false)}
-                    title="User Details"
-                    data={selectedUser}
-                />
-            )} 
+                {isViewOpen && (
+                    <UserProfile
+                        key="user-profile-modal"
+                        isOpen={isViewOpen}
+                        onClose={() => setIsViewOpen(false)}
+                        title="User Details"
+                        data={selectedUser}
+                    />
+                )}
             </AnimatePresence>
-            
+
+            <AnimatePresence>
+                {isLifecycleOpen && (
+                    <EmployeeLifecycleModal
+                        isOpen={isLifecycleOpen}
+                        onClose={() => {
+                            setIsLifecycleOpen(false);
+                            setSelectedUser(null);
+                        }}
+                        user={selectedUser}
+                        onUserUpdated={(updated) => {
+                            setUsers((prev) => prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
+                            setSelectedUser(updated);
+                        }}
+                    />
+                )}
+            </AnimatePresence>
+
             <AnimatePresence>
                 {isDeleteModalOpen && (
                     <ModalConfirmation
@@ -233,7 +235,6 @@ export default function UserIndex() {
                         title="Delete User"
                         message={`Are you sure you want to delete ${selectedUser?.name}? This action is permanent.`}
                     />
-                    
                 )}
             </AnimatePresence>
         </div>

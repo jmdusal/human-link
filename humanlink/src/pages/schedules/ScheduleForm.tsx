@@ -1,13 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import ModalForm from '@/components/modals/ModalForm';
 import Input from '@/components/ui/Input';
 import DateInput from '@/components/ui/DateInput';
 import Checkbox from '@/components/ui/Checkbox';
 import Card from '@/components/ui/Card';
+import Select from '@/components/ui/Select';
 import type { Schedule, WeeklyScheduleDay } from '@/types';
 import { DAYS_NAME, createEmptySchedules, getInitials } from '@/utils/userUtils';
-import { UserService } from '@/services/UserService';
+import { ScheduleService } from '@/services/ScheduleService';
+import { useUsers } from '@/hooks/use-users';
 import { getToday } from '@/utils/dateUtils';
 
 interface ScheduleFormProps {
@@ -18,12 +20,31 @@ interface ScheduleFormProps {
 }
 
 export default function ScheduleForm({ isOpen, onClose, onSuccess, schedule }: ScheduleFormProps) {
+    const isCreate = !schedule;
+    const { userOptions } = useUsers(isCreate && isOpen);
+
+    const [userId, setUserId] = useState('');
     const [startDate, setStartDate] = useState(getToday());
     const [weeklyData, setWeeklyData] = useState<WeeklyScheduleDay[]>(createEmptySchedules(getToday()));
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const selectOptions = useMemo(
+        () => userOptions.map((user) => ({
+            label: `${user.name} (${user.email})`,
+            value: String(user.id),
+        })),
+        [userOptions],
+    );
+
     useEffect(() => {
-        if (!schedule) return;
+        if (!isOpen) return;
+
+        if (!schedule) {
+            setUserId('');
+            setStartDate(getToday());
+            setWeeklyData(createEmptySchedules(getToday()));
+            return;
+        }
 
         const nextStart = schedule.startDate || getToday();
         const nextWeekly = schedule.weeklyData?.length
@@ -38,6 +59,7 @@ export default function ScheduleForm({ isOpen, onClose, onSuccess, schedule }: S
                 .sort((a, b) => a.dayOfWeek - b.dayOfWeek)
             : createEmptySchedules(nextStart);
 
+        setUserId(String(schedule.userId ?? schedule.user?.id ?? ''));
         setStartDate(nextStart);
         setWeeklyData(nextWeekly);
     }, [schedule, isOpen]);
@@ -52,54 +74,73 @@ export default function ScheduleForm({ isOpen, onClose, onSuccess, schedule }: S
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const userId = schedule?.userId ?? schedule?.user?.id;
-        if (!userId) {
-            toast.error('Unable to update schedule: missing user.');
+
+        if (isCreate && !userId) {
+            toast.error('Select an employee for this schedule.');
             return;
         }
 
         setIsSubmitting(true);
         try {
-            await UserService.updateUserSchedule(userId, {
-                startDate,
-                weeklyData: weeklyData as unknown as Array<Record<string, unknown>>,
-            });
-            toast.success('Schedule updated successfully.');
+            if (isCreate) {
+                await ScheduleService.create({
+                    userId: Number(userId),
+                    startDate,
+                    weeklyData,
+                });
+                toast.success('Schedule created successfully.');
+            } else if (schedule) {
+                await ScheduleService.update(schedule.id, {
+                    startDate,
+                    weeklyData,
+                });
+                toast.success('Schedule updated successfully.');
+            }
             onSuccess();
             onClose();
         } catch (error: any) {
             const message = error?.response?.data?.message
-                || error?.response?.data?.errors
-                || 'Failed to update schedule.';
-            toast.error(typeof message === 'string' ? message : 'Failed to update schedule.');
+                || error?.response?.data?.errors?.user_id?.[0]
+                || 'Failed to save schedule.';
+            toast.error(typeof message === 'string' ? message : 'Failed to save schedule.');
         } finally {
             setIsSubmitting(false);
         }
     };
-
-    if (!schedule) return null;
 
     return (
         <ModalForm
             isOpen={isOpen}
             onClose={onClose}
             onSubmit={onSubmit}
-            title={`Edit Schedule`}
-            description={schedule.user?.name || 'Weekly shift pattern'}
-            isUpdate
+            title={isCreate ? 'Create Schedule' : 'Edit Schedule'}
+            description={isCreate ? 'Assign a weekly shift pattern' : (schedule?.user?.name || 'Weekly shift pattern')}
+            isUpdate={!isCreate}
             loading={isSubmitting}
             size="4xl"
         >
             <div className="col-span-1 md:col-span-2 space-y-6">
-                <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center text-sm font-bold uppercase">
-                        {getInitials(schedule.user?.name || '?')}
-                    </div>
+                {isCreate ? (
                     <div>
-                        <p className="text-base font-semibold text-slate-900">{schedule.user?.name}</p>
-                        <p className="text-sm text-slate-400 font-medium">Update weekly shifts and rest days</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Employee</p>
+                        <Select
+                            options={selectOptions}
+                            value={userId}
+                            onChange={setUserId}
+                            placeholder="Select employee"
+                        />
                     </div>
-                </div>
+                ) : (
+                    <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center text-sm font-bold uppercase">
+                            {getInitials(schedule?.user?.name || '?')}
+                        </div>
+                        <div>
+                            <p className="text-base font-semibold text-slate-900">{schedule?.user?.name}</p>
+                            <p className="text-sm text-slate-400 font-medium">Update weekly shifts and rest days</p>
+                        </div>
+                    </div>
+                )}
 
                 <Card className="!p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-slate-50/80">
                     <div>

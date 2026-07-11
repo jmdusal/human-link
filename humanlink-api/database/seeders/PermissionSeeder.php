@@ -24,13 +24,15 @@ class PermissionSeeder extends Seeder
             'activity-logs',
             'schedules',
             'attendances',
+            'attendance-disputes',
             'payrolls',
             'payroll-deductions',
             'leave-calendar',
+            'reports',
         ];
 
         collect($models)->each(function ($model) {
-            if (in_array($model, ['activity-logs', 'schedules', 'leaves', 'leave-calendar'], true)) {
+            if (in_array($model, ['activity-logs', 'leaves', 'leave-calendar', 'reports'], true)) {
                 Permission::updateOrCreate(['name' => "{$model}-view"]);
                 return;
             }

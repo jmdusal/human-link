@@ -147,6 +147,11 @@ export default function PayrollIndex() {
         setIsViewOpen(true);
     };
 
+    const handlePayslipUpdated = (updated: Payslip) => {
+        setSelectedPayslip(updated);
+        setPayslips((prev) => prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
+    };
+
     const handleDeleteClick = (payslip: Payslip) => {
         setSelectedPayslip(payslip);
         setIsDeleteOpen(true);
@@ -339,6 +344,7 @@ export default function PayrollIndex() {
                             setSelectedPayslip(null);
                         }}
                         payslip={selectedPayslip}
+                        onPayslipUpdated={handlePayslipUpdated}
                     />
                 )}
             </AnimatePresence>

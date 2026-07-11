@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -79,6 +80,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereUserId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereWithholdingTax($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereYear($value)
+ * @property string|null $notes
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\PayslipAdjustment> $adjustments
+ * @property-read int|null $adjustments_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereNotes($value)
  * @mixin \Eloquent
  */
 /**
@@ -153,6 +158,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereUserId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereWithholdingTax($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereYear($value)
+ * @property string|null $notes
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\PayslipAdjustment> $adjustments
+ * @property-read int|null $adjustments_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereNotes($value)
  * @mixin \Eloquent
  */
 class Payslip extends Model
@@ -186,6 +195,7 @@ class Payslip extends Model
         'total_deductions',
         'net_pay',
         'currency',
+        'notes',
         'generated_by',
         'generated_at',
     ];
@@ -231,6 +241,11 @@ class Payslip extends Model
     public function generator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'generated_by');
+    }
+
+    public function adjustments(): HasMany
+    {
+        return $this->hasMany(PayslipAdjustment::class);
     }
 
     public function isThirteenthMonth(): bool

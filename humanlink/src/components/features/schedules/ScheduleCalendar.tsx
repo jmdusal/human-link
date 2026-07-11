@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Moon } from 'lucide-react';
+import { Moon, Trash2 } from 'lucide-react';
 import type { Schedule } from '@/types';
 import { getInitials } from '@/utils/userUtils';
 import Card from '@/components/ui/Card';
@@ -11,6 +11,7 @@ interface Props {
     scrollToDay?: number | 'start';
     canEdit?: boolean;
     onEditSchedule?: (schedule: Schedule) => void;
+    onDeleteSchedule?: (schedule: Schedule) => void;
 }
 
 const formatTime = (time: string) => {
@@ -30,6 +31,7 @@ export default function ScheduleCalendar({
     scrollToDay = 'start',
     canEdit = false,
     onEditSchedule,
+    onDeleteSchedule,
 }: Props) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const year = currentDate.getFullYear();
@@ -144,23 +146,35 @@ export default function ScheduleCalendar({
                                 <tr key={schedule.id} className="group">
                                     <td className="sticky left-0 z-20 bg-white group-hover:bg-slate-50 border-b border-r border-slate-100 px-5 py-3.5 transition-colors shadow-[4px_0_12px_-8px_rgba(15,23,42,0.12)]">
                                         {canEdit ? (
-                                            <button
-                                                type="button"
-                                                onClick={() => onEditSchedule?.(schedule)}
-                                                className="flex items-center gap-3 w-full text-left rounded-xl hover:bg-blue-50/70 px-2 py-1.5 -mx-2 transition-colors"
-                                            >
-                                                <div className="h-10 w-10 shrink-0 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-[11px] uppercase shadow-sm">
-                                                    {getInitials(schedule.user?.name || '?')}
-                                                </div>
-                                                <div className="flex flex-col min-w-0">
-                                                    <span className="text-sm font-semibold text-slate-800 truncate">
-                                                        {schedule.user?.name}
-                                                    </span>
-                                                    <span className="text-[11px] text-slate-400 font-medium">
-                                                        Click to edit schedule
-                                                    </span>
-                                                </div>
-                                            </button>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onEditSchedule?.(schedule)}
+                                                    className="flex items-center gap-3 flex-1 text-left rounded-xl hover:bg-blue-50/70 px-2 py-1.5 -mx-2 transition-colors"
+                                                >
+                                                    <div className="h-10 w-10 shrink-0 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-[11px] uppercase shadow-sm">
+                                                        {getInitials(schedule.user?.name || '?')}
+                                                    </div>
+                                                    <div className="flex flex-col min-w-0">
+                                                        <span className="text-sm font-semibold text-slate-800 truncate">
+                                                            {schedule.user?.name}
+                                                        </span>
+                                                        <span className="text-[11px] text-slate-400 font-medium">
+                                                            Click to edit schedule
+                                                        </span>
+                                                    </div>
+                                                </button>
+                                                {onDeleteSchedule && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onDeleteSchedule(schedule)}
+                                                        className="p-2 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                                                        aria-label="Delete schedule"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
                                         ) : (
                                             <div className="flex items-center gap-3 px-2 py-1.5 -mx-2">
                                                 <div className="h-10 w-10 shrink-0 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-[11px] uppercase shadow-sm">

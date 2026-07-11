@@ -28,6 +28,27 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\AttendanceBreak> $breaks
  * @property-read int|null $breaks_count
  * @property-read \App\Models\User $user
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\AttendanceDispute> $disputes
+ * @property-read int|null $disputes_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereBreakMs($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereDate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereEndedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereLateMs($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereOvertimeMs($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereRequiredMs($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereScheduledEnd($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereScheduledStart($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereStartedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereTotalMs($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereUndertimeMs($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereUserId($value)
  * @mixin \Eloquent
  */
 class Attendance extends Model
@@ -71,5 +92,10 @@ class Attendance extends Model
     public function breaks(): HasMany
     {
         return $this->hasMany(AttendanceBreak::class);
+    }
+
+    public function disputes(): HasMany
+    {
+        return $this->hasMany(AttendanceDispute::class);
     }
 }

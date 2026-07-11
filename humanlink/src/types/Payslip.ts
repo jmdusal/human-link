@@ -1,3 +1,5 @@
+import type { AttendanceBreakdownRow, PayslipAdjustment } from '@/types/PayslipAdjustment';
+
 export interface PayslipUser {
     id: number;
     name: string;
@@ -37,6 +39,7 @@ export interface Payslip {
     otherDeductions?: string | number;
     totalDeductions?: string | number;
     netPay?: string | number;
+    notes?: string | null;
     currency: string;
     generatedBy: number | null;
     generatedAt: string | null;
@@ -44,6 +47,8 @@ export interface Payslip {
     updatedAt: string;
     user?: PayslipUser;
     generator?: PayslipUser | null;
+    adjustments?: PayslipAdjustment[];
+    attendanceBreakdown?: AttendanceBreakdownRow[];
 }
 
 export interface PayrollMeta {

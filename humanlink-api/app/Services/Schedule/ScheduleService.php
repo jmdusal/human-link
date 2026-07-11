@@ -9,6 +9,8 @@ use App\Models\Schedule;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ScheduleService implements ScheduleServiceInterface
 {
@@ -21,7 +23,7 @@ class ScheduleService implements ScheduleServiceInterface
         $end ??= now()->endOfMonth()->toDateString();
 
         $query = Schedule::query()
-            ->with('user:id,name')
+            ->with('user:id,name,email')
             ->where(function ($q) use ($start, $end): void {
                 $q->where('start_date', '<=', $end)
                     ->where(function ($query) use ($start): void {
@@ -45,6 +47,95 @@ class ScheduleService implements ScheduleServiceInterface
         ];
     }
 
+    public function show(Schedule $schedule): Schedule
+    {
+        $this->authorizeScheduleAccess($schedule);
+
+        return $schedule->load('user:id,name,email');
+    }
+
+    public function create(array $data): Schedule
+    {
+        $this->assertCanManage();
+
+        $userId = (int) $data['user_id'];
+
+        return DB::transaction(function () use ($data, $userId): Schedule {
+            $existing = Schedule::query()
+                ->where('user_id', $userId)
+                ->whereNull('end_date')
+                ->first();
+
+            if ($existing) {
+                throw ValidationException::withMessages([
+                    'user_id' => ['This user already has an active schedule. Edit it instead.'],
+                ]);
+            }
+
+            $schedule = Schedule::query()->create([
+                'user_id' => $userId,
+                'weekly_data' => $data['weekly_data'],
+                'start_date' => $data['start_date'],
+                'end_date' => $data['end_date'] ?? null,
+                'break_minutes' => $data['break_minutes'] ?? 60,
+            ]);
+
+            return $schedule->load('user:id,name,email');
+        });
+    }
+
+    public function update(Schedule $schedule, array $data): Schedule
+    {
+        $this->assertCanManage();
+
+        $payload = [];
+
+        if (array_key_exists('weekly_data', $data)) {
+            $payload['weekly_data'] = $data['weekly_data'];
+        }
+
+        if (array_key_exists('start_date', $data)) {
+            $payload['start_date'] = $data['start_date'];
+        }
+
+        if (array_key_exists('end_date', $data)) {
+            $payload['end_date'] = $data['end_date'];
+        }
+
+        if (array_key_exists('break_minutes', $data)) {
+            $payload['break_minutes'] = $data['break_minutes'];
+        }
+
+        $schedule->update($payload);
+
+        return $schedule->fresh()->load('user:id,name,email');
+    }
+
+    public function delete(Schedule $schedule): void
+    {
+        $this->assertCanManage();
+
+        $schedule->delete();
+    }
+
+    protected function authorizeScheduleAccess(Schedule $schedule): void
+    {
+        if ($this->canManageSchedules()) {
+            return;
+        }
+
+        if ((int) $schedule->user_id !== (int) Auth::id()) {
+            abort(403, 'You are not allowed to view this schedule.');
+        }
+    }
+
+    protected function assertCanManage(): void
+    {
+        if (! $this->canManageSchedules()) {
+            abort(403, 'You are not allowed to manage schedules.');
+        }
+    }
+
     protected function canManageSchedules(?User $user = null): bool
     {
         $user ??= Auth::user();
@@ -55,6 +146,8 @@ class ScheduleService implements ScheduleServiceInterface
 
         return $user->hasRole('super-admin')
             || $user->hasRole('hr-manager')
-            || $user->can('users-edit');
+            || $user->can('users-edit')
+            || $user->can('schedules-edit')
+            || $user->can('schedules-create');
     }
 }

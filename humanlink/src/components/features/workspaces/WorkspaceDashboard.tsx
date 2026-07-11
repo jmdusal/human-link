@@ -189,9 +189,9 @@ export default function WorkspaceDashboardModal({ isOpen, onClose, data }: Works
             onTabChange={handleTabChange}
             // headerActions={<CloseButton onClose={onClose} />}
         >
-            {activeTab === 'overview' && <OverviewTab 
-                projects={projects}
-            />}
+            {activeTab === 'overview' && (
+                <OverviewTab workspace={data} projects={projects} />
+            )}
 
             {activeTab === 'projects' && (
                 <ProjectsTab

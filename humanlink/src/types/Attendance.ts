@@ -44,6 +44,7 @@ export interface AttendanceScheduleMeta {
     requiredMs: number;
     remainingMs: number;
     canEnd: boolean;
+    canStop?: boolean;
 }
 
 export interface AttendanceTimerState {
@@ -54,4 +55,5 @@ export interface AttendanceTimerState {
     serverTime?: string;
     attendance: Attendance | null;
     schedule?: AttendanceScheduleMeta | null;
+    canContinue?: boolean;
 }

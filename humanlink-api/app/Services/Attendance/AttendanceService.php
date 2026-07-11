@@ -77,7 +77,7 @@ class AttendanceService implements AttendanceServiceInterface
 
             if ($attendance && $attendance->status === 'completed') {
                 throw ValidationException::withMessages([
-                    'timer' => ['Attendance for today is already ended.'],
+                    'timer' => ['Attendance for today was stopped. Use Continue to keep tracking time.'],
                 ]);
             }
 
@@ -234,13 +234,6 @@ class AttendanceService implements AttendanceServiceInterface
             }
 
             $scheduleMeta = $this->scheduleMetaForUser($user, $elapsed);
-
-            if (! $scheduleMeta['can_end']) {
-                throw ValidationException::withMessages([
-                    'timer' => ['You can end only after completing your required schedule hours.'],
-                ]);
-            }
-
             $attendance = $this->todayAttendance($user);
             $now = now();
 
@@ -283,6 +276,60 @@ class AttendanceService implements AttendanceServiceInterface
             }
 
             return $this->broadcastAndReturn($user->fresh(), $attendance?->fresh());
+        });
+    }
+
+    public function continueAttendance(): array
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        return DB::transaction(function () use ($user): array {
+            $user = User::query()->lockForUpdate()->findOrFail($user->id);
+            $this->syncDayBoundary($user);
+
+            if ($user->timer_status !== 'offline') {
+                throw ValidationException::withMessages([
+                    'timer' => ['Timer is already active. Use resume if paused.'],
+                ]);
+            }
+
+            $today = now()->toDateString();
+            $attendance = $this->todayAttendance($user);
+
+            if (! $attendance || $attendance->status !== 'completed') {
+                throw ValidationException::withMessages([
+                    'timer' => ['No stopped attendance for today to continue. Previous days cannot be continued.'],
+                ]);
+            }
+
+            if ($attendance->date->toDateString() !== $today) {
+                throw ValidationException::withMessages([
+                    'timer' => ['You can only continue attendance on the same shift day you stopped. Start a new timer for today instead.'],
+                ]);
+            }
+
+            $now = now();
+            $accumulated = (int) $attendance->total_ms;
+            $scheduleMeta = $this->scheduleMetaForUser($user, $accumulated);
+
+            $attendance->update([
+                'status' => 'working',
+                'ended_at' => null,
+                'undertime_ms' => 0,
+                'overtime_ms' => 0,
+                'required_ms' => $scheduleMeta['required_ms'],
+                'scheduled_start' => $scheduleMeta['shift_start'],
+                'scheduled_end' => $scheduleMeta['shift_end'],
+            ]);
+
+            $user->update([
+                'timer_status' => 'working',
+                'timer_started_at' => $now,
+                'timer_accumulated_ms' => $accumulated,
+            ]);
+
+            return $this->broadcastAndReturn($user->fresh(), $attendance->fresh());
         });
     }
 
@@ -330,6 +377,7 @@ class AttendanceService implements AttendanceServiceInterface
         $today = now()->toDateString();
         $todayAttendance = $this->todayAttendance($user);
 
+        // New calendar day: leftover stop/continue state from yesterday must not carry over.
         if ($user->timer_status === 'offline' && ! $todayAttendance) {
             if ($user->timer_started_at || (int) $user->timer_accumulated_ms > 0) {
                 $user->update([
@@ -458,6 +506,7 @@ class AttendanceService implements AttendanceServiceInterface
         $remainingMs = max(0, $requiredMs - $elapsedMs);
         $isActive = in_array($user->timer_status, ['working', 'paused'], true);
         $canEnd = $isActive && $requiredMs > 0 && $elapsedMs >= $requiredMs;
+        $canStop = $isActive;
 
         return [
             'shift_start' => $shiftStart,
@@ -467,6 +516,7 @@ class AttendanceService implements AttendanceServiceInterface
             'required_ms' => $requiredMs,
             'remaining_ms' => $remainingMs,
             'can_end' => $canEnd,
+            'can_stop' => $canStop,
         ];
     }
 
@@ -508,6 +558,13 @@ class AttendanceService implements AttendanceServiceInterface
         }
 
         $schedule = $this->scheduleMetaForUser($user, $elapsed);
+        $today = now()->toDateString();
+        $isSameShiftDay = $attendance
+            && $attendance->date->toDateString() === $today;
+        // Continue is same calendar/shift day only — never after the date rolls over.
+        $canContinue = $user->timer_status === 'offline'
+            && $isSameShiftDay
+            && $attendance->status === 'completed';
 
         return [
             'timer_status' => $user->timer_status,
@@ -515,10 +572,13 @@ class AttendanceService implements AttendanceServiceInterface
                 ? Carbon::parse($user->timer_started_at)->toIso8601String()
                 : null,
             'timer_accumulated_ms' => (int) $user->timer_accumulated_ms,
-            'elapsed_ms' => $elapsed,
+            'elapsed_ms' => $isSameShiftDay || $user->timer_status !== 'offline'
+                ? $elapsed
+                : 0,
             'server_time' => now()->toIso8601String(),
-            'attendance' => $attendance?->loadMissing('breaks'),
+            'attendance' => $isSameShiftDay ? $attendance?->loadMissing('breaks') : null,
             'schedule' => $schedule,
+            'can_continue' => $canContinue,
         ];
     }
 

@@ -357,7 +357,7 @@ export default function Workspace() {
             onTabChange={handleTabChange}
         >
             {activeTab === 'overview' && (
-                <OverviewTab projects={projects} />
+                <OverviewTab workspace={data} projects={projects} />
             )}
             
             {activeTab === 'projects' && (

@@ -59,8 +59,16 @@ class AttendanceController extends Controller
     public function end(): JsonResponse
     {
         return response()->json([
-            'message' => 'Attendance ended for today.',
+            'message' => 'Attendance stopped for today.',
             'data' => $this->attendanceService->end(),
+        ]);
+    }
+
+    public function continueAttendance(): JsonResponse
+    {
+        return response()->json([
+            'message' => 'Attendance continued for today.',
+            'data' => $this->attendanceService->continueAttendance(),
         ]);
     }
 }

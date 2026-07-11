@@ -1,21 +1,50 @@
 import { usePageTitle } from '@/hooks/use-title';
 import {
     FolderKanban, Kanban, Users, Activity,
-    Clock, CheckCircle2, AlertCircle,
-    TrendingUp
+    CheckCircle2, AlertCircle,
 } from 'lucide-react';
-import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 
 interface OverviewTabProps {
+    workspace: any;
     projects: any[];
 }
 
-export default function OverviewTab({ projects }: OverviewTabProps) {
-    usePageTitle("Overview")
+export default function OverviewTab({ workspace, projects }: OverviewTabProps) {
+    usePageTitle('Overview');
 
-    const activeProjects = projects.filter(p => p.status === 'Active' || !p.status).length;
-    const completedProjects = projects.filter(p => p.status === 'Completed').length;
+    const members = workspace?.members || [];
+    const statuses = workspace?.taskStatuses || workspace?.task_statuses || [];
+    const doneStatus = statuses.find((s: any) =>
+        String(s.name || '').toLowerCase() === 'done'
+        || String(s.name || '').toLowerCase() === 'completed'
+    );
+    const doneStatusId = doneStatus?.id;
+
+    const totalTasks = projects.reduce((acc: number, p: any) => acc + (p.tasks?.length || 0), 0);
+    const completedTasks = projects.reduce((acc: number, p: any) => {
+        const doneInProject = p.tasks?.filter((t: any) =>
+            t.statusId === doneStatusId || t.status_id === doneStatusId
+        ).length || 0;
+        return acc + doneInProject;
+    }, 0);
+    const activeTasks = Math.max(totalTasks - completedTasks, 0);
+    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+    const activeProjects = projects.filter((p) => {
+        const status = String(p.status || '').toLowerCase();
+        return status === 'active' || status === '' || !p.status;
+    }).length;
+    const completedProjects = projects.filter((p) =>
+        String(p.status || '').toLowerCase() === 'completed'
+    ).length;
+
+    const statusBars = [
+        { label: 'Active', count: activeProjects, color: 'bg-blue-500' },
+        { label: 'Completed', count: completedProjects, color: 'bg-emerald-400' },
+        { label: 'Other', count: Math.max(projects.length - activeProjects - completedProjects, 0), color: 'bg-slate-200' },
+    ];
+    const maxBar = Math.max(...statusBars.map((item) => item.count), 1);
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 h-full flex flex-col space-y-6 pb-10">
@@ -25,10 +54,10 @@ export default function OverviewTab({ projects }: OverviewTabProps) {
                         <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
                             Workspace Intelligence
                         </h3>
-                        <p className="text-sm text-slate-500 font-medium">Real-time performance metrics</p>
+                        <p className="text-sm text-slate-500 font-medium">Live project and task metrics</p>
                     </div>
-                    <div className="px-3 py-1 bg-blue-50 rounded-lg text-[10px] font-bold text-blue-600 uppercase tracking-tight">
-                        v2.4 Live
+                    <div className="px-3 py-1 bg-emerald-50 rounded-lg text-[10px] font-bold text-emerald-600 uppercase tracking-tight">
+                        Live
                     </div>
                 </div>
 
@@ -38,28 +67,28 @@ export default function OverviewTab({ projects }: OverviewTabProps) {
                         value={projects.length.toString()}
                         icon={FolderKanban}
                         color="bg-blue-50 text-blue-600"
-                        trend="+2 this month"
+                        trend={`${activeProjects} active`}
                     />
                     <StatCard
                         label="Active Tasks"
-                        value="148"
+                        value={String(activeTasks)}
                         icon={Kanban}
                         color="bg-emerald-50 text-emerald-600"
-                        trend="84% completion"
+                        trend={`${completionRate}% complete`}
                     />
                     <StatCard
-                        label="Team Velocity"
-                        value="8.2"
-                        icon={TrendingUp}
-                        color="bg-purple-50 text-purple-600"
-                        trend="High productivity"
+                        label="Team Members"
+                        value={String(members.length)}
+                        icon={Users}
+                        color="bg-indigo-50 text-indigo-600"
+                        trend="In workspace"
                     />
                     <StatCard
-                        label="System Health"
-                        value="100%"
+                        label="Completion"
+                        value={`${completionRate}%`}
                         icon={Activity}
                         color="bg-orange-50 text-orange-600"
-                        trend="Zero downtime"
+                        trend={`${completedTasks}/${totalTasks} tasks`}
                     />
                 </div>
             </Card>
@@ -73,98 +102,72 @@ export default function OverviewTab({ projects }: OverviewTabProps) {
 
                     <div className="space-y-6">
                         <div className="flex items-end gap-2 h-32">
-                            <div className="flex-1 bg-blue-500 rounded-t-xl transition-all duration-1000" style={{ height: '100%' }} />
-                            <div className="flex-1 bg-emerald-400 rounded-t-xl transition-all duration-1000" style={{ height: '65%' }} />
-                            <div className="flex-1 bg-amber-400 rounded-t-xl transition-all duration-1000" style={{ height: '30%' }} />
-                            <div className="flex-1 bg-slate-200 rounded-t-xl transition-all duration-1000" style={{ height: '45%' }} />
+                            {statusBars.map((item) => (
+                                <div
+                                    key={item.label}
+                                    className={`flex-1 ${item.color} rounded-t-xl transition-all duration-1000`}
+                                    style={{ height: `${Math.max((item.count / maxBar) * 100, item.count > 0 ? 12 : 4)}%` }}
+                                    title={`${item.label}: ${item.count}`}
+                                />
+                            ))}
                         </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-slate-50">
-                            <LegendItem label="Active" value={activeProjects} color="bg-blue-500" />
-                            <LegendItem label="Completed" value={completedProjects} color="bg-emerald-400" />
-                            <LegendItem label="On Hold" value="2" color="bg-amber-400" />
-                            <LegendItem label="Planning" value="5" color="bg-slate-300" />
+                        <div className="grid grid-cols-3 gap-3">
+                            {statusBars.map((item) => (
+                                <div key={item.label} className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{item.label}</p>
+                                    <p className="text-lg font-black text-slate-800">{item.count}</p>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </Card>
 
                 <Card variant="section">
-                    <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2 text-sm">
-                        <Clock size={16} className="text-blue-600" />
+                    <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <AlertCircle size={18} className="text-blue-500" />
                         Quick Insights
                     </h3>
-                    <div className="space-y-6">
-                        <InsightRow
-                            title="Deadline Approaching"
-                            desc="Project 'Alpha' due in 2 days"
-                            icon={<AlertCircle size={14} />}
-                            type="warning"
-                        />
-                        <InsightRow
-                            title="New Team Member"
-                            desc="Sarah joined 'Nexus UI'"
-                            icon={<Users size={14} />}
-                            type="info"
-                        />
-                        <InsightRow
-                            title="Milestone Reached"
-                            desc="Database migration 100%"
-                            icon={<CheckCircle2 size={14} />}
-                            type="success"
-                        />
-                    </div>
-
-                    <Button variant="primary" className="w-full mt-10 justify-center">
-                        View All Activity
-                    </Button>
+                    <ul className="space-y-3 text-sm text-slate-600">
+                        <li className="flex justify-between gap-3 border-b border-slate-100 pb-2">
+                            <span>Completed projects</span>
+                            <span className="font-bold text-slate-800">{completedProjects}</span>
+                        </li>
+                        <li className="flex justify-between gap-3 border-b border-slate-100 pb-2">
+                            <span>Open tasks</span>
+                            <span className="font-bold text-slate-800">{activeTasks}</span>
+                        </li>
+                        <li className="flex justify-between gap-3">
+                            <span>Done status</span>
+                            <span className="font-bold text-slate-800">{doneStatus?.name || '—'}</span>
+                        </li>
+                    </ul>
                 </Card>
             </div>
         </div>
     );
 }
 
-function StatCard({ label, value, icon: Icon, color, trend }: any) {
+function StatCard({
+    label,
+    value,
+    icon: Icon,
+    color,
+    trend,
+}: {
+    label: string;
+    value: string;
+    icon: any;
+    color: string;
+    trend: string;
+}) {
     return (
-        <Card hover className="group !p-5">
-            <div className={`w-10 h-10 rounded-lg ${color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                <Icon size={20} />
+        <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${color}`}>
+                <Icon size={18} />
             </div>
-            <p className="text-3xl font-extrabold text-slate-900 tracking-tight">{value}</p>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-tight mt-1">{label}</p>
-            <div className="mt-4 pt-3 border-t border-slate-100">
-                <span className="text-[11px] font-medium text-slate-500">{trend}</span>
-            </div>
-        </Card>
-    );
-}
-
-function LegendItem({ label, value, color }: any) {
-    return (
-        <div className="flex flex-col">
-            <div className="flex items-center gap-2 mb-1">
-                <div className={`w-2 h-2 rounded-full ${color}`} />
-                <span className="text-[10px] font-bold text-slate-400 uppercase">{label}</span>
-            </div>
-            <span className="text-lg font-bold text-slate-800">{value}</span>
-        </div>
-    );
-}
-
-function InsightRow({ title, desc, icon, type }: any) {
-    const colors = {
-        warning: 'text-amber-500',
-        success: 'text-emerald-500',
-        info: 'text-blue-600',
-    };
-    return (
-        <div className="flex gap-4">
-            <div className={`mt-1 ${colors[type as keyof typeof colors]}`}>
-                {icon}
-            </div>
-            <div>
-                <p className="text-xs font-bold text-slate-900 tracking-tight">{title}</p>
-                <p className="text-[11px] text-slate-400 font-medium">{desc}</p>
-            </div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
+            <p className="text-2xl font-black text-slate-900 mt-1">{value}</p>
+            <p className="text-[11px] text-slate-400 mt-1 font-medium">{trend}</p>
         </div>
     );
 }

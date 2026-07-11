@@ -1,6 +1,9 @@
+import { useMemo, useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { Pause, Play, Square, TimerReset } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import ModalConfirmation from '@/components/modals/ModalConfirmation';
 import type { AttendanceTimerState } from '@/types';
 
 interface Props {
@@ -8,6 +11,8 @@ interface Props {
     displayMs: number;
     remainingMs: number;
     canEnd: boolean;
+    canStop: boolean;
+    canContinue: boolean;
     isCompletedToday?: boolean;
     loading?: boolean;
     actionLoading?: boolean;
@@ -15,6 +20,7 @@ interface Props {
     onPause: () => Promise<unknown>;
     onResume: () => Promise<unknown>;
     onEnd: () => Promise<unknown>;
+    onContinue: () => Promise<unknown>;
 }
 
 function formatClock(ms: number): string {
@@ -53,6 +59,8 @@ export default function MyAttendanceTimer({
     displayMs,
     remainingMs,
     canEnd,
+    canStop,
+    canContinue,
     isCompletedToday,
     loading,
     actionLoading,
@@ -60,11 +68,39 @@ export default function MyAttendanceTimer({
     onPause,
     onResume,
     onEnd,
+    onContinue,
 }: Props) {
+    const [isStopConfirmOpen, setIsStopConfirmOpen] = useState(false);
+    const [isStopping, setIsStopping] = useState(false);
+
     const status = timer.timerStatus;
     const schedule = timer.schedule;
     const requiredMs = schedule?.requiredMs ?? 0;
     const progress = requiredMs > 0 ? Math.min(100, (displayMs / requiredMs) * 100) : 0;
+    const isEarlyStop = requiredMs > 0 && displayMs < requiredMs;
+
+    const stopConfirmMessage = useMemo(() => {
+        const worked = formatHoursLabel(displayMs);
+        const required = formatHoursLabel(requiredMs);
+
+        if (isEarlyStop) {
+            return `You've only worked ${worked} so far (required: ${required}). Stopping early will end attendance for this shift day. If this was accidental, you can continue today only — not tomorrow. Are you sure you want to stop?`;
+        }
+
+        return `You've worked ${worked} today. Stop attendance for this shift day? If you stop by mistake, you can continue today only — not on the next day.`;
+    }, [displayMs, requiredMs, isEarlyStop]);
+
+    const handleConfirmStop = async () => {
+        setIsStopping(true);
+        try {
+            await onEnd();
+            setIsStopConfirmOpen(false);
+        } catch {
+            // toast handled in hook
+        } finally {
+            setIsStopping(false);
+        }
+    };
 
     return (
         <Card className="border-slate-200 overflow-hidden relative">
@@ -86,7 +122,7 @@ export default function MyAttendanceTimer({
                                     ? 'bg-amber-50 text-amber-600'
                                     : 'bg-slate-100 text-slate-500'
                     }`}>
-                        {isCompletedToday ? 'Completed' : (statusLabel[status] || status)}
+                        {isCompletedToday ? 'Stopped' : (statusLabel[status] || status)}
                     </span>
                 </div>
 
@@ -184,22 +220,33 @@ export default function MyAttendanceTimer({
                         </Button>
                     )}
 
-                    {canEnd && (
+                    {canStop && (
                         <Button
                             icon={Square}
                             variant="danger"
                             loading={actionLoading}
-                            onClick={() => onEnd()}
+                            onClick={() => setIsStopConfirmOpen(true)}
                             className="min-w-[140px] justify-center"
                         >
-                            End
+                            {canEnd ? 'Stop' : 'Stop early'}
                         </Button>
                     )}
 
-                    {isCompletedToday && (
-                        <p className="text-sm font-medium text-emerald-600">
-                            You have ended attendance for today.
-                        </p>
+                    {isCompletedToday && canContinue && (
+                        <div className="w-full flex flex-col items-center gap-3">
+                            <p className="text-sm font-medium text-slate-500 text-center max-w-md">
+                                Attendance stopped for this shift day ({formatHoursLabel(displayMs)} recorded).
+                                If you stopped by mistake, you can continue — only today. Tomorrow you will need to start a new timer.
+                            </p>
+                            <Button
+                                icon={Play}
+                                loading={actionLoading}
+                                onClick={() => onContinue()}
+                                className="min-w-[180px] justify-center"
+                            >
+                                Continue time
+                            </Button>
+                        </div>
                     )}
 
                     {status !== 'offline' && (
@@ -210,6 +257,24 @@ export default function MyAttendanceTimer({
                     )}
                 </div>
             </div>
+
+            <AnimatePresence>
+                {isStopConfirmOpen && (
+                    <ModalConfirmation
+                        isOpen={isStopConfirmOpen}
+                        onClose={() => {
+                            if (isStopping) return;
+                            setIsStopConfirmOpen(false);
+                        }}
+                        onConfirm={handleConfirmStop}
+                        loading={isStopping}
+                        title={isEarlyStop ? 'Stop early?' : 'Stop attendance?'}
+                        message={stopConfirmMessage}
+                        confirmText="Yes, stop"
+                        variant="warning"
+                    />
+                )}
+            </AnimatePresence>
         </Card>
     );
 }

@@ -9,7 +9,9 @@ use App\Models\Attendance;
 use App\Models\LeaveRequest;
 use App\Models\PayrollDeduction;
 use App\Models\Payslip;
+use App\Models\PayslipAdjustment;
 use App\Models\User;
+use App\Notifications\PayslipReadyNotification;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
@@ -57,7 +59,27 @@ class PayrollService implements PayrollServiceInterface
     {
         $this->authorizePayslipAccess($payslip);
 
-        return $payslip->load(['user:id,name,email,sss_number,philhealth_number,pagibig_number,tin', 'generator:id,name']);
+        $payslip->load([
+            'user:id,name,email,sss_number,philhealth_number,pagibig_number,tin',
+            'generator:id,name',
+            'adjustments.creator:id,name',
+        ]);
+
+        $payslip->setAttribute('attendance_breakdown', $this->attendanceBreakdown($payslip));
+
+        return $payslip;
+    }
+
+    public function attendanceBreakdown(Payslip $payslip): Collection
+    {
+        return Attendance::query()
+            ->where('user_id', $payslip->user_id)
+            ->whereBetween('date', [
+                $payslip->period_start->toDateString(),
+                $payslip->period_end->toDateString(),
+            ])
+            ->orderBy('date')
+            ->get();
     }
 
     public function generateForMonth(int $year, int $month): array
@@ -85,12 +107,17 @@ class PayrollService implements PayrollServiceInterface
                     continue;
                 }
 
+                $this->recalculateNetPay($payslip);
                 $payslips->push($payslip);
                 $generated++;
             }
         });
 
         $payslips->load(['user:id,name,email', 'generator:id,name']);
+
+        foreach ($payslips as $payslip) {
+            $payslip->user?->notify(new PayslipReadyNotification($payslip));
+        }
 
         return [
             'data' => $payslips,
@@ -117,7 +144,15 @@ class PayrollService implements PayrollServiceInterface
             ]);
         }
 
-        $payslip = DB::transaction(fn (): ?Payslip => $this->buildPayslipForUser($user, $year, $month));
+        $payslip = DB::transaction(function () use ($user, $year, $month): ?Payslip {
+            $payslip = $this->buildPayslipForUser($user, $year, $month);
+
+            if ($payslip !== null) {
+                $this->recalculateNetPay($payslip);
+            }
+
+            return $payslip;
+        });
 
         if ($payslip === null) {
             throw ValidationException::withMessages([
@@ -125,7 +160,10 @@ class PayrollService implements PayrollServiceInterface
             ]);
         }
 
-        return $payslip->load(['user:id,name,email', 'generator:id,name']);
+        $payslip = $payslip->load(['user:id,name,email', 'generator:id,name', 'adjustments.creator:id,name']);
+        $user->notify(new PayslipReadyNotification($payslip));
+
+        return $payslip;
     }
 
     public function generateThirteenthMonth(int $year): array
@@ -227,6 +265,44 @@ class PayrollService implements PayrollServiceInterface
         DB::transaction(fn () => $payslip->delete());
     }
 
+    public function addAdjustment(Payslip $payslip, array $data): PayslipAdjustment
+    {
+        if (! $this->canManagePayroll()) {
+            abort(403, 'You are not allowed to adjust payslips.');
+        }
+
+        return DB::transaction(function () use ($payslip, $data): PayslipAdjustment {
+            $adjustment = PayslipAdjustment::query()->create([
+                'payslip_id' => $payslip->id,
+                'type' => $data['type'],
+                'label' => $data['label'],
+                'amount' => $data['amount'],
+                'reason' => $data['reason'] ?? null,
+                'created_by' => Auth::id(),
+            ]);
+
+            $this->recalculateNetPay($payslip);
+
+            return $adjustment->load('creator:id,name');
+        });
+    }
+
+    public function removeAdjustment(Payslip $payslip, PayslipAdjustment $adjustment): void
+    {
+        if (! $this->canManagePayroll()) {
+            abort(403, 'You are not allowed to adjust payslips.');
+        }
+
+        if ((int) $adjustment->payslip_id !== (int) $payslip->id) {
+            abort(404, 'Adjustment not found on this payslip.');
+        }
+
+        DB::transaction(function () use ($payslip, $adjustment): void {
+            $adjustment->delete();
+            $this->recalculateNetPay($payslip);
+        });
+    }
+
     public function downloadPdf(Payslip $payslip): Response
     {
         $payslip = $this->show($payslip);
@@ -240,6 +316,24 @@ class PayrollService implements PayrollServiceInterface
             : sprintf('%04d-%02d', $payslip->year, $payslip->month);
 
         return $pdf->download(sprintf('payslip-%s-%s.pdf', $payslip->user?->name ?? $payslip->user_id, $label));
+    }
+
+    protected function recalculateNetPay(Payslip $payslip): void
+    {
+        $payslip->loadMissing('adjustments');
+
+        $adjEarnings = (float) $payslip->adjustments->where('type', 'earning')->sum('amount');
+        $adjDeductions = (float) $payslip->adjustments->where('type', 'deduction')->sum('amount');
+
+        $netPay = round(
+            (float) $payslip->gross_pay
+            - (float) $payslip->total_deductions
+            + $adjEarnings
+            - $adjDeductions,
+            2
+        );
+
+        $payslip->update(['net_pay' => $netPay]);
     }
 
     protected function buildPayslipForUser(User $user, int $year, int $month): ?Payslip

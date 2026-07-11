@@ -6,14 +6,18 @@ namespace App\Providers;
 
 use App\Contracts\ActivityLogServiceInterface;
 use App\Contracts\AttendanceServiceInterface;
+use App\Contracts\AttendanceDisputeServiceInterface;
 use App\Contracts\PayrollServiceInterface;
 use App\Contracts\AuthServiceInterface;
+use App\Contracts\DashboardServiceInterface;
+use App\Contracts\EmployeeLifecycleServiceInterface;
 use App\Contracts\LeaveBalanceServiceInterface;
 use App\Contracts\LeavePolicyServiceInterface;
 use App\Contracts\LeaveRequestServiceInterface;
 use App\Contracts\LeaveServiceInterface;
 use App\Contracts\PermissionServiceInterface;
 use App\Contracts\ProjectServiceInterface;
+use App\Contracts\ReportServiceInterface;
 use App\Contracts\RoleServiceInterface;
 use App\Contracts\ScheduleServiceInterface;
 use App\Contracts\StatusServiceInterface;
@@ -26,6 +30,9 @@ use App\Contracts\WorkspaceServiceInterface;
 use App\Listeners\UpdateModelsAfterMigration;
 use App\Services\ActivityLog\ActivityLogService;
 use App\Services\Attendance\AttendanceService;
+use App\Services\AttendanceDispute\AttendanceDisputeService;
+use App\Services\Dashboard\DashboardService;
+use App\Services\EmployeeLifecycle\EmployeeLifecycleService;
 use App\Services\Payroll\PayrollService;
 use App\Services\Auth\AuthService;
 use App\Services\Leave\LeaveService;
@@ -34,6 +41,7 @@ use App\Services\LeavePolicy\LeavePolicyService;
 use App\Services\LeaveRequest\LeaveRequestService;
 use App\Services\Permission\PermissionService;
 use App\Services\Project\ProjectService;
+use App\Services\Report\ReportService;
 use App\Services\Role\RoleService;
 use App\Services\Schedule\ScheduleService;
 use App\Services\Status\StatusService;
@@ -64,6 +72,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(TagServiceInterface::class, TagService::class);
         $this->app->bind(StatusServiceInterface::class, StatusService::class);
         $this->app->bind(ScheduleServiceInterface::class, ScheduleService::class);
+        $this->app->bind(DashboardServiceInterface::class, DashboardService::class);
         $this->app->bind(ActivityLogServiceInterface::class, ActivityLogService::class);
         $this->app->bind(LeaveServiceInterface::class, LeaveService::class);
         $this->app->bind(LeavePolicyServiceInterface::class, LeavePolicyService::class);
@@ -73,7 +82,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(PermissionServiceInterface::class, PermissionService::class);
         $this->app->bind(AuthServiceInterface::class, AuthService::class);
         $this->app->bind(AttendanceServiceInterface::class, AttendanceService::class);
+        $this->app->bind(AttendanceDisputeServiceInterface::class, AttendanceDisputeService::class);
         $this->app->bind(PayrollServiceInterface::class, PayrollService::class);
+        $this->app->bind(ReportServiceInterface::class, ReportService::class);
+        $this->app->bind(EmployeeLifecycleServiceInterface::class, EmployeeLifecycleService::class);
     }
 
     public function boot(): void

@@ -14,6 +14,10 @@ export const API_ROUTES = {
         DELETE: (id: number) => `/users/${id}`,
         WORKSPACE_USERS: (workspaceId: number) => `/users/workspace/${workspaceId}`,
         PROJECT_USERS: (projectId: number) => `/users/project/${projectId}`,
+        LIFECYCLE: (id: number) => `/users/${id}/lifecycle`,
+        LIFECYCLE_TOGGLE: (userId: number, itemId: number) =>
+            `/users/${userId}/lifecycle/items/${itemId}/toggle`,
+        OFFBOARD: (id: number) => `/users/${id}/offboard`,
     },
     ROLES: {
         LIST: '/roles',
@@ -102,6 +106,13 @@ export const API_ROUTES = {
     },
     SCHEDULES: {
         LIST: '/schedules',
+        STORE: '/schedules',
+        SHOW: (id: number) => `/schedules/${id}`,
+        UPDATE: (id: number) => `/schedules/${id}`,
+        DELETE: (id: number) => `/schedules/${id}`,
+    },
+    DASHBOARD: {
+        SUMMARY: '/dashboard',
     },
     ATTENDANCES: {
         LIST: '/attendances',
@@ -110,6 +121,13 @@ export const API_ROUTES = {
         PAUSE: '/attendances/pause',
         RESUME: '/attendances/resume',
         END: '/attendances/end',
+        CONTINUE: '/attendances/continue',
+    },
+    ATTENDANCE_DISPUTES: {
+        LIST: '/attendance-disputes',
+        STORE: '/attendance-disputes',
+        APPROVE: (id: number) => `/attendance-disputes/${id}/approve`,
+        REJECT: (id: number) => `/attendance-disputes/${id}/reject`,
     },
     PAYROLLS: {
         LIST: '/payrolls',
@@ -118,6 +136,9 @@ export const API_ROUTES = {
         GENERATE: '/payrolls/generate',
         GENERATE_INDIVIDUAL: '/payrolls/generate-individual',
         GENERATE_13TH_MONTH: '/payrolls/generate-13th-month',
+        ADJUSTMENTS: (id: number) => `/payrolls/${id}/adjustments`,
+        DELETE_ADJUSTMENT: (payslipId: number, adjustmentId: number) =>
+            `/payrolls/${payslipId}/adjustments/${adjustmentId}`,
         DELETE: (id: number) => `/payrolls/${id}`,
     },
     PAYROLL_DEDUCTIONS: {
@@ -125,6 +146,11 @@ export const API_ROUTES = {
         STORE: '/payroll-deductions',
         UPDATE: (id: number) => `/payroll-deductions/${id}`,
         DELETE: (id: number) => `/payroll-deductions/${id}`,
+    },
+    REPORTS: {
+        ATTENDANCE_SUMMARY: '/reports/attendance-summary',
+        LEAVE_UTILIZATION: '/reports/leave-utilization',
+        PAYROLL_REGISTER: '/reports/payroll-register',
     },
     ME: {
         SHOW: '/me',

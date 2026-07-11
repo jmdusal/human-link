@@ -19,11 +19,15 @@ use App\Http\Controllers\Api\StatusController;
 use App\Http\Controllers\Api\TaskCommentController;
 use App\Http\Controllers\Api\TaskAttachmentController;
 use App\Http\Controllers\Api\AttendanceController;
+use App\Http\Controllers\Api\AttendanceDisputeController;
 use App\Http\Controllers\Api\PayrollController;
 use App\Http\Controllers\Api\PayrollDeductionController;
 use App\Http\Controllers\Api\LeaveRequestController;
 use App\Http\Controllers\Api\MeController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\EmployeeLifecycleController;
+use App\Http\Controllers\Api\DashboardController;
 
 Route::group(['middleware' => ['web']], function () {
     Route::post('/login', [AuthenticationController::class, 'login']);
@@ -54,6 +58,10 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::get('/', 'show')->name('show');
         Route::put('/', 'update')->name('update');
         Route::patch('/', 'update')->name('patch');
+    });
+
+    Route::controller(DashboardController::class)->prefix('dashboard')->name('dashboard.')->group(function () {
+        Route::get('/', 'summary')->name('summary');
     });
 
     Route::controller(NotificationController::class)->prefix('notifications')->name('notifications.')->group(function () {
@@ -148,6 +156,10 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
 
     Route::controller(ScheduleController::class)->prefix('schedules')->name('schedules.')->group(function () {
         Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::get('/{schedule}', 'show')->name('show');
+        Route::put('/{schedule}', 'update')->name('update');
+        Route::delete('/{schedule}', 'destroy')->name('destroy');
     });
 
     Route::controller(LeavePolicyController::class)->prefix('leave-policies')->name('leave-policies.')->group(function () {
@@ -189,6 +201,14 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::post('/pause', 'pause')->name('pause');
         Route::post('/resume', 'resume')->name('resume');
         Route::post('/end', 'end')->name('end');
+        Route::post('/continue', 'continueAttendance')->name('continue');
+    });
+
+    Route::controller(AttendanceDisputeController::class)->prefix('attendance-disputes')->name('attendance-disputes.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::post('/{attendanceDispute}/approve', 'approve')->name('approve');
+        Route::post('/{attendanceDispute}/reject', 'reject')->name('reject');
     });
 
     Route::controller(PayrollController::class)->prefix('payrolls')->name('payrolls.')->group(function () {
@@ -196,6 +216,8 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::post('/generate', 'generate')->name('generate');
         Route::post('/generate-individual', 'generateIndividual')->name('generateIndividual');
         Route::post('/generate-13th-month', 'generateThirteenthMonth')->name('generateThirteenthMonth');
+        Route::post('/{payslip}/adjustments', 'storeAdjustment')->name('storeAdjustment');
+        Route::delete('/{payslip}/adjustments/{adjustment}', 'destroyAdjustment')->name('destroyAdjustment');
         Route::get('/{payslip}/pdf', 'pdf')->name('pdf');
         Route::get('/{payslip}', 'show')->name('show');
         Route::delete('/{payslip}', 'destroy')->name('destroy');
@@ -206,5 +228,17 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::post('/', 'store')->name('store');
         Route::put('/{payrollDeduction}', 'update')->name('update');
         Route::delete('/{payrollDeduction}', 'destroy')->name('destroy');
+    });
+
+    Route::controller(ReportController::class)->prefix('reports')->name('reports.')->group(function () {
+        Route::get('/attendance-summary', 'attendanceSummary')->name('attendanceSummary');
+        Route::get('/leave-utilization', 'leaveUtilization')->name('leaveUtilization');
+        Route::get('/payroll-register', 'payrollRegister')->name('payrollRegister');
+    });
+
+    Route::controller(EmployeeLifecycleController::class)->prefix('users')->name('users.')->group(function () {
+        Route::get('/{user}/lifecycle', 'show')->name('lifecycle');
+        Route::post('/{user}/lifecycle/items/{item}/toggle', 'toggleItem')->name('toggleLifecycleItem');
+        Route::post('/{user}/offboard', 'offboard')->name('offboard');
     });
 });

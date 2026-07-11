@@ -21,7 +21,11 @@ class AuthorizePermission
         }
 
         // Auth-only modules (no Spatie permission required).
-        if (str_starts_with($routeName, 'me.') || str_starts_with($routeName, 'notifications.')) {
+        if (
+            str_starts_with($routeName, 'me.')
+            || str_starts_with($routeName, 'notifications.')
+            || str_starts_with($routeName, 'dashboard.')
+        ) {
             return $next($request);
         }
 
@@ -34,20 +38,29 @@ class AuthorizePermission
             'calendar' => 'view',
             'conflicts' => 'view',
             'pdf' => 'view',
+            'attendanceSummary' => 'view',
+            'leaveUtilization' => 'view',
+            'payrollRegister' => 'view',
+            'lifecycle' => 'view',
             'store' => 'create',
             'start' => 'create',
             'generate' => 'create',
             'generateIndividual' => 'create',
             'generateThirteenthMonth' => 'create',
+            'storeAdjustment' => 'create',
             'update' => 'edit',
             'patch' => 'edit',
             'pause' => 'edit',
             'resume' => 'edit',
             'end' => 'edit',
+            'continue' => 'edit',
             'approve' => 'edit',
             'reject' => 'edit',
             'cancel' => 'edit',
+            'toggleLifecycleItem' => 'edit',
+            'offboard' => 'edit',
             'destroy' => 'delete',
+            'destroyAdjustment' => 'delete',
         ];
 
         $parts = explode('.', $routeName);

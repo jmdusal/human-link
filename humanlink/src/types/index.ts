@@ -37,3 +37,29 @@ export type {
     GeneratePayrollPayload,
     GenerateIndividualPayrollPayload,
 } from '@/types/Payslip';
+export type {
+    AttendanceDispute,
+    AttendanceDisputeStatus,
+    AttendanceDisputeFormData,
+} from '@/types/AttendanceDispute';
+export type {
+    PayslipAdjustment,
+    PayslipAdjustmentType,
+    PayslipAdjustmentFormData,
+    AttendanceBreakdownRow,
+} from '@/types/PayslipAdjustment';
+export type {
+    LifecycleType,
+    LifecycleStatus,
+    EmployeeChecklistItem,
+    EmployeeChecklist,
+    EmployeeLifecyclePayload,
+    OffboardPayload,
+} from '@/types/EmployeeLifecycle';
+export type {
+    DashboardKpis,
+    LeaveActivityPoint,
+    RoleDistributionItem,
+    DashboardActivityItem,
+    DashboardSummary,
+} from '@/types/Dashboard';

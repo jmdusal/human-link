@@ -1,19 +1,17 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import {
-    Users, ShieldCheck, Key, FileText, ArrowUpRight,
-    TrendingUp, ArrowDownRight, Plus, History,
-    Zap, Activity, ExternalLink, Settings, FolderKanban, Globe, Clock3
+    Users, FileText, ArrowUpRight, ArrowDownRight, Plus, History,
+    Zap, Activity, ExternalLink, FolderKanban, Globe, Clock3,
+    Wallet, CalendarDays, AlertCircle,
 } from 'lucide-react';
-import { usePermissions } from '@/hooks/use-permissions';
-import { useUsers } from '@/hooks/use-users';
-import { useRoles } from '@/hooks/use-roles';
-import { useLeavePolicies } from '@/hooks/use-leave-policies';
 import { useWorkspaces } from '@/hooks/use-workspace';
 import { useAuth } from '@/context/AuthContext';
 import { getInitials } from '@/utils/userUtils';
-import type { Workspace } from '@/types';
+import { DashboardService } from '@/services/DashboardService';
+import { formatCurrency } from '@/utils/formatUtils';
+import type { DashboardSummary, Workspace } from '@/types';
 
 interface StatProps {
     label: string;
@@ -21,36 +19,47 @@ interface StatProps {
     icon: React.ReactNode;
     trend: string;
     isUp: boolean;
+    onClick?: () => void;
 }
 
 export default function Overview() {
     const navigate = useNavigate();
     const { can, user, hasRole, loading: authLoading } = useAuth();
-    const isAdminView = can('users-view') || hasRole('super-admin');
+    const isAdminView = can('users-view') || hasRole('super-admin') || hasRole('hr-manager');
     const canViewWorkspaces = can('workspaces-view');
 
     const { workspaces, loading: wLoading } = useWorkspaces(!authLoading && canViewWorkspaces);
-    const { users, loading: uLoading } = useUsers(!authLoading && isAdminView);
-    const { permissions, loading: pLoading } = usePermissions(!authLoading && isAdminView);
-    const { roles, loading: rLoading } = useRoles(!authLoading && isAdminView);
-    const { leavepolicies, loading: lLoading } = useLeavePolicies(!authLoading && isAdminView && can('leave-policies-view'));
+    const [dashboard, setDashboard] = useState<DashboardSummary | null>(null);
+    const [dashLoading, setDashLoading] = useState(true);
 
-    const isAppLoading = authLoading || wLoading || (isAdminView && (uLoading || pLoading || rLoading || lLoading));
+    useEffect(() => {
+        if (authLoading) return;
 
-    const statsHistory = [
-        { day: 'Mon', requests: 4 },
-        { day: 'Tue', requests: 7 },
-        { day: 'Wed', requests: 5 },
-        { day: 'Thu', requests: 12 },
-        { day: 'Fri', requests: 8 },
-        { day: 'Sat', requests: 2 },
-        { day: 'Sun', requests: 3 },
-    ];
+        let cancelled = false;
+        setDashLoading(true);
 
-    const roleDistribution = roles?.map(role => ({
-        name: role.name,
-        count: users?.filter((u: any) => u.role === role.name).length || 0
-    })).slice(0, 3) || [];
+        DashboardService.summary()
+            .then((data) => {
+                if (!cancelled) setDashboard(data);
+            })
+            .catch(() => {
+                if (!cancelled) setDashboard(null);
+            })
+            .finally(() => {
+                if (!cancelled) setDashLoading(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [authLoading]);
+
+    const isAppLoading = authLoading || wLoading || dashLoading;
+    const kpis = dashboard?.kpis;
+    const leaveActivity = dashboard?.leaveActivity ?? [];
+    const roleDistribution = dashboard?.roleDistribution ?? [];
+    const recentActivity = dashboard?.recentActivity ?? [];
+    const totalRoleUsers = roleDistribution.reduce((sum, item) => sum + item.count, 0) || 1;
 
     const myRoleInWorkspace = (ws: Workspace) =>
         ws.members?.find((m: any) => m.id === user?.id)?.pivot?.role || 'member';
@@ -70,25 +79,34 @@ export default function Overview() {
                     </h1>
                     <p className="text-slate-500 text-sm font-medium">
                         {isAdminView
-                            ? 'Monitoring Users, Roles, and System Access.'
-                            : `Welcome back, ${user?.name?.split(' ')[0] || 'there'}. Here are your workspaces.`}
+                            ? 'Live attendance, leave, and payroll metrics.'
+                            : `Welcome back, ${user?.name?.split(' ')[0] || 'there'}.`}
                     </p>
                 </div>
                 {isAdminView && (
                     <div className="hidden md:flex gap-3">
-                        <button className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-[11px] font-bold uppercase tracking-wider hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-slate-200">
+                        <button
+                            type="button"
+                            onClick={() => navigate('/reports')}
+                            className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-[11px] font-bold uppercase tracking-wider hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-slate-200"
+                        >
                             <Zap size={14} className="text-yellow-400 fill-yellow-400" />
                             Generate Report
                         </button>
                         <div className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl shadow-sm">
-                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                            <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">System Operational</span>
+                            <div className={`w-2 h-2 rounded-full ${
+                                (kpis?.workingNow ?? 0) > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'
+                            }`} />
+                            <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                                {(kpis?.workingNow ?? 0) > 0
+                                    ? `${kpis?.workingNow} working now`
+                                    : 'No active timers'}
+                            </span>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* My Workspaces — visible to all members */}
             {canViewWorkspaces && (
                 <section className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -181,39 +199,95 @@ export default function Overview() {
                 </section>
             )}
 
-            {!isAdminView && can('attendances-view') && (
-                <section>
-                    <button
-                        type="button"
+            {!isAdminView && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <OverviewStat
+                        label="Timer"
+                        value={String(kpis?.timerStatus ?? 'offline')}
+                        icon={<Clock3 size={20} />}
+                        trend="Live status"
+                        isUp={(kpis?.timerStatus ?? 'offline') === 'working'}
                         onClick={() => navigate('/attendances')}
-                        className="w-full text-left bg-white p-6 rounded-[1.75rem] border border-slate-100 shadow-sm hover:shadow-xl hover:border-emerald-100 hover:-translate-y-0.5 transition-all duration-300 group"
-                    >
-                        <div className="flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                                    <Clock3 size={20} />
-                                </div>
-                                <div>
-                                    <h2 className="text-lg font-bold text-slate-800">My Attendance</h2>
-                                    <p className="text-xs text-slate-400 mt-0.5">
-                                        Start, pause, and resume your work time.
-                                    </p>
-                                </div>
-                            </div>
-                            <ExternalLink size={16} className="text-slate-300 group-hover:text-emerald-500" />
-                        </div>
-                    </button>
-                </section>
+                    />
+                    <OverviewStat
+                        label="Days MTD"
+                        value={kpis?.attendanceDaysMtd ?? 0}
+                        icon={<CalendarDays size={20} />}
+                        trend="This month"
+                        isUp
+                        onClick={() => navigate('/attendances')}
+                    />
+                    <OverviewStat
+                        label="Pending Leave"
+                        value={kpis?.pendingLeaves ?? 0}
+                        icon={<FileText size={20} />}
+                        trend="Awaiting review"
+                        isUp={(kpis?.pendingLeaves ?? 0) === 0}
+                        onClick={() => navigate('/leave-requests')}
+                    />
+                    <OverviewStat
+                        label="Payslips"
+                        value={kpis?.payslipsThisMonth ?? 0}
+                        icon={<Wallet size={20} />}
+                        trend="This month"
+                        isUp
+                        onClick={() => navigate('/my-profile')}
+                    />
+                </div>
             )}
 
             {isAdminView && (
                 <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <OverviewStat label="Active Users" value={users.length} icon={<Users size={20}/>} trend="+12% growth" isUp={true} />
-                        <OverviewStat label="Roles" value={roles.length} icon={<ShieldCheck size={20}/>} trend="Stable" isUp={true} />
-                        <OverviewStat label="Permissions" value={permissions.length} icon={<Key size={20}/>} trend="Managed" isUp={true} />
-                        <OverviewStat label="Leave Policies" value={leavepolicies.length} icon={<FileText size={20}/>} trend="Active" isUp={true} />
+                        <OverviewStat
+                            label="Active Users"
+                            value={kpis?.activeUsers ?? 0}
+                            icon={<Users size={20} />}
+                            trend={`${kpis?.workingNow ?? 0} working now`}
+                            isUp={(kpis?.workingNow ?? 0) > 0}
+                            onClick={() => navigate('/users')}
+                        />
+                        <OverviewStat
+                            label="Pending Leave"
+                            value={kpis?.pendingLeaves ?? 0}
+                            icon={<CalendarDays size={20} />}
+                            trend="Needs approval"
+                            isUp={(kpis?.pendingLeaves ?? 0) === 0}
+                            onClick={() => navigate('/leave-requests')}
+                        />
+                        <OverviewStat
+                            label="Attendance MTD"
+                            value={kpis?.attendanceDaysMtd ?? 0}
+                            icon={<Clock3 size={20} />}
+                            trend="Days logged"
+                            isUp
+                            onClick={() => navigate('/attendances')}
+                        />
+                        <OverviewStat
+                            label="Payroll Net"
+                            value={`₱${formatCurrency(kpis?.netPayrollMtd ?? 0)}`}
+                            icon={<Wallet size={20} />}
+                            trend={`${kpis?.payslipsThisMonth ?? 0} payslips`}
+                            isUp
+                            onClick={() => navigate('/payrolls')}
+                        />
                     </div>
+
+                    {(kpis?.openDisputes ?? 0) > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => navigate('/attendances')}
+                            className="w-full text-left rounded-2xl border border-amber-200 bg-amber-50/70 px-5 py-4 flex items-center gap-3 hover:bg-amber-50 transition-colors"
+                        >
+                            <AlertCircle size={18} className="text-amber-600" />
+                            <div>
+                                <p className="text-sm font-bold text-slate-800">
+                                    {kpis?.openDisputes} open attendance dispute{(kpis?.openDisputes ?? 0) === 1 ? '' : 's'}
+                                </p>
+                                <p className="text-xs text-slate-500">Review timesheet corrections before payroll.</p>
+                            </div>
+                        </button>
+                    )}
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-2 space-y-8">
@@ -224,15 +298,14 @@ export default function Overview() {
                                 <div className="flex justify-between items-start mb-8 relative z-10">
                                     <div>
                                         <h3 className="font-bold text-xl text-slate-800">Weekly Leave Activity</h3>
-                                        <p className="text-slate-400 text-xs font-medium mt-1">Volume of leave requests processed this week</p>
-                                    </div>
-                                    <div className="p-3 bg-slate-50 rounded-2xl text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
-                                        <TrendingUp size={20} />
+                                        <p className="text-slate-400 text-xs font-medium mt-1">
+                                            Leave requests submitted this week
+                                        </p>
                                     </div>
                                 </div>
                                 <div className="h-72 w-full">
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={statsHistory}>
+                                        <AreaChart data={leaveActivity}>
                                             <defs>
                                                 <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                                                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15}/>
@@ -258,18 +331,22 @@ export default function Overview() {
                                         <Activity size={18} className="text-blue-500" />
                                         Role Distribution
                                     </h3>
-                                    <button className="text-slate-400 hover:text-blue-500 transition-colors">
+                                    <button
+                                        type="button"
+                                        onClick={() => navigate('/roles')}
+                                        className="text-slate-400 hover:text-blue-500 transition-colors"
+                                    >
                                         <ExternalLink size={16} />
                                     </button>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    {roleDistribution.length > 0 ? roleDistribution.map((item, i) => (
-                                        <div key={i} className="p-5 rounded-2xl bg-slate-50/50 border border-slate-100 hover:bg-white hover:border-blue-100 transition-all group">
+                                    {roleDistribution.length > 0 ? roleDistribution.slice(0, 3).map((item) => (
+                                        <div key={item.name} className="p-5 rounded-2xl bg-slate-50/50 border border-slate-100 hover:bg-white hover:border-blue-100 transition-all group">
                                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 group-hover:text-blue-500">{item.name}</p>
                                             <div className="flex justify-between items-end">
                                                 <p className="text-2xl font-black text-slate-800">{item.count}</p>
                                                 <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden mb-2">
-                                                    <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${(item.count / (users.length || 1)) * 100}%` }} />
+                                                    <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${(item.count / totalRoleUsers) * 100}%` }} />
                                                 </div>
                                             </div>
                                         </div>
@@ -287,9 +364,22 @@ export default function Overview() {
                                     Global Shortcuts
                                 </h3>
                                 <div className="space-y-2">
-                                    <ActionButton icon={<Users size={18}/>} label="Onboard User" primary />
-                                    <ActionButton icon={<Key size={18}/>} label="Set Permissions" />
-                                    <ActionButton icon={<Settings size={18}/>} label="System Config" />
+                                    <ActionButton
+                                        icon={<Users size={18}/>}
+                                        label="Onboard User"
+                                        primary
+                                        onClick={() => navigate('/users')}
+                                    />
+                                    <ActionButton
+                                        icon={<CalendarDays size={18}/>}
+                                        label="Manage Schedules"
+                                        onClick={() => navigate('/schedules')}
+                                    />
+                                    <ActionButton
+                                        icon={<FileText size={18}/>}
+                                        label="Export Reports"
+                                        onClick={() => navigate('/reports')}
+                                    />
                                 </div>
                             </div>
 
@@ -299,12 +389,26 @@ export default function Overview() {
                                         <History size={16} className="text-blue-500" />
                                         System Activity
                                     </h3>
-                                    <span className="text-[9px] font-black text-blue-500 px-2 py-0.5 bg-blue-50 rounded-full uppercase tracking-tighter">Realtime</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => navigate('/activity-logs')}
+                                        className="text-[9px] font-black text-blue-500 px-2 py-0.5 bg-blue-50 rounded-full uppercase tracking-tighter"
+                                    >
+                                        View all
+                                    </button>
                                 </div>
                                 <div className="space-y-6">
-                                    <ActivityItem user="AD" name="Admin" action="Updated Roles" time="2m ago" />
-                                    <ActivityItem user="SYS" name="System" action="Policy Created" time="1h ago" />
-                                    <ActivityItem user="ST" name="Staff" action="New Login" time="3h ago" />
+                                    {recentActivity.length > 0 ? recentActivity.slice(0, 5).map((item) => (
+                                        <ActivityItem
+                                            key={item.id}
+                                            user={getInitials(item.causerName || 'SYS')}
+                                            name={item.causerName || 'System'}
+                                            action={item.description}
+                                            time={item.time || ''}
+                                        />
+                                    )) : (
+                                        <p className="text-xs text-slate-400 text-center py-6">No recent activity yet.</p>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -315,8 +419,12 @@ export default function Overview() {
     );
 }
 
-const OverviewStat = ({ label, value, icon, trend, isUp }: StatProps) => (
-    <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 group relative overflow-hidden">
+const OverviewStat = ({ label, value, icon, trend, isUp, onClick }: StatProps) => (
+    <button
+        type="button"
+        onClick={onClick}
+        className="text-left bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 group relative overflow-hidden w-full"
+    >
         <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50 rounded-full -mr-12 -mt-12 group-hover:bg-blue-50 transition-colors duration-500" />
         <div className="relative z-10">
             <div className="flex justify-between items-start mb-4">
@@ -332,14 +440,27 @@ const OverviewStat = ({ label, value, icon, trend, isUp }: StatProps) => (
             </div>
             <div>
                 <p className="text-slate-400 text-[11px] font-bold uppercase tracking-[0.15em] mb-1">{label}</p>
-                <p className="text-3xl font-black text-slate-900 tracking-tight">{value}</p>
+                <p className="text-3xl font-black text-slate-900 tracking-tight truncate">{value}</p>
             </div>
         </div>
-    </div>
+    </button>
 );
 
-const ActionButton = ({ icon, label, primary }: { icon: React.ReactNode, label: string, primary?: boolean }) => (
-    <button className={`w-full flex items-center justify-between p-3.5 rounded-xl transition-all group ${
+const ActionButton = ({
+    icon,
+    label,
+    primary,
+    onClick,
+}: {
+    icon: React.ReactNode;
+    label: string;
+    primary?: boolean;
+    onClick?: () => void;
+}) => (
+    <button
+        type="button"
+        onClick={onClick}
+        className={`w-full flex items-center justify-between p-3.5 rounded-xl transition-all group ${
         primary
         ? "bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700"
         : "bg-slate-50 border border-slate-100 text-slate-600 hover:bg-white hover:border-blue-200 hover:text-blue-600"
@@ -364,7 +485,7 @@ const ActivityItem = ({ user, name, action, time }: any) => (
                 <span className="text-[13px] font-bold text-slate-800 truncate">{name}</span>
                 <span className="text-[10px] font-bold text-slate-300 uppercase tracking-tighter">{time}</span>
             </div>
-            <p className="text-[11px] text-slate-500 font-medium tracking-tight leading-none mt-1">{action}</p>
+            <p className="text-[11px] text-slate-500 font-medium tracking-tight leading-none mt-1 truncate">{action}</p>
         </div>
     </div>
 );

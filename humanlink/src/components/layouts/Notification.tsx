@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, Circle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { echo } from '@/lib/echo';
@@ -10,6 +11,7 @@ import LeaveRequestReviewModal from '@/components/modals/leave-requests/LeaveReq
 
 export default function NotificationDropdown() {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false);
     const [notifications, setNotifications] = useState<AppNotification[]>([]);
     const [selectedLeaveRequest, setSelectedLeaveRequest] = useState<LeaveRequest | null>(null);
@@ -47,6 +49,12 @@ export default function NotificationDropdown() {
                         || notification.leave_request_id
                         || notification.data?.leave_request_id
                         || notification.data?.leaveRequestId
+                        || null,
+                    payslipId:
+                        notification.payslipId
+                        || notification.payslip_id
+                        || notification.data?.payslip_id
+                        || notification.data?.payslipId
                         || null,
                 },
                 ...prev,
@@ -127,6 +135,16 @@ export default function NotificationDropdown() {
         }
     };
 
+    const isClickableNotification = (notification: AppNotification): boolean => {
+        return !!notification.leaveRequestId
+            || notification.type === 'leave_request_submitted'
+            || notification.type === 'leave_request_status'
+            || notification.type === 'leave_pending_reminder'
+            || notification.type === 'payslip_ready'
+            || notification.type === 'timer_forgotten'
+            || !!notification.payslipId;
+    };
+
     const handleNotificationClick = async (notification: AppNotification) => {
         if (!notification.read) {
             try {
@@ -143,10 +161,23 @@ export default function NotificationDropdown() {
         const isLeaveNotification =
             notification.type === 'leave_request_submitted'
             || notification.type === 'leave_request_status'
+            || notification.type === 'leave_pending_reminder'
             || !!leaveRequestId;
 
         if (isLeaveNotification && leaveRequestId) {
             await openLeaveRequestModal(Number(leaveRequestId));
+            return;
+        }
+
+        if (notification.type === 'payslip_ready' || notification.payslipId) {
+            setIsOpen(false);
+            navigate('/my-profile');
+            return;
+        }
+
+        if (notification.type === 'timer_forgotten') {
+            setIsOpen(false);
+            navigate('/attendances');
         }
     };
 
@@ -184,9 +215,7 @@ export default function NotificationDropdown() {
                             <div className="max-h-[350px] overflow-y-auto">
                                 {notifications.length > 0 ? (
                                     notifications.map((n) => {
-                                        const isClickable = !!n.leaveRequestId
-                                            || n.type === 'leave_request_submitted'
-                                            || n.type === 'leave_request_status';
+                                        const isClickable = isClickableNotification(n);
 
                                         return (
                                             <button

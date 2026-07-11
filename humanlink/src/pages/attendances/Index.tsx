@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { useAuth } from '@/context/AuthContext';
 import { useAttendanceTimer } from '@/hooks/use-attendance-timer';
 import { useAttendances } from '@/hooks/use-attendances';
 import AttendanceCalendar from '@/components/features/attendances/AttendanceCalendar';
+import AttendanceDisputesPanel from '@/components/features/attendances/AttendanceDisputesPanel';
 import MyAttendanceTimer from '@/components/features/attendances/MyAttendanceTimer';
 import MyAttendanceList from '@/components/features/attendances/MyAttendanceList';
+import AttendanceDisputeModal from '@/components/modals/attendances/AttendanceDisputeModal';
+import type { Attendance } from '@/types';
 
 function localDateKey(year: number, monthIndex: number, day: number): string {
     return `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -17,6 +21,8 @@ export default function AttendanceIndex() {
     const isAdminView = hasRole('super-admin') || hasRole('hr-manager') || can('users-edit');
 
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [disputeAttendance, setDisputeAttendance] = useState<Attendance | null>(null);
+    const [isDisputeOpen, setIsDisputeOpen] = useState(false);
 
     const range = useMemo(() => {
         const year = currentDate.getFullYear();
@@ -50,6 +56,8 @@ export default function AttendanceIndex() {
         displayMs,
         remainingMs,
         canEnd,
+        canStop,
+        canContinue,
         isCompletedToday,
         loading: timerLoading,
         actionLoading,
@@ -57,6 +65,7 @@ export default function AttendanceIndex() {
         pause,
         resume,
         end,
+        continue: continueTime,
     } = useAttendanceTimer(!isAdminView);
 
     useEffect(() => {
@@ -74,6 +83,11 @@ export default function AttendanceIndex() {
 
     const monthLabel = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
 
+    const openDispute = (attendance: Attendance) => {
+        setDisputeAttendance(attendance);
+        setIsDisputeOpen(true);
+    };
+
     if (!isAdminView) {
         return (
             <div className="w-full max-w-3xl mx-auto space-y-6">
@@ -86,6 +100,8 @@ export default function AttendanceIndex() {
                     displayMs={displayMs}
                     remainingMs={remainingMs}
                     canEnd={canEnd}
+                    canStop={canStop}
+                    canContinue={canContinue}
                     isCompletedToday={isCompletedToday}
                     loading={timerLoading}
                     actionLoading={actionLoading}
@@ -93,12 +109,27 @@ export default function AttendanceIndex() {
                     onPause={pause}
                     onResume={resume}
                     onEnd={end}
+                    onContinue={continueTime}
                 />
                 <MyAttendanceList
                     data={attendances}
                     loading={listLoading}
                     liveElapsedMs={displayMs}
+                    onDispute={openDispute}
                 />
+
+                <AnimatePresence>
+                    {isDisputeOpen && (
+                        <AttendanceDisputeModal
+                            isOpen={isDisputeOpen}
+                            onClose={() => {
+                                setIsDisputeOpen(false);
+                                setDisputeAttendance(null);
+                            }}
+                            attendance={disputeAttendance}
+                        />
+                    )}
+                </AnimatePresence>
             </div>
         );
     }
@@ -141,6 +172,8 @@ export default function AttendanceIndex() {
                 currentDate={currentDate}
                 loading={listLoading}
             />
+
+            <AttendanceDisputesPanel />
         </div>
     );
 }

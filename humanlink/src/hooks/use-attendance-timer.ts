@@ -6,6 +6,16 @@ import { useAuth } from '@/context/AuthContext';
 import type { AttendanceTimerState } from '@/types';
 
 const CHANNEL_NAME = 'humanlink-attendance-timer';
+const APP_TIMEZONE = 'Asia/Manila';
+
+function manilaDateKey(date = new Date()): string {
+    return new Intl.DateTimeFormat('en-CA', {
+        timeZone: APP_TIMEZONE,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    }).format(date);
+}
 
 const emptyTimer = (): AttendanceTimerState => ({
     timerStatus: 'offline',
@@ -14,6 +24,7 @@ const emptyTimer = (): AttendanceTimerState => ({
     elapsedMs: 0,
     attendance: null,
     schedule: null,
+    canContinue: false,
 });
 
 function applyTimerState(
@@ -59,7 +70,7 @@ export const useAttendanceTimer = (enabled: boolean) => {
         }
     }, [enabled, broadcastLocal]);
 
-    const runAction = useCallback(async (action: 'start' | 'pause' | 'resume' | 'end') => {
+    const runAction = useCallback(async (action: 'start' | 'pause' | 'resume' | 'end' | 'continue') => {
         setActionLoading(true);
         try {
             let state: AttendanceTimerState;
@@ -70,6 +81,8 @@ export const useAttendanceTimer = (enabled: boolean) => {
                 state = await AttendanceService.pause();
             } else if (action === 'resume') {
                 state = await AttendanceService.resume();
+            } else if (action === 'continue') {
+                state = await AttendanceService.continue();
             } else {
                 state = await AttendanceService.end();
             }
@@ -78,7 +91,9 @@ export const useAttendanceTimer = (enabled: boolean) => {
             applyTimerState(state, setTimer, setDisplayMs);
             broadcastLocal(state);
             if (action === 'end') {
-                toast.success('Attendance ended for today.');
+                toast.success('Attendance stopped for today.');
+            } else if (action === 'continue') {
+                toast.success('Attendance continued for today.');
             }
             return state;
         } catch (error: any) {
@@ -148,7 +163,8 @@ export const useAttendanceTimer = (enabled: boolean) => {
                             || current.timerStartedAt !== state.timerStartedAt
                             || current.timerAccumulatedMs !== state.timerAccumulatedMs
                             || current.schedule?.remainingMs !== state.schedule?.remainingMs
-                            || current.schedule?.canEnd !== state.schedule?.canEnd;
+                            || current.schedule?.canEnd !== state.schedule?.canEnd
+                            || current.canContinue !== state.canContinue;
 
                         if (!changed) return current;
 
@@ -199,13 +215,25 @@ export const useAttendanceTimer = (enabled: boolean) => {
         return active && required > 0 && displayMs >= required;
     }, [timer.schedule?.requiredMs, timer.timerStatus, displayMs]);
 
-    const isCompletedToday = timer.attendance?.status === 'completed' && timer.timerStatus === 'offline';
+    const canStop = useMemo(() => {
+        return timer.timerStatus === 'working' || timer.timerStatus === 'paused';
+    }, [timer.timerStatus]);
+
+    const attendanceDate = timer.attendance?.date?.slice(0, 10) ?? null;
+    const isSameShiftDay = Boolean(attendanceDate && attendanceDate === manilaDateKey());
+    const isCompletedToday =
+        isSameShiftDay
+        && timer.attendance?.status === 'completed'
+        && timer.timerStatus === 'offline';
+    const canContinue = Boolean(timer.canContinue) && isCompletedToday;
 
     return {
         timer,
         displayMs,
         remainingMs,
         canEnd,
+        canStop,
+        canContinue,
         isCompletedToday,
         loading,
         actionLoading,
@@ -214,5 +242,6 @@ export const useAttendanceTimer = (enabled: boolean) => {
         pause: () => runAction('pause'),
         resume: () => runAction('resume'),
         end: () => runAction('end'),
+        continue: () => runAction('continue'),
     };
 };

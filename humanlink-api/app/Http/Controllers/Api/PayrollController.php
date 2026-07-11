@@ -9,7 +9,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Payroll\GenerateIndividualPayrollRequest;
 use App\Http\Requests\Payroll\GeneratePayrollRequest;
 use App\Http\Requests\Payroll\GenerateThirteenthMonthRequest;
+use App\Http\Requests\Payroll\StorePayslipAdjustmentRequest;
 use App\Models\Payslip;
+use App\Models\PayslipAdjustment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -88,6 +90,30 @@ class PayrollController extends Controller
             'data' => $result['data'],
             'meta' => $result['meta'],
         ], 201);
+    }
+
+    public function storeAdjustment(StorePayslipAdjustmentRequest $request, Payslip $payslip): JsonResponse
+    {
+        $adjustment = $this->payrollService->addAdjustment($payslip, $request->validated());
+        $updatedPayslip = $this->payrollService->show($payslip->fresh());
+
+        return response()->json([
+            'message' => 'Adjustment added.',
+            'data' => $adjustment,
+            'payslip' => $updatedPayslip,
+        ], 201);
+    }
+
+    public function destroyAdjustment(Payslip $payslip, PayslipAdjustment $adjustment): JsonResponse
+    {
+        $this->payrollService->removeAdjustment($payslip, $adjustment);
+        $updatedPayslip = $this->payrollService->show($payslip->fresh());
+
+        return response()->json([
+            'message' => 'Adjustment removed.',
+            'data' => $updatedPayslip,
+            'payslip' => $updatedPayslip,
+        ]);
     }
 
     public function destroy(Payslip $payslip): JsonResponse

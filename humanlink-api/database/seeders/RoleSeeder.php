@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
@@ -28,9 +27,11 @@ class RoleSeeder extends Seeder
                 ->orWhere('name', 'like', 'leaves-%')
                 ->orWhere('name', 'like', 'schedules-%')
                 ->orWhere('name', 'like', 'attendances-%')
+                ->orWhere('name', 'like', 'attendance-disputes-%')
                 ->orWhere('name', 'like', 'payrolls-%')
                 ->orWhere('name', 'like', 'payroll-deductions-%')
                 ->orWhere('name', 'like', 'leave-calendar-%')
+                ->orWhere('name', 'like', 'reports-%')
                 ->get()
         );
 
@@ -46,6 +47,9 @@ class RoleSeeder extends Seeder
             'tasks-create',
             'tasks-edit',
             'schedules-view',
+            'schedules-create',
+            'schedules-edit',
+            'schedules-delete',
             'leave-policies-view',
             'leave-requests-view',
             'leave-requests-create',
@@ -57,11 +61,13 @@ class RoleSeeder extends Seeder
             'attendances-view',
             'attendances-create',
             'attendances-edit',
+            'attendance-disputes-view',
+            'attendance-disputes-edit',
             'payrolls-view',
             'payroll-deductions-view',
+            'reports-view',
         ]);
 
-        // Workspace members use the same login; access is scoped by workspace/project membership.
         $userRole->syncPermissions([
             'workspaces-view',
             'projects-view',
@@ -81,6 +87,8 @@ class RoleSeeder extends Seeder
             'attendances-view',
             'attendances-create',
             'attendances-edit',
+            'attendance-disputes-view',
+            'attendance-disputes-create',
             'payrolls-view',
         ]);
     }

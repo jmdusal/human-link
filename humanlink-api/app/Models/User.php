@@ -105,6 +105,12 @@ use Spatie\Activitylog\Support\LogOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User wherePhilhealthNumber($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereSssNumber($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereTin($value)
+ * @property \Illuminate\Support\Carbon|null $hired_at
+ * @property \Illuminate\Support\Carbon|null $terminated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\EmployeeChecklist> $checklists
+ * @property-read int|null $checklists_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereHiredAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereTerminatedAt($value)
  * @mixin \Eloquent
  */
 class User extends Authenticatable
@@ -122,6 +128,8 @@ class User extends Authenticatable
         'philhealth_number',
         'pagibig_number',
         'tin',
+        'hired_at',
+        'terminated_at',
         'timer_started_at',
         'timer_accumulated_ms',
         'timer_status',
@@ -141,6 +149,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'hired_at' => 'date:Y-m-d',
+            'terminated_at' => 'date:Y-m-d',
         ];
     }
 
@@ -200,6 +210,11 @@ class User extends Authenticatable
     public function payrollDeductions(): HasMany
     {
         return $this->hasMany(PayrollDeduction::class);
+    }
+
+    public function checklists(): HasMany
+    {
+        return $this->hasMany(EmployeeChecklist::class);
     }
 
     public function workspaces(): BelongsToMany

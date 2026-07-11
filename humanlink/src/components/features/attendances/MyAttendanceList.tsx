@@ -6,6 +6,7 @@ interface Props {
     data: Attendance[];
     loading?: boolean;
     liveElapsedMs?: number;
+    onDispute?: (attendance: Attendance) => void;
 }
 
 function formatDuration(ms: number): string {
@@ -30,7 +31,7 @@ function statusStyles(status: Attendance['status']): string {
     return 'bg-slate-100 text-slate-600';
 }
 
-export default function MyAttendanceList({ data, loading, liveElapsedMs }: Props) {
+export default function MyAttendanceList({ data, loading, liveElapsedMs, onDispute }: Props) {
     const todayKey = formatISODate(new Date());
 
     const rows = [...data].sort((a, b) => {
@@ -65,6 +66,11 @@ export default function MyAttendanceList({ data, loading, liveElapsedMs }: Props
                                 <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Total</th>
                                 <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Flags</th>
                                 <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
+                                {onDispute && (
+                                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-right">
+                                        Actions
+                                    </th>
+                                )}
                             </tr>
                         </thead>
                         <tbody>
@@ -125,6 +131,19 @@ export default function MyAttendanceList({ data, loading, liveElapsedMs }: Props
                                                 {item.status}
                                             </span>
                                         </td>
+                                        {onDispute && (
+                                            <td className="px-6 py-3.5 text-right">
+                                                {item.status === 'completed' && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onDispute(item)}
+                                                        className="text-[11px] font-bold uppercase tracking-wider text-blue-600 hover:text-blue-700"
+                                                    >
+                                                        Dispute
+                                                    </button>
+                                                )}
+                                            </td>
+                                        )}
                                     </tr>
                                 );
                             })}

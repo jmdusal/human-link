@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\User;
 
 use App\Contracts\UserServiceInterface;
+use App\Contracts\EmployeeLifecycleServiceInterface;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\Workspace;
@@ -21,6 +22,10 @@ class UserService implements UserServiceInterface
     use ManagesUserRates;
     use ManagesUserSchedules;
 
+    public function __construct(
+        private EmployeeLifecycleServiceInterface $lifecycleService
+    ) {}
+
     public function list(): Collection
     {
         return User::query()
@@ -35,7 +40,12 @@ class UserService implements UserServiceInterface
     public function create(array $data): User
     {
         return DB::transaction(function () use ($data): User {
-            $user = User::create($this->userPayload($data));
+            $payload = $this->userPayload($data);
+            if (empty($payload['hired_at'])) {
+                $payload['hired_at'] = now()->toDateString();
+            }
+
+            $user = User::create($payload);
 
             $this->assignActiveLeaveBalances($user);
             $this->createUserRate($user, $data);
@@ -43,6 +53,7 @@ class UserService implements UserServiceInterface
 
             $user->assignRole($data['role'] ?? 'user');
             $user->notify(new NewActivityNotification());
+            $this->lifecycleService->ensureOnboardChecklist($user);
 
             return $user->load(['roles', 'rate', 'schedule', 'leaveBalances.leavePolicy']);
         });
@@ -100,6 +111,8 @@ class UserService implements UserServiceInterface
             'philhealth_number',
             'pagibig_number',
             'tin',
+            'hired_at',
+            'terminated_at',
         ]));
     }
 }

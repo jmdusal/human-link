@@ -35,4 +35,9 @@ interface AttendanceServiceInterface
      * @return array<string, mixed>
      */
     public function end(): array;
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function continueAttendance(): array;
 }

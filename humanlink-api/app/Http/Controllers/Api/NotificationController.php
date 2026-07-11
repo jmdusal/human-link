@@ -26,6 +26,7 @@ class NotificationController extends Controller
                 'read' => $notification->read_at !== null,
                 'type' => $notification->data['type'] ?? null,
                 'leave_request_id' => $notification->data['leave_request_id'] ?? null,
+                'payslip_id' => $notification->data['payslip_id'] ?? null,
                 'created_at' => $notification->created_at?->toIso8601String(),
             ]);
 

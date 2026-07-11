@@ -5,6 +5,8 @@ import type {
     GeneratePayrollPayload,
     PayrollMeta,
     Payslip,
+    PayslipAdjustment,
+    PayslipAdjustmentFormData,
 } from '@/types';
 
 export const PayrollService = {
@@ -64,5 +66,21 @@ export const PayrollService = {
 
     async delete(id: number): Promise<void> {
         await api.delete(API_ROUTES.PAYROLLS.DELETE(id));
+    },
+
+    async addAdjustment(payslipId: number, payload: PayslipAdjustmentFormData): Promise<{
+        adjustment: PayslipAdjustment;
+        payslip: Payslip;
+    }> {
+        const response = await api.post(API_ROUTES.PAYROLLS.ADJUSTMENTS(payslipId), payload);
+        return {
+            adjustment: response.data.data,
+            payslip: response.data.payslip ?? response.data.meta?.payslip,
+        };
+    },
+
+    async removeAdjustment(payslipId: number, adjustmentId: number): Promise<Payslip> {
+        const response = await api.delete(API_ROUTES.PAYROLLS.DELETE_ADJUSTMENT(payslipId, adjustmentId));
+        return response.data.data ?? response.data.payslip;
     },
 };

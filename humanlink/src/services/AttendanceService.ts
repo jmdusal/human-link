@@ -32,4 +32,9 @@ export const AttendanceService = {
         const response = await api.post(API_ROUTES.ATTENDANCES.END);
         return response.data.data;
     },
+
+    async continue(): Promise<AttendanceTimerState> {
+        const response = await api.post(API_ROUTES.ATTENDANCES.CONTINUE);
+        return response.data.data;
+    },
 };
