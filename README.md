@@ -1,70 +1,178 @@
-# Human Link
+# HumanLink
 
-## Project Architecture
+HR platform for attendance, leave, payroll, workspaces, and people management.
 
-```text
+```
 human-link/
-├── frontend/ (React UI)         # Vite + TS
-│   ├── src/
-│   │   ├── api/                 # API client (Axios/React Query) & services
-│   │   ├── components/          # Atomic UI (atoms, molecules, organisms)
-│   │   ├── features/            # Feature-based logic (e.g., Auth, Profile)
-│   │   ├── hooks/               # Reusable custom React hooks
-│   │   ├── layouts/             # Page structures (Admin, Guest)
-│   │   ├── pages/               # View components mapped to routes
-│   │   ├── store/               # State (Zustand, Redux, or Context)
-│   │   ├── types/               # Global TypeScript interfaces
-│   │   └── utils/               # Pure helper functions
-│   └── vite.config.ts           # Build & Alias configuration
-│
-└── backend/ (Laravel API)       # Stateless Backend
-    ├── app/
-    │   ├── Http/
-    │   │   ├── Controllers/     # Returns JSON only (no Blade)
-    │   │   ├── Requests/        # API validation logic
-    │   │   └── Resources/       # JSON transformation layer
-    │   └── Models/              # Eloquent database entities
-    ├── database/                # Migrations, Seeders, & Factories
-    ├── routes/
-    │   └── api.php              # Core endpoint definitions
-    └── .env                     # Database & Sanctum credentials
+  humanlink/           React UI (port 5173)
+  humanlink-api/       Laravel API (port 8000)
+  docker-compose.yml   Full local stack
+```
 
----
+More API detail: humanlink-api/README.md
 
-## Quick Start Guide
+## Stack
 
-### Backend (Laravel 12)
-The backend serves as a headless API.
-*   **Install:** `composer install`
-*   **Environment:** `cp .env.example .env` (Set `DB_DATABASE`, `APP_URL`)
-*   **Database:** `php artisan migrate --seed`
-*   **API Mode:** `php artisan install:api` (Ensures Sanctum/Passport is ready)
-*   **Run:** `php artisan serve`
+UI: React 19, Vite, TypeScript, Tailwind, Axios, Sanctum cookies
 
-### Frontend (React + TypeScript)
-The UI is a modern SPA built with Vite.
-*   **Install:** `npm install`
-*   **Environment:** `cp .env.example .env` (Set `VITE_API_URL=http://localhost:8000/api`)
-*   **Run:** `npm run dev`
+API: Laravel 13, PHP 8.4, Sanctum, Spatie Permission, Reverb
 
----
+Data: MySQL 8, Redis
 
-## Key Integration Details
+## Access model
 
-### CORS Configuration
-In the backend `config/cors.php`, authorize your frontend origin:
-```php
-'paths' => ['api/*', 'sanctum/csrf-cookie'],
-'allowed_origins' => ['http://localhost:5173'],
-'supports_credentials' => true,
+super-admin: full access, no user type needed
 
+employee: own attendance, payroll, leave requests, reports, workspaces
 
----
+manager: workspace member reports and leave approve, schedules, leave calendar
 
-### 🐋 Docker Usage (Optional)
-If you are running this project inside a Docker container (e.g., Laravel Sail), add the following to your root or backend `.env` to ensure correct file permissions:
+hr: company wide HR, leave admin, users; no roles, permissions, or activity logs
 
-```text
-# Match these to your local user ID (usually 1000 on Linux)
+Roles are only super-admin and user. Day to day access comes from user type.
+
+## Main flows
+
+Auth: cookie login; UI loads roles and permissions from /api/user
+
+Attendance: clock in out, breaks, disputes
+
+Schedules: weekly shift patterns for HR, manager, admin
+
+Leave: request, notify approvers, approve or reject, calendar, types and credits for HR
+
+Payroll: monthly payslips, deductions, adjustments, PDF
+
+Reports: attendance summary, leave utilization, payroll register, scoped by type
+
+Workspaces: teams, members, projects, tasks
+
+Users: people, rates, schedules, leave balances, role and user type
+
+Dashboard: overview for the signed in persona
+
+## Run with Docker
+
+From this repo root:
+
+```
+cp humanlink-api/.env.example humanlink-api/.env
+```
+
+In humanlink-api/.env set:
+
+```
+DB_HOST=mysql
+DB_PORT=3306
+REDIS_HOST=redis
+APP_URL=http://localhost:8000
+FRONTEND_URL=http://localhost:5173
+SANCTUM_STATEFUL_DOMAINS=localhost:5173
+```
+
+Optional Linux volume permissions:
+
+```
 UID=1000
 GID=1000
+```
+
+Then:
+
+```
+docker compose up -d --build
+docker compose exec api composer install
+docker compose exec api php artisan key:generate
+docker compose exec api php artisan migrate --seed
+docker compose exec api php artisan permission:cache-reset
+```
+
+URLs:
+
+UI http://localhost:5173
+
+API http://localhost:8000
+
+phpMyAdmin http://localhost:8080
+
+MySQL from host localhost:3307
+
+Reverb http://localhost:8081
+
+```
+docker compose logs -f api
+docker compose exec api php artisan migrate
+docker compose down
+```
+
+## Run without Docker
+
+### Database and Redis
+
+Use local MySQL 8 and Redis, or start only infra in Docker:
+
+```
+docker compose up -d mysql redis
+```
+
+Then in humanlink-api/.env use DB_HOST=127.0.0.1 and DB_PORT=3307
+
+### API
+
+```
+cd humanlink-api
+cp .env.example .env
+composer install
+php artisan key:generate
+php artisan migrate --seed
+php artisan permission:cache-reset
+php artisan serve --host=0.0.0.0 --port=8000
+```
+
+Optional:
+
+```
+php artisan queue:work
+php artisan reverb:start --port=8081
+```
+
+### UI
+
+```
+cd humanlink
+npm install
+npm run dev
+```
+
+API base URL defaults to http://localhost:8000/api
+
+## Seeded logins
+
+Password: password
+
+admin@admin.com    super-admin
+
+hr@user.com        user / hr
+
+manager@user.com   user / manager
+
+user@user.com       user / employee
+
+## Folder map
+
+```
+humanlink/
+  src/api/               Axios client
+  src/pages/             Route screens
+  src/components/        Shared UI
+  src/routes/routes.tsx  Nav and pages
+  src/context/           Auth
+
+humanlink-api/
+  app/Http/Controllers/  Controllers
+  app/Services/          Business logic
+  app/Contracts/         Service interfaces
+  app/Support/           Helpers
+  database/              Migrations and seeders
+  routes/api.php         Endpoints
+```
