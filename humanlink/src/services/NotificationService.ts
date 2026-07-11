@@ -8,6 +8,7 @@ export interface AppNotification {
     time?: string;
     read: boolean;
     type?: string | null;
+    companyId?: number | null;
     leaveRequestId?: number | null;
     payslipId?: number | null;
     workspaceId?: number | null;
@@ -23,6 +24,8 @@ export const NotificationService = {
         const response = await api.get(API_ROUTES.NOTIFICATIONS.LIST);
         return response.data.data.map((item: any) => ({
             ...item,
+            companyId: item.companyId ?? item.company_id ?? null,
+            leaveRequestId: item.leaveRequestId ?? item.leave_request_id ?? null,
             payslipId: item.payslipId ?? item.payslip_id ?? null,
             workspaceId: item.workspaceId ?? item.workspace_id ?? null,
             workspaceSlug: item.workspaceSlug ?? item.workspace_slug ?? null,

@@ -8,7 +8,7 @@ export const INITIAL_PROJECT_FORM_STATE = (workspaceId: number): ProjectFormData
     endDate: '',
     status: 'active',
     projectMembers: [],
-    template: null,
+    template: 'sprint',
 });
 
 export const formatProjectFormData = (project: Project): ProjectFormData => ({

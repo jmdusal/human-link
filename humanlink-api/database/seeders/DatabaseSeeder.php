@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            CompanySeeder::class,
             PermissionSeeder::class,
             LeavePolicySeeder::class,
             ContractTemplateSeeder::class,
@@ -23,24 +24,5 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             StatutoryContributionSeeder::class,
         ]);
-
-        // $adminRole = Role::create(['name' => 'admin']);
-        // $userRole = Role::create(['name' => 'user']);
-
-        // $adminRole->givePermissionTo(Permission::all());
-
-        // $admin = User::factory()->create([
-        //     'name' => 'Admin User',
-        //     'email' => 'admin@admin.com',
-        //     'password' => Hash::make('password'),
-        // ]);
-        // $admin->assignRole($adminRole);
-
-        // $user = User::factory()->create([
-        //     'name' => 'Regular User',
-        //     'email' => 'user@user.com',
-        //     'password' => Hash::make('password'),
-        // ]);
-        // $user->assignRole($userRole);
     }
 }

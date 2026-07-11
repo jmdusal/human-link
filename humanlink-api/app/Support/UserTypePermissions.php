@@ -106,6 +106,8 @@ final class UserTypePermissions
             'payroll-deductions-edit',
             'payroll-deductions-delete',
             'reports-view',
+            'companies-view',
+            'companies-edit',
         ];
     }
 

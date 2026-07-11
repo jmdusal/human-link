@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Notifications;
 
 use App\Models\LeaveRequest;
+use App\Models\User;
+use App\Notifications\Concerns\HasCompanyContext;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Notifications\Messages\BroadcastMessage;
@@ -12,6 +14,7 @@ use Illuminate\Notifications\Notification;
 
 class LeavePendingReminderNotification extends Notification implements ShouldBroadcastNow
 {
+    use HasCompanyContext;
     use Queueable;
 
     public function __construct(
@@ -25,12 +28,27 @@ class LeavePendingReminderNotification extends Notification implements ShouldBro
 
     public function toBroadcast(object $notifiable): BroadcastMessage
     {
-        return new BroadcastMessage($this->payload());
+        return new BroadcastMessage($this->withCompanyContext($this->payload(), $notifiable));
     }
 
     public function toArray(object $notifiable): array
     {
-        return $this->payload();
+        return $this->withCompanyContext($this->payload(), $notifiable);
+    }
+
+    public function companyId(?object $notifiable = null): ?int
+    {
+        $companyId = $this->leaveRequest->user?->company_id;
+
+        if ($companyId !== null) {
+            return (int) $companyId;
+        }
+
+        if ($notifiable instanceof User && $notifiable->company_id !== null) {
+            return (int) $notifiable->company_id;
+        }
+
+        return null;
     }
 
     /**

@@ -10,6 +10,7 @@ use App\Models\Attendance;
 use App\Models\AttendanceBreak;
 use App\Models\Schedule;
 use App\Models\User;
+use App\Support\CompanyContext;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,10 @@ use Illuminate\Validation\ValidationException;
 class AttendanceService implements AttendanceServiceInterface
 {
     private const DEFAULT_REQUIRED_MS = 7 * 60 * 60 * 1000; // 8h shift - 1h break
+
+    public function __construct(
+        private CompanyContext $companyContext
+    ) {}
 
     public function list(?string $start = null, ?string $end = null): array
     {
@@ -30,6 +35,8 @@ class AttendanceService implements AttendanceServiceInterface
 
         if (! $this->canManageAttendances()) {
             $query->where('user_id', Auth::id());
+        } else {
+            $this->companyContext->constrainByUserCompany($query);
         }
 
         $attendances = $query->orderBy('date')->get();

@@ -13,6 +13,10 @@ return new class extends Migration
             $table->foreignId('workspace_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('role'); // owner, admin, member
+            $table->string('status')->default('accepted');
+            $table->string('invitation_token', 64)->nullable()->unique();
+            $table->timestamp('invited_at')->nullable();
+            $table->timestamp('accepted_at')->nullable();
             $table->timestamps();
         });
     }

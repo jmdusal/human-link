@@ -9,9 +9,9 @@ use App\Models\TaskActivity;
 use App\Models\TaskComment;
 use App\Models\Workspace;
 use App\Models\WorkspaceUser;
-use App\Services\Workspace\Concerns\CreatesDefaultWorkspaceSetup;
 use App\Services\Workspace\Concerns\ManagesWorkspaceAccess;
 use App\Services\Workspace\Concerns\ManagesWorkspaceMembers;
+use App\Support\CompanyContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Auth;
@@ -20,14 +20,17 @@ use Illuminate\Support\Str;
 
 class WorkspaceService implements WorkspaceServiceInterface
 {
-    use CreatesDefaultWorkspaceSetup;
     use ManagesWorkspaceAccess;
     use ManagesWorkspaceMembers;
+
+    public function __construct(
+        private CompanyContext $companyContext
+    ) {}
 
     public function list(bool $includeArchived = false): Collection
     {
         $query = Workspace::query()
-            ->select(['id', 'name', 'slug', 'owner_id', 'archived_at', 'created_at', 'updated_at'])
+            ->select(['id', 'company_id', 'name', 'slug', 'owner_id', 'archived_at', 'created_at', 'updated_at'])
             ->with([
                 'owner',
                 'members',
@@ -48,6 +51,8 @@ class WorkspaceService implements WorkspaceServiceInterface
                     }
                 },
             ]);
+
+        $this->companyContext->constrain($query);
 
         if (! $includeArchived) {
             $query->whereNull('archived_at');
@@ -73,7 +78,7 @@ class WorkspaceService implements WorkspaceServiceInterface
 
     public function findBySlug(string $slug): Workspace
     {
-        $workspace = Workspace::query()
+        $query = Workspace::query()
             ->with([
                 'owner',
                 'members',
@@ -98,8 +103,11 @@ class WorkspaceService implements WorkspaceServiceInterface
                 },
             ])
             ->where('slug', $slug)
-            ->whereNull('archived_at')
-            ->firstOrFail();
+            ->whereNull('archived_at');
+
+        $this->companyContext->constrain($query);
+
+        $workspace = $query->firstOrFail();
 
         $this->assertCanAccessWorkspace($workspace);
 
@@ -111,6 +119,7 @@ class WorkspaceService implements WorkspaceServiceInterface
         return DB::transaction(function () use ($data): Workspace {
             $workspace = Workspace::create([
                 ...$this->workspacePayload($data),
+                'company_id' => $this->companyContext->requireId(),
                 'slug' => Str::slug($data['name']),
                 'owner_id' => Auth::id(),
             ]);
@@ -120,9 +129,6 @@ class WorkspaceService implements WorkspaceServiceInterface
             if (isset($data['members'])) {
                 $this->syncMembersOnCreate($workspace, $data['members']);
             }
-
-            $this->createDefaultStatuses($workspace);
-            $this->createDefaultTags($workspace);
 
             return $workspace->load('statuses', 'tags', 'members', 'projects');
         });

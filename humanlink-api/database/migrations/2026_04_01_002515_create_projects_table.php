@@ -16,6 +16,7 @@ return new class extends Migration
             $table->dateTime('start_date')->nullable();
             $table->dateTime('end_date')->nullable();
             $table->string('status')->default('active');
+            $table->timestamp('archived_at')->nullable();
             $table->timestamps();
         });
     }

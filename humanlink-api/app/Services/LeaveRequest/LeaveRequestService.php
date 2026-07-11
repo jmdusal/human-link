@@ -38,7 +38,13 @@ class LeaveRequestService implements LeaveRequestServiceInterface
             ->latest();
 
         if ($this->canManageAllLeaves($actor)) {
-            return $query->get();
+            $ids = $actor->reportableUserIds();
+
+            if ($ids === null) {
+                return $query->get();
+            }
+
+            return $query->whereIn('user_id', $ids)->get();
         }
 
         if ($actor?->isManagerType()) {
@@ -52,10 +58,16 @@ class LeaveRequestService implements LeaveRequestServiceInterface
 
     public function listPolicyOptions(): Collection
     {
-        return LeavePolicy::query()
+        $actor = Auth::user();
+        $query = LeavePolicy::query()
             ->where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name', 'slug', 'is_paid', 'is_active']);
+            ->orderBy('name');
+
+        if ($actor && ! $actor->isPlatformAdmin()) {
+            $query->where('company_id', $actor->company_id);
+        }
+
+        return $query->get(['id', 'name', 'slug', 'is_paid', 'is_active']);
     }
 
     public function calendar(?string $start = null, ?string $end = null, ?string $status = null): array
@@ -81,7 +93,11 @@ class LeaveRequestService implements LeaveRequestServiceInterface
         $actor = Auth::user();
 
         if ($this->canManageAllLeaves($actor)) {
-            // company-wide
+            $ids = $actor->reportableUserIds();
+
+            if ($ids !== null) {
+                $query->whereIn('user_id', $ids);
+            }
         } elseif ($actor?->isManagerType()) {
             $query->whereIn('user_id', $actor->sharedWorkspaceMemberIds());
         } else {
@@ -142,6 +158,10 @@ class LeaveRequestService implements LeaveRequestServiceInterface
             abort(403, 'You can only create leave requests for yourself.');
         }
 
+        if ($userId !== (int) $actor->id && ! $actor->canAccessUserId($userId)) {
+            abort(403, 'You can only create leave requests for users in your company.');
+        }
+
         if (
             (int) $actor->id === $userId
             && ! $actor->isEmployeeType()
@@ -152,7 +172,9 @@ class LeaveRequestService implements LeaveRequestServiceInterface
         }
 
         $user = User::query()->findOrFail($userId);
-        $policy = LeavePolicy::query()->findOrFail((int) $data['leave_policy_id']);
+        $policy = LeavePolicy::query()
+            ->where('company_id', $user->company_id)
+            ->findOrFail((int) $data['leave_policy_id']);
 
         if (! $policy->is_active) {
             throw ValidationException::withMessages([
@@ -180,7 +202,7 @@ class LeaveRequestService implements LeaveRequestServiceInterface
             ]);
 
             return $leaveRequest->load([
-                'user:id,name,email,user_type',
+                'user:id,name,email,user_type,company_id',
                 'leavePolicy:id,name,slug,is_paid',
                 'approver:id,name,email',
             ]);
@@ -201,9 +223,11 @@ class LeaveRequestService implements LeaveRequestServiceInterface
             ]);
         }
 
-        $policy = LeavePolicy::query()->findOrFail(
-            (int) ($data['leave_policy_id'] ?? $leaveRequest->leave_policy_id)
-        );
+        $policy = LeavePolicy::query()
+            ->where('company_id', $leaveRequest->user->company_id)
+            ->findOrFail(
+                (int) ($data['leave_policy_id'] ?? $leaveRequest->leave_policy_id)
+            );
 
         $startDate = Carbon::parse($data['start_date'] ?? $leaveRequest->start_date)->startOfDay();
         $endDate = Carbon::parse($data['end_date'] ?? $leaveRequest->end_date)->startOfDay();
@@ -376,6 +400,10 @@ class LeaveRequestService implements LeaveRequestServiceInterface
         $recipients = User::query()
             ->where('id', '!=', $leaveRequest->user_id)
             ->where('status', 'active')
+            ->when(
+                $requester?->company_id,
+                fn ($query) => $query->where('company_id', $requester->company_id),
+            )
             ->where(function ($query) use ($workspaceMemberIds): void {
                 $query->where('user_type', 'hr')
                     ->orWhereHas('roles', function ($roles): void {
@@ -512,7 +540,7 @@ class LeaveRequestService implements LeaveRequestServiceInterface
     {
         $actor = Auth::user();
 
-        if ($this->canManageAllLeaves($actor)) {
+        if ($this->canManageAllLeaves($actor) && $actor->canAccessUserId((int) $leaveRequest->user_id)) {
             return;
         }
 
@@ -531,7 +559,7 @@ class LeaveRequestService implements LeaveRequestServiceInterface
     {
         $actor = Auth::user();
 
-        if ($this->canManageAllLeaves($actor)) {
+        if ($this->canManageAllLeaves($actor) && $actor->canAccessUserId((int) $leaveRequest->user_id)) {
             return;
         }
 
@@ -550,7 +578,7 @@ class LeaveRequestService implements LeaveRequestServiceInterface
             abort(403, 'You cannot approve or reject your own leave request.');
         }
 
-        if ($this->canManageAllLeaves($actor)) {
+        if ($this->canManageAllLeaves($actor) && $actor->canAccessUserId((int) $leaveRequest->user_id)) {
             return;
         }
 

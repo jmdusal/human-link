@@ -10,8 +10,9 @@ return new class extends Migration
     {
         Schema::create('leave_policies', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('company_id')->constrained()->restrictOnDelete();
             $table->string('name');
-            $table->string('slug')->unique();
+            $table->string('slug');
             $table->decimal('default_credits', 5, 2)->default(0.00);
             $table->boolean('is_active')->default(true);
             $table->boolean('is_paid')->default(true);
@@ -20,6 +21,7 @@ return new class extends Migration
             $table->decimal('max_carry_over', 5, 2)->default(0.00);
             $table->boolean('requires_attachment')->default(false);
             $table->timestamps();
+            $table->unique(['company_id', 'slug']);
         });
     }
 

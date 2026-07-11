@@ -15,6 +15,7 @@ trait ManagesUserLeaveBalances
 
         $policies = LeavePolicy::query()
             ->where('is_active', true)
+            ->where('company_id', $user->company_id)
             ->get();
 
         foreach ($policies as $policy) {

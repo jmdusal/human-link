@@ -1,11 +1,14 @@
-import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Building2, ChevronDown, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import api from '@/api/axios';
 import Notification from '@/components/layouts/Notification';
 import { useAuth } from '@/context/AuthContext';
 import { API_ROUTES } from '@/constants';
+import { CompanyService } from '@/services/CompanyService';
+import type { Company } from '@/types';
 import { getInitials } from '@/utils/userUtils';
 
 interface TopHeaderProps {
@@ -18,19 +21,48 @@ export default function TopHeader({
     onToggleSidebar,
 }: TopHeaderProps) {
     const [isOpen, setIsOpen] = useState(false);
-    const { user, setUser } = useAuth();
+    const [companyOpen, setCompanyOpen] = useState(false);
+    const [companies, setCompanies] = useState<Company[]>([]);
+    const [switching, setSwitching] = useState(false);
+    const { user, setUser, can, hasRole, switchCompany } = useAuth();
     const navigate = useNavigate();
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const companyRef = useRef<HTMLDivElement>(null);
+    const isPlatformAdmin = hasRole('super-admin');
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setIsOpen(false);
             }
+            if (companyRef.current && !companyRef.current.contains(event.target as Node)) {
+                setCompanyOpen(false);
+            }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        if (!isPlatformAdmin) {
+            setCompanies([]);
+            return;
+        }
+
+        let cancelled = false;
+
+        CompanyService.list()
+            .then((list) => {
+                if (!cancelled) setCompanies(list);
+            })
+            .catch(() => {
+                if (!cancelled) setCompanies([]);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [isPlatformAdmin, user?.company_id]);
 
     const handleLogout = async () => {
         try {
@@ -41,6 +73,24 @@ export default function TopHeader({
             console.error('Logout failed', error);
             setUser(null);
             navigate('/login');
+        }
+    };
+
+    const handleSwitchCompany = async (company: Company) => {
+        if (company.id === user?.company_id || switching) {
+            setCompanyOpen(false);
+            return;
+        }
+
+        setSwitching(true);
+        try {
+            await switchCompany(company.id);
+            setCompanyOpen(false);
+            toast.success(`Switched to ${company.name}`);
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'Failed to switch company.');
+        } finally {
+            setSwitching(false);
         }
     };
 
@@ -64,7 +114,92 @@ export default function TopHeader({
                 )}
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+                {isPlatformAdmin && companies.length > 0 && (
+                    <div className="relative" ref={companyRef}>
+                        <button
+                            type="button"
+                            onClick={() => setCompanyOpen((prev) => !prev)}
+                            disabled={switching}
+                            className={`hidden sm:flex items-center gap-2 h-9 px-3 rounded-xl border text-sm font-medium transition-all ${
+                                companyOpen
+                                    ? 'bg-white border-slate-200 shadow-sm text-slate-900'
+                                    : 'bg-white/70 border-slate-200/80 text-slate-700 hover:bg-white hover:border-slate-200'
+                            }`}
+                        >
+                            <Building2 size={15} className="text-slate-500" />
+                            <span className="max-w-[160px] truncate">
+                                {user?.company?.name || 'Select company'}
+                            </span>
+                            <ChevronDown
+                                size={14}
+                                className={`text-slate-400 transition-transform ${companyOpen ? 'rotate-180' : ''}`}
+                            />
+                        </button>
+
+                        <AnimatePresence>
+                            {companyOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 6 }}
+                                    transition={{ duration: 0.15 }}
+                                    className="absolute right-0 mt-2 w-64 bg-white border border-slate-200/80 rounded-xl shadow-lg shadow-slate-200/50 overflow-hidden py-1.5 z-50"
+                                >
+                                    <div className="px-3.5 py-2">
+                                        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
+                                            Switch company
+                                        </p>
+                                    </div>
+                                    {companies.map((company) => {
+                                        const active = company.id === user?.company_id;
+                                        return (
+                                            <button
+                                                key={company.id}
+                                                type="button"
+                                                onClick={() => handleSwitchCompany(company)}
+                                                className={`w-full px-3.5 py-2 text-left text-sm transition-colors ${
+                                                    active
+                                                        ? 'bg-slate-900 text-white'
+                                                        : 'text-slate-700 hover:bg-slate-50'
+                                                }`}
+                                            >
+                                                <span className="font-medium block truncate">{company.name}</span>
+                                                <span className={`text-[11px] ${active ? 'text-slate-300' : 'text-slate-400'}`}>
+                                                    {company.slug}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+
+                                    <div className="h-px bg-slate-100 my-1.5" />
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setCompanyOpen(false);
+                                            navigate('/company-settings?create=1');
+                                        }}
+                                        className="w-full px-3.5 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                                    >
+                                        + New company
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setCompanyOpen(false);
+                                            navigate('/company-settings');
+                                        }}
+                                        className="w-full px-3.5 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                                    >
+                                        Company settings
+                                    </button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                )}
+
                 <div className="scale-90 origin-right">
                     <Notification />
                 </div>
@@ -117,12 +252,18 @@ export default function TopHeader({
                                     My Profile
                                 </button>
 
-                                <button
-                                    type="button"
-                                    className="w-full px-3.5 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                                >
-                                    System Settings
-                                </button>
+                                {(isPlatformAdmin || can('companies-view')) && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsOpen(false);
+                                            navigate('/company-settings');
+                                        }}
+                                        className="w-full px-3.5 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                                    >
+                                        Company Settings
+                                    </button>
+                                )}
 
                                 <div className="h-px bg-slate-100 my-1.5" />
 

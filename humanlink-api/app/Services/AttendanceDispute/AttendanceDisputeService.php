@@ -8,6 +8,7 @@ use App\Contracts\AttendanceDisputeServiceInterface;
 use App\Models\Attendance;
 use App\Models\AttendanceDispute;
 use App\Models\User;
+use App\Support\CompanyContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,10 @@ use Illuminate\Validation\ValidationException;
 
 class AttendanceDisputeService implements AttendanceDisputeServiceInterface
 {
+    public function __construct(
+        private CompanyContext $companyContext
+    ) {}
+
     public function list(): Collection
     {
         $query = AttendanceDispute::query()
@@ -27,6 +32,8 @@ class AttendanceDisputeService implements AttendanceDisputeServiceInterface
 
         if (! $this->canManage()) {
             $query->where('user_id', Auth::id());
+        } else {
+            $this->companyContext->constrainByUserCompany($query);
         }
 
         return $query->get();

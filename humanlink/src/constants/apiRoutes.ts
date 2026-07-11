@@ -112,9 +112,6 @@ export const API_ROUTES = {
         STORE: (taskId: number) => `/tasks/${taskId}/attachments`,
         DELETE: (id: number) => `/tasks/attachments/${id}`,
     },
-    LEAVES: {
-      LIST: '/leaves'  
-    },
     LEAVE_BALANCES: {
         LIST: '/leave-balances',
         STORE: '/leave-balances',
@@ -199,6 +196,15 @@ export const API_ROUTES = {
     ME: {
         SHOW: '/me',
         UPDATE: '/me',
+    },
+    COMPANIES: {
+        LIST: '/companies',
+        STORE: '/companies',
+        CURRENT: '/companies/current',
+        UPDATE_CURRENT: '/companies/current',
+        SWITCH: '/companies/switch',
+        SHOW: (id: number) => `/companies/${id}`,
+        UPDATE: (id: number) => `/companies/${id}`,
     },
     NOTIFICATIONS: {
         LIST: '/notifications',

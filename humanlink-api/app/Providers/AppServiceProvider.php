@@ -9,6 +9,7 @@ use App\Contracts\AttendanceServiceInterface;
 use App\Contracts\AttendanceDisputeServiceInterface;
 use App\Contracts\PayrollServiceInterface;
 use App\Contracts\AuthServiceInterface;
+use App\Contracts\CompanyServiceInterface;
 use App\Contracts\ContractTemplateServiceInterface;
 use App\Contracts\DashboardServiceInterface;
 use App\Contracts\EmployeeLifecycleServiceInterface;
@@ -29,10 +30,12 @@ use App\Contracts\TaskServiceInterface;
 use App\Contracts\UserServiceInterface;
 use App\Contracts\UserDocumentServiceInterface;
 use App\Contracts\WorkspaceServiceInterface;
+use App\Listeners\ApplyCompanyMailSettings;
 use App\Listeners\UpdateModelsAfterMigration;
 use App\Services\ActivityLog\ActivityLogService;
 use App\Services\Attendance\AttendanceService;
 use App\Services\AttendanceDispute\AttendanceDisputeService;
+use App\Services\Company\CompanyService;
 use App\Services\Dashboard\DashboardService;
 use App\Services\EmployeeLifecycle\EmployeeLifecycleService;
 use App\Services\Payroll\PayrollService;
@@ -55,7 +58,13 @@ use App\Services\TaskComment\TaskCommentService;
 use App\Services\User\UserService;
 use App\Services\UserDocument\UserDocumentService;
 use App\Services\Workspace\WorkspaceService;
+use App\Notifications\Channels\CompanyDatabaseChannel;
+use App\Support\CompanyContext;
+use App\Support\CompanyMailConfigurator;
 use Illuminate\Database\Events\MigrationsEnded;
+use Illuminate\Mail\Events\MessageSending;
+use Illuminate\Notifications\Channels\DatabaseChannel;
+use Illuminate\Notifications\Events\NotificationSending;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
@@ -67,6 +76,10 @@ class AppServiceProvider extends ServiceProvider
             $this->app->register(\Laravel\Telescope\TelescopeServiceProvider::class);
             $this->app->register(TelescopeServiceProvider::class);
         }
+        $this->app->singleton(CompanyContext::class);
+        $this->app->singleton(CompanyMailConfigurator::class);
+        $this->app->bind(DatabaseChannel::class, CompanyDatabaseChannel::class);
+        $this->app->bind(CompanyServiceInterface::class, CompanyService::class);
         $this->app->bind(UserServiceInterface::class, UserService::class);
         $this->app->bind(UserDocumentServiceInterface::class, UserDocumentService::class);
         $this->app->bind(WorkspaceServiceInterface::class, WorkspaceService::class);
@@ -99,6 +112,16 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(
             MigrationsEnded::class,
             UpdateModelsAfterMigration::class,
+        );
+
+        Event::listen(
+            NotificationSending::class,
+            [ApplyCompanyMailSettings::class, 'handleNotificationSending'],
+        );
+
+        Event::listen(
+            MessageSending::class,
+            [ApplyCompanyMailSettings::class, 'handleMessageSending'],
         );
     }
 }

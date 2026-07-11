@@ -17,6 +17,13 @@ return new class extends Migration
             $table->timestamp('started_at')->nullable();
             $table->timestamp('ended_at')->nullable();
             $table->bigInteger('total_ms')->default(0);
+            $table->bigInteger('late_ms')->default(0);
+            $table->bigInteger('undertime_ms')->default(0);
+            $table->bigInteger('overtime_ms')->default(0);
+            $table->bigInteger('break_ms')->default(0);
+            $table->bigInteger('required_ms')->default(0);
+            $table->time('scheduled_start')->nullable();
+            $table->time('scheduled_end')->nullable();
             $table->enum('status', ['working', 'paused', 'completed'])->default('working');
             $table->timestamps();
 

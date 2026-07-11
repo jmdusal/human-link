@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
+use App\Notifications\Concerns\HasCompanyContext;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Notifications\Messages\BroadcastMessage;
@@ -11,6 +12,7 @@ use Illuminate\Notifications\Notification;
 
 class TimerForgottenNotification extends Notification implements ShouldBroadcastNow
 {
+    use HasCompanyContext;
     use Queueable;
 
     public function via(object $notifiable): array
@@ -20,12 +22,12 @@ class TimerForgottenNotification extends Notification implements ShouldBroadcast
 
     public function toBroadcast(object $notifiable): BroadcastMessage
     {
-        return new BroadcastMessage($this->payload());
+        return new BroadcastMessage($this->withCompanyContext($this->payload(), $notifiable));
     }
 
     public function toArray(object $notifiable): array
     {
-        return $this->payload();
+        return $this->withCompanyContext($this->payload(), $notifiable);
     }
 
     /**

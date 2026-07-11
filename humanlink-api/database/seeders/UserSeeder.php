@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Company;
 use App\Support\UserTypePermissions;
 use Illuminate\Database\Seeder;
 use App\Models\LeavePolicy;
@@ -12,9 +13,16 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
+        $companyId = Company::query()->where('slug', 'humanlink')->value('id');
+
+        if (! $companyId) {
+            return;
+        }
+
         $admin = User::updateOrCreate(
             ['email' => 'admin@admin.com'],
             [
+                'company_id' => $companyId,
                 'name' => 'Admin User',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
@@ -30,6 +38,7 @@ class UserSeeder extends Seeder
         $hr = User::updateOrCreate(
             ['email' => 'hr@user.com'],
             [
+                'company_id' => $companyId,
                 'name' => 'HR User',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
@@ -46,6 +55,7 @@ class UserSeeder extends Seeder
         $manager = User::updateOrCreate(
             ['email' => 'manager@user.com'],
             [
+                'company_id' => $companyId,
                 'name' => 'Team Manager',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
@@ -62,6 +72,7 @@ class UserSeeder extends Seeder
         $employee = User::updateOrCreate(
             ['email' => 'user@user.com'],
             [
+                'company_id' => $companyId,
                 'name' => 'Regular User',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
@@ -81,6 +92,7 @@ class UserSeeder extends Seeder
         $currentYear = (int) date('Y');
 
         $balances = LeavePolicy::query()
+            ->where('company_id', $user->company_id)
             ->where('is_active', true)
             ->get()
             ->map(fn (LeavePolicy $policy): array => [

@@ -10,17 +10,24 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('company_id')->constrained()->restrictOnDelete();
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->boolean('must_set_password')->default(false);
             $table->boolean('is_active')->default(true);
-            $table->enum('status', ['active', 'inactive'])->default('Active');
+            $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->string('user_type', 32)->nullable();
+            $table->date('hired_at')->nullable();
+            $table->date('terminated_at')->nullable();
             $table->enum('timer_status', ['working', 'paused', 'offline'])->default('offline');
             $table->timestamp('timer_started_at')->nullable();
             $table->bigInteger('timer_accumulated_ms')->default(0);
-
             $table->rememberToken();
+            $table->text('two_factor_secret')->nullable();
+            $table->text('two_factor_recovery_codes')->nullable();
+            $table->timestamp('two_factor_confirmed_at')->nullable();
             $table->timestamps();
         });
 

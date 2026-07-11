@@ -75,7 +75,15 @@ class TaskCommentService implements TaskCommentServiceInterface
             return;
         }
 
-        $users = User::query()->whereIn('id', $mentionedIds)->get();
+        $task->loadMissing('project.workspace');
+
+        $users = User::query()
+            ->whereIn('id', $mentionedIds)
+            ->when(
+                $task->project?->workspace?->company_id,
+                fn ($query) => $query->where('company_id', $task->project->workspace->company_id),
+            )
+            ->get();
 
         if ($users->isEmpty()) {
             return;
@@ -83,7 +91,7 @@ class TaskCommentService implements TaskCommentServiceInterface
 
         Notification::send(
             $users,
-            new TaskMentionNotification($task->loadMissing('project'), $comment, Auth::user())
+            new TaskMentionNotification($task, $comment, Auth::user())
         );
 
         TaskActivity::create([

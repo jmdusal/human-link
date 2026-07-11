@@ -20,6 +20,21 @@ export default function NotificationDropdown() {
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const handleNewNotification = useCallback((notification: any) => {
+        const companyId =
+            notification.companyId
+            ?? notification.company_id
+            ?? notification.data?.company_id
+            ?? notification.data?.companyId
+            ?? null;
+
+        if (
+            user?.company_id != null
+            && companyId != null
+            && Number(companyId) !== Number(user.company_id)
+        ) {
+            return;
+        }
+
         setNotifications((prev) => {
             const id = String(notification.id || notification.data?.id || Math.random().toString());
             if (prev.find((n) => n.id === id)) return prev;
@@ -44,6 +59,7 @@ export default function NotificationDropdown() {
                     time: displayTime,
                     read: false,
                     type: notification.type || notification.data?.type || null,
+                    companyId: companyId != null ? Number(companyId) : null,
                     leaveRequestId:
                         notification.leaveRequestId
                         || notification.leave_request_id
@@ -90,7 +106,7 @@ export default function NotificationDropdown() {
                 ...prev,
             ];
         });
-    }, []);
+    }, [user?.company_id]);
 
     const fetchNotifications = useCallback(async () => {
         try {
@@ -104,7 +120,7 @@ export default function NotificationDropdown() {
     useEffect(() => {
         if (!user?.id) return;
         fetchNotifications();
-    }, [user?.id, fetchNotifications]);
+    }, [user?.id, user?.company_id, fetchNotifications]);
 
     useEffect(() => {
         if (!user?.id) return;

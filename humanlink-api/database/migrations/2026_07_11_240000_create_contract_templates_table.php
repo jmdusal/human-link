@@ -2,10 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Support\DefaultContractTemplates;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -14,22 +12,14 @@ return new class extends Migration
     {
         Schema::create('contract_templates', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('company_id')->constrained()->restrictOnDelete();
             $table->string('name');
-            $table->string('employment_type')->unique();
+            $table->string('employment_type');
             $table->longText('body');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+            $table->unique(['company_id', 'employment_type']);
         });
-
-        $now = now();
-
-        foreach (DefaultContractTemplates::all() as $template) {
-            DB::table('contract_templates')->insert([
-                ...$template,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
-        }
     }
 
     public function down(): void

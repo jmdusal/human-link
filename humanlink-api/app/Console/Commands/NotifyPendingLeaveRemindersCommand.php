@@ -22,7 +22,7 @@ class NotifyPendingLeaveRemindersCommand extends Command
         $reminded = 0;
 
         $pending = LeaveRequest::query()
-            ->with('user:id,name,email')
+            ->with('user:id,name,email,company_id')
             ->where('status', 'pending')
             ->where('created_at', '<=', $cutoff)
             ->get();
@@ -34,6 +34,10 @@ class NotifyPendingLeaveRemindersCommand extends Command
             $targets = User::query()
                 ->where('id', '!=', $leaveRequest->user_id)
                 ->where('status', 'active')
+                ->when(
+                    $requester?->company_id,
+                    fn ($query) => $query->where('company_id', $requester->company_id),
+                )
                 ->where(function ($query) use ($workspaceMemberIds): void {
                     $query->where('user_type', 'hr')
                         ->orWhereHas('roles', function ($roles): void {

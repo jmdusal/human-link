@@ -32,8 +32,10 @@ class ScheduleService implements ScheduleServiceInterface
                     });
             });
 
-        if (! $this->canManageSchedules()) {
-            $query->where('user_id', Auth::id());
+        $ids = Auth::user()?->reportableUserIds();
+
+        if ($ids !== null) {
+            $query->whereIn('user_id', $ids);
         }
 
         $schedules = $query->latest()->get();
@@ -59,6 +61,13 @@ class ScheduleService implements ScheduleServiceInterface
         $this->assertCanManage();
 
         $userId = (int) $data['user_id'];
+        $actor = Auth::user();
+
+        if ($actor && ! $actor->canAccessUserId($userId)) {
+            throw ValidationException::withMessages([
+                'user_id' => ['User does not belong to your company.'],
+            ]);
+        }
 
         return DB::transaction(function () use ($data, $userId): Schedule {
             $existing = Schedule::query()
@@ -87,6 +96,7 @@ class ScheduleService implements ScheduleServiceInterface
     public function update(Schedule $schedule, array $data): Schedule
     {
         $this->assertCanManage();
+        $this->authorizeScheduleAccess($schedule);
 
         $payload = [];
 
@@ -114,19 +124,20 @@ class ScheduleService implements ScheduleServiceInterface
     public function delete(Schedule $schedule): void
     {
         $this->assertCanManage();
+        $this->authorizeScheduleAccess($schedule);
 
         $schedule->delete();
     }
 
     protected function authorizeScheduleAccess(Schedule $schedule): void
     {
-        if ($this->canManageSchedules()) {
+        $actor = Auth::user();
+
+        if ($actor && $actor->canAccessUserId((int) $schedule->user_id)) {
             return;
         }
 
-        if ((int) $schedule->user_id !== (int) Auth::id()) {
-            abort(403, 'You are not allowed to view this schedule.');
-        }
+        abort(403, 'You are not allowed to view this schedule.');
     }
 
     protected function assertCanManage(): void

@@ -105,6 +105,7 @@ class UserDocumentService implements UserDocumentServiceInterface
         }
 
         $hasActiveTemplate = ContractTemplate::query()
+            ->where('company_id', $user->company_id)
             ->where('employment_type', $employmentType)
             ->where('is_active', true)
             ->exists();
@@ -137,6 +138,7 @@ class UserDocumentService implements UserDocumentServiceInterface
         if ($templateId !== null) {
             $template = ContractTemplate::query()
                 ->whereKey($templateId)
+                ->where('company_id', $user->company_id)
                 ->where('is_active', true)
                 ->first();
 
@@ -158,6 +160,7 @@ class UserDocumentService implements UserDocumentServiceInterface
         }
 
         $template = ContractTemplate::query()
+            ->where('company_id', $user->company_id)
             ->where('employment_type', $employmentType)
             ->where('is_active', true)
             ->first();

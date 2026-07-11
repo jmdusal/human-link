@@ -12,6 +12,7 @@ return new class extends Migration
     {
         Schema::create('payroll_deductions', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('company_id')->constrained()->restrictOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->decimal('amount', 12, 2);

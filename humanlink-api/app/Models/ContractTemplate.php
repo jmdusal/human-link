@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -24,6 +25,10 @@ use Illuminate\Database\Eloquent\Model;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ContractTemplate whereIsActive($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ContractTemplate whereName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ContractTemplate whereUpdatedAt($value)
+ * @property int $company_id
+ * @property-read \App\Models\Company $company
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContractTemplate forCompany(int $companyId)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContractTemplate whereCompanyId($value)
  * @mixin \Eloquent
  */
 /**
@@ -44,10 +49,16 @@ use Illuminate\Database\Eloquent\Model;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ContractTemplate whereIsActive($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ContractTemplate whereName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ContractTemplate whereUpdatedAt($value)
+ * @property int $company_id
+ * @property-read \App\Models\Company $company
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContractTemplate forCompany(int $companyId)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContractTemplate whereCompanyId($value)
  * @mixin \Eloquent
  */
 class ContractTemplate extends Model
 {
+    use BelongsToCompany;
+
     public const PLACEHOLDERS = [
         'employee_name',
         'email',
@@ -62,6 +73,7 @@ class ContractTemplate extends Model
     ];
 
     protected $fillable = [
+        'company_id',
         'name',
         'employment_type',
         'body',

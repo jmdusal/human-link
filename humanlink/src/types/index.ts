@@ -1,6 +1,7 @@
 
 
 export type { ActivityLog } from '@/types/ActivityLog';
+export type { Company, CompanyFormData } from '@/types/Company';
 export type { User, UserFormData, UserLeaveBalanceSummary, UserType, HrStatus } from '@/types/User';
 export type { UserDetail, EmploymentType } from '@/types/UserDetail';
 export type { UserDocument, UserDocumentType } from '@/types/UserDocument';

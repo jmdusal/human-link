@@ -30,6 +30,7 @@ class PermissionSeeder extends Seeder
             'payroll-deductions',
             'leave-calendar',
             'reports',
+            'companies',
         ];
 
         collect($models)->each(function ($model) {

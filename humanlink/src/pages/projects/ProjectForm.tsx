@@ -89,7 +89,9 @@ export default function ProjectForm({ isOpen, onClose, onSuccess, workspaceId, s
                             <div>
                                 <h4 className="text-sm font-bold text-slate-900">Project template</h4>
                                 <p className="text-[12px] text-slate-400 font-medium mt-0.5">
-                                    Optional presets for statuses and tags. Existing ones are kept; missing ones are added.
+                                    Required. Sets board statuses and starter tags from the template.
+                                    If this workspace has no tasks yet, the board is replaced by the template
+                                    (old Todo/In Progress/Done defaults are cleared).
                                 </p>
                             </div>
                         </div>
@@ -101,10 +103,7 @@ export default function ProjectForm({ isOpen, onClose, onSuccess, workspaceId, s
                                         key={template.key}
                                         type="button"
                                         onClick={() =>
-                                            form.handleChange(
-                                                'template',
-                                                selected ? null : (template.key as ProjectTemplate),
-                                            )
+                                            form.handleChange('template', template.key as ProjectTemplate)
                                         }
                                         className={`text-left rounded-xl border px-3 py-3 transition-all ${
                                             selected
@@ -120,6 +119,9 @@ export default function ProjectForm({ isOpen, onClose, onSuccess, workspaceId, s
                                 );
                             })}
                         </div>
+                        {form.errors.template?.[0] && (
+                            <p className="text-[11px] text-red-500 font-medium mt-2">{form.errors.template[0]}</p>
+                        )}
                     </Card>
                 )}
 

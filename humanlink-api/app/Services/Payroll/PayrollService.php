@@ -12,6 +12,7 @@ use App\Models\Payslip;
 use App\Models\PayslipAdjustment;
 use App\Models\User;
 use App\Notifications\PayslipReadyNotification;
+use App\Support\CompanyContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
@@ -25,7 +26,8 @@ class PayrollService implements PayrollServiceInterface
     private const STANDARD_WORK_DAYS = 22;
 
     public function __construct(
-        private StatutoryContributionCalculator $statutoryCalculator
+        private StatutoryContributionCalculator $statutoryCalculator,
+        private CompanyContext $companyContext
     ) {}
 
     public function list(?int $year = null, ?int $month = null): array
@@ -40,6 +42,8 @@ class PayrollService implements PayrollServiceInterface
 
         if (! $this->canManagePayroll()) {
             $query->where('user_id', Auth::id());
+        } else {
+            $this->companyContext->constrainByUserCompany($query);
         }
 
         $payslips = $query
@@ -91,8 +95,11 @@ class PayrollService implements PayrollServiceInterface
             ->where('status', 'active')
             ->whereHas('rate')
             ->with('rate')
-            ->orderBy('id')
-            ->get();
+            ->orderBy('id');
+
+        $this->companyContext->constrain($users);
+
+        $users = $users->get();
 
         $generated = 0;
         $skipped = 0;
@@ -139,6 +146,11 @@ class PayrollService implements PayrollServiceInterface
             ->with('rate')
             ->findOrFail($userId);
 
+        $actor = Auth::user();
+        if ($actor && ! $actor->canAccessUserId((int) $user->id)) {
+            abort(403, 'You are not allowed to generate payroll for this user.');
+        }
+
         if (! $user->rate) {
             throw ValidationException::withMessages([
                 'user_id' => ['User has no active rate. Set rates before generating a payslip.'],
@@ -179,8 +191,11 @@ class PayrollService implements PayrollServiceInterface
             ->where('status', 'active')
             ->whereHas('rate')
             ->with('rate')
-            ->orderBy('id')
-            ->get();
+            ->orderBy('id');
+
+        $this->companyContext->constrain($users);
+
+        $users = $users->get();
 
         $generated = 0;
         $skipped = 0;

@@ -6,6 +6,7 @@ namespace App\Services\ContractTemplate;
 
 use App\Contracts\ContractTemplateServiceInterface;
 use App\Models\ContractTemplate;
+use App\Support\CompanyContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -13,23 +14,36 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ContractTemplateService implements ContractTemplateServiceInterface
 {
+    public function __construct(
+        private CompanyContext $companyContext
+    ) {}
+
     public function list(): Collection
     {
-        return ContractTemplate::query()
-            ->orderBy('employment_type')
-            ->get();
+        $query = ContractTemplate::query()->orderBy('employment_type');
+
+        $this->companyContext->constrain($query);
+
+        return $query->get();
     }
 
     public function create(array $data): ContractTemplate
     {
         return DB::transaction(function () use ($data): ContractTemplate {
-            return ContractTemplate::create($data);
+            return ContractTemplate::create([
+                ...$data,
+                'company_id' => $data['company_id'] ?? $this->companyContext->requireId(),
+            ]);
         });
     }
 
     public function update(ContractTemplate $contractTemplate, array $data): ContractTemplate
     {
+        $this->assertSameCompany($contractTemplate);
+
         return DB::transaction(function () use ($contractTemplate, $data): ContractTemplate {
+            unset($data['company_id']);
+
             $contractTemplate->update($data);
 
             return $contractTemplate->fresh();
@@ -38,6 +52,8 @@ class ContractTemplateService implements ContractTemplateServiceInterface
 
     public function delete(ContractTemplate $contractTemplate): void
     {
+        $this->assertSameCompany($contractTemplate);
+
         $contractTemplate->delete();
     }
 
@@ -50,6 +66,17 @@ class ContractTemplateService implements ContractTemplateServiceInterface
         ]);
 
         return $pdf->stream('contract-template-preview.pdf');
+    }
+
+    private function assertSameCompany(ContractTemplate $contractTemplate): void
+    {
+        if (! $this->companyContext->shouldScope()) {
+            return;
+        }
+
+        if ((int) $contractTemplate->company_id !== $this->companyContext->requireId()) {
+            abort(403, 'Contract template does not belong to your company.');
+        }
     }
 
     private function fillSamplePlaceholders(string $body): string

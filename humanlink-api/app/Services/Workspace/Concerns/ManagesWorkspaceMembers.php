@@ -42,7 +42,17 @@ trait ManagesWorkspaceMembers
             return;
         }
 
-        $invitees = User::query()->whereIn('id', $memberIds)->get();
+        $invitees = User::query()
+            ->whereIn('id', $memberIds)
+            ->when(
+                $workspace->company_id,
+                fn ($q) => $q->where('company_id', $workspace->company_id)
+            )
+            ->get();
+
+        if ($invitees->count() !== $memberIds->count()) {
+            throw new AccessDeniedHttpException('Workspace members must belong to the same company.');
+        }
 
         foreach ($invitees as $user) {
             $token = Str::random(64);
@@ -71,6 +81,17 @@ trait ManagesWorkspaceMembers
         foreach ($members as $member) {
             $id = (int) $member['id'];
             $existing = $existingPivots->get($id);
+
+            if ($workspace->company_id) {
+                $belongsToCompany = User::query()
+                    ->whereKey($id)
+                    ->where('company_id', $workspace->company_id)
+                    ->exists();
+
+                if (! $belongsToCompany) {
+                    throw new AccessDeniedHttpException('Workspace members must belong to the same company.');
+                }
+            }
 
             if ($id === (int) $workspace->owner_id) {
                 $syncData[$id] = [
@@ -287,6 +308,11 @@ trait ManagesWorkspaceMembers
         }
 
         $user = User::query()->findOrFail($userId);
+
+        if ($workspace->company_id && (int) $user->company_id !== (int) $workspace->company_id) {
+            throw new AccessDeniedHttpException('Workspace members must belong to the same company.');
+        }
+
         $existing = WorkspaceUser::query()
             ->where('workspace_id', $workspace->id)
             ->where('user_id', $userId)

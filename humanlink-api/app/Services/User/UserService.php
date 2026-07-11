@@ -16,6 +16,7 @@ use App\Services\User\Concerns\ManagesUserDetails;
 use App\Services\User\Concerns\ManagesUserLeaveBalances;
 use App\Services\User\Concerns\ManagesUserRates;
 use App\Services\User\Concerns\ManagesUserSchedules;
+use App\Support\CompanyContext;
 use App\Support\UserTypePermissions;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -32,18 +33,21 @@ class UserService implements UserServiceInterface
 
     public function __construct(
         private EmployeeLifecycleServiceInterface $lifecycleService,
-        private UserDocumentServiceInterface $userDocumentService
+        private UserDocumentServiceInterface $userDocumentService,
+        private CompanyContext $companyContext
     ) {}
 
     public function list(): Collection
     {
-        return User::query()
+        $query = User::query()
             ->with(['roles', 'details', 'rate', 'schedule', 'leaveBalances', 'checklists', 'documents'])
             ->whereDoesntHave('roles', function ($query): void {
                 $query->where('name', 'super-admin');
-            })
-            ->latest()
-            ->get();
+            });
+
+        $this->companyContext->constrain($query);
+
+        return $query->latest()->get();
     }
 
     public function create(array $data): User
@@ -54,6 +58,9 @@ class UserService implements UserServiceInterface
                 : true;
 
             $payload = $this->userPayload($data);
+            $payload['company_id'] = $this->companyContext->isPlatformAdmin() && isset($data['company_id'])
+                ? (int) $data['company_id']
+                : $this->companyContext->requireId();
 
             if (empty($payload['hired_at'])) {
                 $payload['hired_at'] = now()->toDateString();
@@ -261,9 +268,13 @@ class UserService implements UserServiceInterface
 
     public function listManagers(): Collection
     {
-        return User::query()
+        $query = User::query()
             ->where('user_type', 'manager')
-            ->where('status', 'active')
+            ->where('status', 'active');
+
+        $this->companyContext->constrain($query);
+
+        return $query
             ->orderBy('name')
             ->get(['id', 'name', 'email', 'user_type']);
     }
@@ -271,6 +282,7 @@ class UserService implements UserServiceInterface
     protected function userPayload(array $data): array
     {
         return array_intersect_key($data, array_flip([
+            'company_id',
             'name',
             'email',
             'password',

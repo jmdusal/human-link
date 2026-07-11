@@ -15,6 +15,7 @@ import {
     ClipboardList,
     Umbrella,
     FileText,
+    Building2,
 } from 'lucide-react';
 
 const Overview = lazy(() => import('@/pages/Overview'));
@@ -34,6 +35,7 @@ const AttendanceIndex = lazy(() => import('@/pages/attendances/Index'));
 const PayrollIndex = lazy(() => import('@/pages/payrolls/Index'));
 const ReportsIndex = lazy(() => import('@/pages/reports/Index'));
 const MyProfileIndex = lazy(() => import('@/pages/me/Index'));
+const CompanySettingsIndex = lazy(() => import('@/pages/company-settings/Index'));
 
 const Workspace = lazy(() => import('@/pages/workspaces/Workspace'));
 const AcceptInvitation = lazy(() => import('@/pages/workspaces/AcceptInvitation'));
@@ -211,7 +213,16 @@ export const navItems = [
         permission: 'permissions-view',
     },
 
-    // --- System (super-admin) ---
+    // --- System ---
+    {
+        path: '/company-settings',
+        label: 'Company',
+        title: 'Company Settings',
+        category: 'System',
+        icon: <Building2 size={18} />,
+        component: <CompanySettingsIndex />,
+        permission: 'companies-view',
+    },
     {
         path: '/activity-logs',
         label: 'Activity Logs',

@@ -46,9 +46,7 @@ class ProjectService implements ProjectServiceInterface
         $this->assertCanManageWorkspace($workspace);
 
         return DB::transaction(function () use ($data, $workspace): Project {
-            if (! empty($data['template'])) {
-                $this->applyProjectTemplate($workspace, $data['template']);
-            }
+            $this->applyProjectTemplate($workspace, (string) $data['template']);
 
             $project = Project::create($this->projectPayload($data));
 

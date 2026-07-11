@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -37,6 +38,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read int|null $leave_balances_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\LeaveRequest> $leaveRequests
  * @property-read int|null $leave_requests_count
+ * @property int $company_id
+ * @property-read \App\Models\Company $company
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeavePolicy forCompany(int $companyId)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeavePolicy whereCompanyId($value)
  * @mixin \Eloquent
  */
 /**
@@ -71,11 +76,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read int|null $leave_balances_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\LeaveRequest> $leaveRequests
  * @property-read int|null $leave_requests_count
+ * @property int $company_id
+ * @property-read \App\Models\Company $company
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeavePolicy forCompany(int $companyId)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeavePolicy whereCompanyId($value)
  * @mixin \Eloquent
  */
 class LeavePolicy extends Model
 {
+    use BelongsToCompany;
+
     protected $fillable = [
+        'company_id',
         'name',
         'slug',
         'default_credits',
@@ -84,7 +96,7 @@ class LeavePolicy extends Model
         'is_cashable',
         'allow_carry_over',
         'max_carry_over',
-        'requires_attachment'
+        'requires_attachment',
     ];
 
     protected function casts(): array

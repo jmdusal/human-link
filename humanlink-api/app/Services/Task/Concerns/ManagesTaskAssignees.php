@@ -37,8 +37,17 @@ trait ManagesTaskAssignees
         }
 
         $task->loadMissing('project.workspace');
+        $companyId = $task->project?->workspace?->company_id;
 
-        $recipients = User::query()->whereIn('id', $notifyIds)->get();
+        $recipients = User::query()
+            ->whereIn('id', $notifyIds)
+            ->when($companyId, fn ($query) => $query->where('company_id', $companyId))
+            ->get();
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
         Notification::send($recipients, new TaskAssignedNotification($task, Auth::user()));
     }
 }

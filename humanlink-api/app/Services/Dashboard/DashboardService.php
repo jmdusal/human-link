@@ -7,16 +7,21 @@ namespace App\Services\Dashboard;
 use App\Contracts\DashboardServiceInterface;
 use App\Models\Attendance;
 use App\Models\AttendanceDispute;
+use App\Models\Activity;
 use App\Models\LeaveRequest;
 use App\Models\Payslip;
 use App\Models\User;
+use App\Support\CompanyContext;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Role;
 
 class DashboardService implements DashboardServiceInterface
 {
+    public function __construct(
+        private CompanyContext $companyContext
+    ) {}
+
     public function summary(): array
     {
         $actor = Auth::user();
@@ -55,39 +60,39 @@ class DashboardService implements DashboardServiceInterface
         $year = (int) now()->year;
         $month = (int) now()->month;
 
-        $activeUsers = User::query()
+        $activeUsersQuery = User::query()
             ->where('status', 'active')
-            ->whereDoesntHave('roles', fn ($q) => $q->where('name', 'super-admin'))
-            ->count();
+            ->whereDoesntHave('roles', fn ($q) => $q->where('name', 'super-admin'));
+        $this->companyContext->constrain($activeUsersQuery);
 
-        $workingNow = User::query()
+        $workingNowQuery = User::query()
             ->where('status', 'active')
-            ->whereIn('timer_status', ['working', 'paused'])
-            ->count();
+            ->whereIn('timer_status', ['working', 'paused']);
+        $this->companyContext->constrain($workingNowQuery);
 
-        $pendingLeaves = LeaveRequest::query()
-            ->where('status', 'pending')
-            ->count();
+        $pendingLeavesQuery = LeaveRequest::query()->where('status', 'pending');
+        $this->companyContext->constrainByUserCompany($pendingLeavesQuery);
 
-        $openDisputes = AttendanceDispute::query()
-            ->where('status', 'pending')
-            ->count();
+        $openDisputesQuery = AttendanceDispute::query()->where('status', 'pending');
+        $this->companyContext->constrainByUserCompany($openDisputesQuery);
 
-        $attendanceDaysMtd = Attendance::query()
-            ->whereBetween('date', [$monthStart, $monthEnd])
-            ->count();
+        $attendanceDaysQuery = Attendance::query()
+            ->whereBetween('date', [$monthStart, $monthEnd]);
+        $this->companyContext->constrainByUserCompany($attendanceDaysQuery);
 
-        $payslips = Payslip::query()
+        $payslipsQuery = Payslip::query()
             ->where('year', $year)
-            ->where('month', $month)
-            ->get(['gross_pay', 'net_pay']);
+            ->where('month', $month);
+        $this->companyContext->constrainByUserCompany($payslipsQuery);
+
+        $payslips = $payslipsQuery->get(['gross_pay', 'net_pay']);
 
         return [
-            'active_users' => $activeUsers,
-            'working_now' => $workingNow,
-            'pending_leaves' => $pendingLeaves,
-            'open_disputes' => $openDisputes,
-            'attendance_days_mtd' => $attendanceDaysMtd,
+            'active_users' => $activeUsersQuery->count(),
+            'working_now' => $workingNowQuery->count(),
+            'pending_leaves' => $pendingLeavesQuery->count(),
+            'open_disputes' => $openDisputesQuery->count(),
+            'attendance_days_mtd' => $attendanceDaysQuery->count(),
             'payslips_this_month' => $payslips->count(),
             'gross_payroll_mtd' => round((float) $payslips->sum('gross_pay'), 2),
             'net_payroll_mtd' => round((float) $payslips->sum('net_pay'), 2),
@@ -134,8 +139,11 @@ class DashboardService implements DashboardServiceInterface
         $start = now()->startOfWeek(Carbon::MONDAY)->startOfDay();
         $end = now()->endOfWeek(Carbon::SUNDAY)->endOfDay();
 
-        $counts = LeaveRequest::query()
-            ->whereBetween('created_at', [$start, $end])
+        $countsQuery = LeaveRequest::query()
+            ->whereBetween('created_at', [$start, $end]);
+        $this->companyContext->constrainByUserCompany($countsQuery);
+
+        $counts = $countsQuery
             ->get(['created_at'])
             ->groupBy(fn (LeaveRequest $request): string => $request->created_at->format('D'))
             ->map->count();
@@ -194,16 +202,21 @@ class DashboardService implements DashboardServiceInterface
      */
     protected function recentActivity(): array
     {
-        return Activity::query()
+        $query = Activity::query()
             ->with('causer:id,name,email')
             ->latest()
-            ->limit(8)
+            ->limit(8);
+
+        $this->companyContext->constrain($query);
+
+        return $query
             ->get()
             ->map(fn (Activity $activity): array => [
                 'id' => $activity->id,
                 'description' => $activity->description,
                 'subject_type' => class_basename((string) $activity->subject_type),
                 'causer_name' => $activity->causer?->name ?? 'System',
+                'company_id' => $activity->company_id,
                 'time' => $activity->created_at?->diffForHumans(),
                 'created_at' => $activity->created_at?->toIso8601String(),
             ])

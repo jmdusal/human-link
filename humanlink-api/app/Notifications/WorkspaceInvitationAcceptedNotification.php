@@ -6,6 +6,7 @@ namespace App\Notifications;
 
 use App\Models\User;
 use App\Models\Workspace;
+use App\Notifications\Concerns\HasCompanyContext;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Notifications\Messages\BroadcastMessage;
@@ -13,6 +14,7 @@ use Illuminate\Notifications\Notification;
 
 class WorkspaceInvitationAcceptedNotification extends Notification implements ShouldBroadcastNow
 {
+    use HasCompanyContext;
     use Queueable;
 
     public function __construct(
@@ -27,12 +29,25 @@ class WorkspaceInvitationAcceptedNotification extends Notification implements Sh
 
     public function toBroadcast(object $notifiable): BroadcastMessage
     {
-        return new BroadcastMessage($this->payload());
+        return new BroadcastMessage($this->withCompanyContext($this->payload(), $notifiable));
     }
 
     public function toArray(object $notifiable): array
     {
-        return $this->payload();
+        return $this->withCompanyContext($this->payload(), $notifiable);
+    }
+
+    public function companyId(?object $notifiable = null): ?int
+    {
+        if ($this->workspace->company_id !== null) {
+            return (int) $this->workspace->company_id;
+        }
+
+        if ($notifiable instanceof User && $notifiable->company_id !== null) {
+            return (int) $notifiable->company_id;
+        }
+
+        return null;
     }
 
     protected function payload(): array

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -36,6 +37,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PayrollDeduction whereType($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PayrollDeduction whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PayrollDeduction whereUserId($value)
+ * @property int $company_id
+ * @property-read \App\Models\Company $company
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PayrollDeduction forCompany(int $companyId)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PayrollDeduction whereCompanyId($value)
  * @mixin \Eloquent
  */
 /**
@@ -67,11 +72,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PayrollDeduction whereType($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PayrollDeduction whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PayrollDeduction whereUserId($value)
+ * @property int $company_id
+ * @property-read \App\Models\Company $company
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PayrollDeduction forCompany(int $companyId)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PayrollDeduction whereCompanyId($value)
  * @mixin \Eloquent
  */
 class PayrollDeduction extends Model
 {
+    use BelongsToCompany;
+
     protected $fillable = [
+        'company_id',
         'user_id',
         'name',
         'amount',

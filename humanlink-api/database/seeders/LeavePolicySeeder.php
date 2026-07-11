@@ -2,14 +2,20 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
+use App\Models\Company;
 use App\Models\LeavePolicy;
+use Illuminate\Database\Seeder;
 
 class LeavePolicySeeder extends Seeder
 {
     public function run(): void
     {
+        $companyId = Company::query()->where('slug', 'humanlink')->value('id');
+
+        if (! $companyId) {
+            return;
+        }
+
         $policies = [
             // --- MANDATORY STATUTORY ---
             ['name' => 'Service Incentive Leave', 'slug' => 'sil', 'default_credits' => 5.00, 'is_cashable' => true, 'requires_attachment' => false],
@@ -33,7 +39,16 @@ class LeavePolicySeeder extends Seeder
         ];
 
         foreach ($policies as $policy) {
-            LeavePolicy::updateOrCreate(['slug' => $policy['slug']], $policy);
+            LeavePolicy::updateOrCreate(
+                [
+                    'company_id' => $companyId,
+                    'slug' => $policy['slug'],
+                ],
+                [
+                    ...$policy,
+                    'company_id' => $companyId,
+                ]
+            );
         }
     }
 }

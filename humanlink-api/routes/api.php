@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\EmployeeLifecycleController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\UserDocumentController;
 use App\Http\Controllers\Api\ContractTemplateController;
+use App\Http\Controllers\Api\CompanyController;
 
 Route::group(['middleware' => ['web']], function () {
     Route::post('/login', [AuthenticationController::class, 'login']);
@@ -44,10 +45,12 @@ Route::group(['middleware' => ['web']], function () {
 // Authenticated routes
 Route::middleware('auth:sanctum', 'permission')->group(function () {
     Route::get('/user', function (Request $request) {
+        $user = $request->user()->load('company:id,name,slug,legal_name,timezone');
+
         return response()->json([
-            'user' => $request->user(),
-            'roles' => $request->user()->getRoleNames(),
-            'permissions' => $request->user()->getAllPermissions()->pluck('name'),
+            'user' => $user,
+            'roles' => $user->getRoleNames(),
+            'permissions' => $user->getAllPermissions()->pluck('name'),
         ]);
     });
     Route::post('/logout', [AuthenticationController::class, 'logout']);
@@ -64,6 +67,16 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::get('/', 'show')->name('show');
         Route::put('/', 'update')->name('update');
         Route::patch('/', 'update')->name('patch');
+    });
+
+    Route::controller(CompanyController::class)->prefix('companies')->name('companies.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::get('/current', 'current')->name('current');
+        Route::put('/current', 'updateCurrent')->name('updateCurrent');
+        Route::post('/switch', 'switchCompany')->name('switch');
+        Route::get('/{company}', 'show')->name('show');
+        Route::put('/{company}', 'update')->name('update');
     });
 
     Route::controller(DashboardController::class)->prefix('dashboard')->name('dashboard.')->group(function () {

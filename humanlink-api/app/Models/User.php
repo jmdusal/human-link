@@ -2,18 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Crypt;
-use Spatie\Permission\Traits\HasRoles;
-
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
  * @property int $id
@@ -117,14 +117,20 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\UserDocument> $documents
  * @property-read int|null $documents_count
  * @property-read string $hr_status
+ * @property int $company_id
+ * @property-read \App\Models\Company $company
+ * @property-read \App\Models\UserDocument|null $latestContract
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User forCompany(int $companyId)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereCompanyId($value)
  * @mixin \Eloquent
  */
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasRoles, HasFactory, Notifiable, LogsActivity;
+    use BelongsToCompany, HasRoles, HasFactory, Notifiable, LogsActivity;
 
     protected $fillable = [
+        'company_id',
         'name',
         'email',
         'password',
@@ -302,6 +308,11 @@ class User extends Authenticatable implements MustVerifyEmail
         $this->notify(new \App\Notifications\VerifyEmailNotification);
     }
 
+    public function isPlatformAdmin(): bool
+    {
+        return $this->hasRole('super-admin');
+    }
+
     public function details(): HasOne
     {
         return $this->hasOne(UserDetail::class);
@@ -365,9 +376,16 @@ class User extends Authenticatable implements MustVerifyEmail
             return [(int) $this->id];
         }
 
-        return \Illuminate\Support\Facades\DB::table('workspace_users')
-            ->whereIn('workspace_id', $workspaceIds)
-            ->pluck('user_id')
+        $query = \Illuminate\Support\Facades\DB::table('workspace_users')
+            ->join('users', 'users.id', '=', 'workspace_users.user_id')
+            ->whereIn('workspace_users.workspace_id', $workspaceIds);
+
+        if ($this->company_id !== null) {
+            $query->where('users.company_id', $this->company_id);
+        }
+
+        return $query
+            ->pluck('workspace_users.user_id')
             ->map(fn ($id): int => (int) $id)
             ->unique()
             ->values()
@@ -376,12 +394,26 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function canAccessUserId(int $userId): bool
     {
-        if ($this->isElevatedStaff()) {
-            return true;
+        if ($this->isPlatformAdmin()) {
+            if ($this->company_id === null) {
+                return true;
+            }
+
+            return static::query()
+                ->whereKey($userId)
+                ->where('company_id', $this->company_id)
+                ->exists();
         }
 
         if ((int) $this->id === $userId) {
             return true;
+        }
+
+        if ($this->isHrType()) {
+            return static::query()
+                ->whereKey($userId)
+                ->where('company_id', $this->company_id)
+                ->exists();
         }
 
         if ($this->isManagerType()) {
@@ -392,12 +424,28 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * @return list<int>|null null means unrestricted (elevated staff)
+     * @return list<int>|null null means unrestricted (platform super-admin with no active company)
      */
     public function reportableUserIds(): ?array
     {
-        if ($this->isElevatedStaff()) {
-            return null;
+        if ($this->isPlatformAdmin()) {
+            if ($this->company_id === null) {
+                return null;
+            }
+
+            return static::query()
+                ->where('company_id', $this->company_id)
+                ->pluck('id')
+                ->map(fn ($id): int => (int) $id)
+                ->all();
+        }
+
+        if ($this->isHrType()) {
+            return static::query()
+                ->where('company_id', $this->company_id)
+                ->pluck('id')
+                ->map(fn ($id): int => (int) $id)
+                ->all();
         }
 
         if ($this->isManagerType()) {

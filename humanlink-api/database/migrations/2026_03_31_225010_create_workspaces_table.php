@@ -10,10 +10,13 @@ return new class extends Migration
     {
         Schema::create('workspaces', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('company_id')->constrained()->restrictOnDelete();
             $table->string('name');
-            $table->string('slug')->unique();
+            $table->string('slug');
             $table->foreignId('owner_id')->constrained('users');
+            $table->timestamp('archived_at')->nullable();
             $table->timestamps();
+            $table->unique(['company_id', 'slug']);
         });
     }
 
