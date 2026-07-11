@@ -52,7 +52,7 @@ class StoreUserRequest extends FormRequest
             'password' => ['required', 'string', 'min:6'],
             'status'   => ['required', Rule::in(['active', 'inactive'])],
             'role'     => ['nullable', 'string', 'exists:roles,name'],
-            'user_type' => ['nullable', Rule::in(['employee', 'manager'])],
+            'user_type' => ['nullable', Rule::in(['employee', 'hr', 'manager'])],
             'sss_number' => ['nullable', 'string', 'max:50'],
             'philhealth_number' => ['nullable', 'string', 'max:50'],
             'pagibig_number' => ['nullable', 'string', 'max:50'],

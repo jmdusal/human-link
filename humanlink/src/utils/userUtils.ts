@@ -12,8 +12,8 @@ export const DAYS_NAME = [
 ];
 
 export const USER_TYPE_OPTIONS = [
-    { value: '', label: 'None (Admin/HR)' },
     { value: 'employee', label: 'Employee' },
+    { value: 'hr', label: 'HR' },
     { value: 'manager', label: 'Manager' },
 ];
 

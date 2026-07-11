@@ -26,7 +26,7 @@ export default function LeaveBalanceForm({ isOpen, onClose, onSuccess, onError, 
                 onSuccess(data);
                 onClose();
             },
-            "Balance",
+            "Leave Credit",
                 !selectedLeaveBalance
         );
     };
@@ -44,8 +44,8 @@ export default function LeaveBalanceForm({ isOpen, onClose, onSuccess, onError, 
             isOpen={isOpen}
             onClose={onClose}
             onSubmit={onSubmit}
-            title={selectedLeaveBalance ? "Edit Balance" : "Create New Balance"}
-            description={selectedLeaveBalance ? "MODIFY EXISTING BALANCE" : "SETUP A NEW BALANCE"}
+            title={selectedLeaveBalance ? "Edit Leave Credits" : "Assign Leave Credits"}
+            description={selectedLeaveBalance ? "MODIFY EXISTING LEAVE CREDITS" : "ASSIGN NEW LEAVE CREDITS"}
             isUpdate={!!selectedLeaveBalance}
             loading={form.isSubmitting}
         >

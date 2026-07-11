@@ -215,8 +215,6 @@ class DashboardService implements DashboardServiceInterface
             return false;
         }
 
-        return $user->hasRole('super-admin')
-            || $user->hasRole('hr-manager')
-            || $user->can('users-view');
+        return $user->isElevatedStaff() || $user->can('users-view');
     }
 }

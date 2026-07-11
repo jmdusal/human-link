@@ -7,7 +7,7 @@ export interface User {
     email: string;
     roles: string[];
     permissions: string[];
-    userType?: 'employee' | 'manager' | null;
+    userType?: 'employee' | 'hr' | 'manager' | null;
 }
 
 interface AuthContextType {

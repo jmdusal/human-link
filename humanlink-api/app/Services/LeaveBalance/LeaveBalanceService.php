@@ -55,8 +55,7 @@ class LeaveBalanceService implements LeaveBalanceServiceInterface
             return false;
         }
 
-        return $user->hasRole('super-admin')
-            || $user->hasRole('hr-manager')
+        return $user->isElevatedStaff()
             || $user->can('leave-balances-edit')
             || $user->can('users-edit');
     }

@@ -144,8 +144,6 @@ class AttendanceDisputeService implements AttendanceDisputeServiceInterface
             return false;
         }
 
-        return $user->hasRole('super-admin')
-            || $user->hasRole('hr-manager')
-            || $user->can('users-edit');
+        return $user->isElevatedStaff() || $user->can('users-edit');
     }
 }

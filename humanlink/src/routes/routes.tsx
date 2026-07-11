@@ -1,5 +1,20 @@
 import { lazy } from 'react';
-import { LayoutDashboard, Users, History, Shield, ShieldCheck, CalendarDays, Clock3, Wallet, UserRound, FileSpreadsheet } from 'lucide-react';
+import {
+    LayoutDashboard,
+    Users,
+    History,
+    Shield,
+    ShieldCheck,
+    CalendarDays,
+    Clock3,
+    Wallet,
+    UserRound,
+    FileSpreadsheet,
+    Folders,
+    CalendarRange,
+    ClipboardList,
+    Umbrella,
+} from 'lucide-react';
 
 const Overview = lazy(() => import('@/pages/Overview'));
 const ActivityLogIndex = lazy(() => import('@/pages/activity-logs/Index'));
@@ -21,11 +36,19 @@ const MyProfileIndex = lazy(() => import('@/pages/me/Index'));
 const Workspace = lazy(() => import('@/pages/workspaces/Workspace'));
 const AcceptInvitation = lazy(() => import('@/pages/workspaces/AcceptInvitation'));
 
+/**
+ * Nav order is workflow-first so each persona reads cleanly after permission filtering:
+ * - employee: Dashboard → Time & Work → Leave Request → Pay
+ * - manager:  Dashboard → Time & Work → Leave Calendar/Request → Pay
+ * - hr:       Dashboard → Time & Work → People → Leaves group → Pay
+ * - super-admin: all of the above + Access + System
+ */
 export const navItems = [
     {
         path: '/dashboard',
         label: 'Dashboard',
         title: 'Dashboard | Admin Panel',
+        category: 'Overview',
         icon: <LayoutDashboard size={18} />,
         component: <Overview />,
     },
@@ -37,101 +60,75 @@ export const navItems = [
         component: <MyProfileIndex />,
         hideFromNav: true,
     },
+
+    // --- Time & Work ---
     {
         path: '/attendances',
         label: 'Attendance',
         title: 'Attendance',
-        category: 'Manage',
+        category: 'Time & Work',
         icon: <Clock3 size={18} />,
         component: <AttendanceIndex />,
         permission: 'attendances-view',
     },
     {
-        path: '/payrolls',
-        label: 'Payroll',
-        title: 'Payroll',
-        category: 'Manage',
-        icon: <Wallet size={18} />,
-        component: <PayrollIndex />,
-        permission: 'payrolls-view',
-    },
-    {
-        path: '/reports',
-        label: 'Reports',
-        title: 'Reports',
-        category: 'Manage',
-        icon: <FileSpreadsheet size={18} />,
-        component: <ReportsIndex />,
-        permission: 'payrolls-view',
-    },
-    {
-        path: '/users',
-        label: 'Users',
-        title: 'Users',
-        category: 'Manage',
-        icon: <Users size={18} />,
-        component: <UserIndex />,
-        permission: 'users-view',
+        path: '/schedules',
+        label: 'Schedules',
+        title: 'Schedules',
+        category: 'Time & Work',
+        icon: <CalendarRange size={18} />,
+        component: <ScheduleIndex />,
+        permission: 'schedules-view',
     },
     {
         path: '/workspaces',
         label: 'Workspaces',
         title: 'Workspaces',
-        category: 'Manage',
-        icon: <LayoutDashboard size={18} />,
+        category: 'Time & Work',
+        icon: <Folders size={18} />,
         component: <WorkspaceIndex />,
         permission: 'workspaces-view',
     },
+
+    // --- People ---
     {
-        path: '/schedules',
-        label: 'Schedules',
-        title: 'Schedules',
-        category: 'Manage',
-        icon: <CalendarDays size={18} />,
-        component: <ScheduleIndex />,
-        permission: 'schedules-view',
+        path: '/users',
+        label: 'Users',
+        title: 'Users',
+        category: 'People',
+        icon: <Users size={18} />,
+        component: <UserIndex />,
+        permission: 'users-view',
+    },
+
+    // --- Leave (flat items for employee/manager; hidden when Leaves group is available) ---
+    {
+        path: '/leave-requests',
+        label: 'Request',
+        title: 'Leave Requests',
+        category: 'Leave',
+        icon: <ClipboardList size={18} />,
+        component: <LeaveRequestIndex />,
+        permission: 'leave-requests-view',
+        hideIfCan: 'leaves-view',
     },
     {
         path: '/leave-calendar',
-        label: 'Leave Calendar',
+        label: 'Calendar',
         title: 'Leave Calendar',
-        category: 'Manage',
+        category: 'Leave',
         icon: <CalendarDays size={18} />,
         component: <LeaveCalendarIndex />,
         permission: 'leave-calendar-view',
         hideIfCan: 'leaves-view',
     },
     {
-        path: '/leave-requests',
-        label: 'Leave Request',
-        title: 'Leave Requests',
-        category: 'Manage',
-        icon: <CalendarDays size={18} />,
-        component: <LeaveRequestIndex />,
-        permission: 'leave-requests-view',
-        hideIfCan: 'leaves-view',
-    },
-    {
         label: 'Leaves',
         title: 'Leaves',
-        category: 'Manage',
-        icon: <CalendarDays size={18} />,
+        category: 'Leave',
+        icon: <Umbrella size={18} />,
         permission: 'leaves-view',
         children: [
-            {
-                path: '/leave-policies',
-                label: 'Policies',
-                title: 'Leave Policy',
-                component: <LeavePolicyIndex />,
-                permission: 'leave-policies-view',
-            },
-            {
-                path: '/leave-balances',
-                label: 'Balances',
-                title: 'Leave Balance',
-                component: <LeaveBalanceIndex />,
-                permission: 'leave-balances-view',
-            },
             {
                 path: '/leave-requests',
                 label: 'Requests',
@@ -146,8 +143,44 @@ export const navItems = [
                 component: <LeaveCalendarIndex />,
                 permission: 'leave-calendar-view',
             },
+            {
+                path: '/leave-balances',
+                label: 'Credits',
+                title: 'Leave Credits',
+                component: <LeaveBalanceIndex />,
+                permission: 'leave-balances-view',
+            },
+            {
+                path: '/leave-policies',
+                label: 'Types',
+                title: 'Leave Types',
+                component: <LeavePolicyIndex />,
+                permission: 'leave-policies-view',
+            },
         ],
     },
+
+    // --- Pay ---
+    {
+        path: '/payrolls',
+        label: 'Payroll',
+        title: 'Payroll',
+        category: 'Pay',
+        icon: <Wallet size={18} />,
+        component: <PayrollIndex />,
+        permission: 'payrolls-view',
+    },
+    {
+        path: '/reports',
+        label: 'Reports',
+        title: 'Reports',
+        category: 'Pay',
+        icon: <FileSpreadsheet size={18} />,
+        component: <ReportsIndex />,
+        permission: 'reports-view',
+    },
+
+    // --- Access (super-admin) ---
     {
         path: '/roles',
         label: 'Roles',
@@ -166,6 +199,8 @@ export const navItems = [
         component: <PermissionIndex />,
         permission: 'permissions-view',
     },
+
+    // --- System (super-admin) ---
     {
         path: '/activity-logs',
         label: 'Activity Logs',
@@ -175,6 +210,8 @@ export const navItems = [
         component: <ActivityLogIndex />,
         permission: 'activity-logs-view',
     },
+
+    // Hidden routes (linked from elsewhere)
     {
         path: '/workspaces/:slug',
         label: 'Workspace',

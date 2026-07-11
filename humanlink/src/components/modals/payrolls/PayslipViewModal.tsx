@@ -45,8 +45,8 @@ export default function PayslipViewModal({
     payslip: initialPayslip,
     onPayslipUpdated,
 }: PayslipViewModalProps) {
-    const { can, hasRole } = useAuth();
-    const canAdjust = hasRole('super-admin') || hasRole('hr-manager') || can('payrolls-edit') || can('payrolls-create');
+    const { can, hasRole, user } = useAuth();
+    const canAdjust = hasRole('super-admin') || user?.userType === 'hr' || can('payrolls-edit') || can('payrolls-create');
 
     const [payslip, setPayslip] = useState<Payslip | null>(initialPayslip);
     const [downloading, setDownloading] = useState(false);

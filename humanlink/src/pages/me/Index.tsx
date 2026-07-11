@@ -154,9 +154,9 @@ export default function MyProfilePage() {
                 </Card>
 
                 <Card className="border-slate-200 space-y-3">
-                    <h2 className="text-sm font-bold text-slate-800">Leave balances</h2>
+                    <h2 className="text-sm font-bold text-slate-800">Leave credits</h2>
                     {myBalances.length === 0 ? (
-                        <p className="text-sm text-slate-400">No leave balances assigned.</p>
+                        <p className="text-sm text-slate-400">No leave credits assigned.</p>
                     ) : (
                         myBalances.map((balance) => {
                             const allowed = Number(balance.allowed ?? 0);

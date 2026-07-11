@@ -37,8 +37,14 @@ class LeaveRequestService implements LeaveRequestServiceInterface
             ])
             ->latest();
 
-        if ($this->canManageAllLeaves($actor) || $actor?->isManagerType()) {
+        if ($this->canManageAllLeaves($actor)) {
             return $query->get();
+        }
+
+        if ($actor?->isManagerType()) {
+            return $query
+                ->whereIn('user_id', $actor->sharedWorkspaceMemberIds())
+                ->get();
         }
 
         return $query->where('user_id', $actor?->id)->get();
@@ -74,9 +80,13 @@ class LeaveRequestService implements LeaveRequestServiceInterface
 
         $actor = Auth::user();
 
-        // Employees see company-wide approved leaves; managers/HR see approved + pending.
-        if (! $this->canManageAllLeaves($actor) && ! $actor?->isManagerType()) {
-            $query->where('status', 'approved');
+        if ($this->canManageAllLeaves($actor)) {
+            // company-wide
+        } elseif ($actor?->isManagerType()) {
+            $query->whereIn('user_id', $actor->sharedWorkspaceMemberIds());
+        } else {
+            // Employees should not use calendar; if they reach here, own approved only.
+            $query->where('user_id', $actor?->id)->where('status', 'approved');
         }
 
         return [
@@ -132,8 +142,13 @@ class LeaveRequestService implements LeaveRequestServiceInterface
             abort(403, 'You can only create leave requests for yourself.');
         }
 
-        if (! $actor->isEmployeeType() && (int) $actor->id === $userId) {
-            abort(403, 'Only employees can submit leave requests.');
+        if (
+            (int) $actor->id === $userId
+            && ! $actor->isEmployeeType()
+            && ! $actor->isManagerType()
+            && ! $actor->isHrType()
+        ) {
+            abort(403, 'Only employees, managers, and HR can submit leave requests.');
         }
 
         $user = User::query()->findOrFail($userId);
@@ -355,13 +370,20 @@ class LeaveRequestService implements LeaveRequestServiceInterface
 
     protected function notifyApprovers(LeaveRequest $leaveRequest): void
     {
+        $requester = $leaveRequest->user ?? User::query()->find($leaveRequest->user_id);
+        $workspaceMemberIds = $requester?->sharedWorkspaceMemberIds() ?? [(int) $leaveRequest->user_id];
+
         $recipients = User::query()
             ->where('id', '!=', $leaveRequest->user_id)
             ->where('status', 'active')
-            ->where(function ($query): void {
-                $query->where('user_type', 'manager')
+            ->where(function ($query) use ($workspaceMemberIds): void {
+                $query->where('user_type', 'hr')
                     ->orWhereHas('roles', function ($roles): void {
-                        $roles->whereIn('name', ['super-admin', 'hr-manager']);
+                        $roles->where('name', 'super-admin');
+                    })
+                    ->orWhere(function ($managers) use ($workspaceMemberIds): void {
+                        $managers->where('user_type', 'manager')
+                            ->whereIn('id', $workspaceMemberIds);
                     });
             })
             ->get();
@@ -483,16 +505,18 @@ class LeaveRequestService implements LeaveRequestServiceInterface
             return false;
         }
 
-        return $user->hasRole('super-admin')
-            || $user->hasRole('hr-manager')
-            || $user->can('users-edit');
+        return $user->isElevatedStaff();
     }
 
     protected function authorizeView(LeaveRequest $leaveRequest): void
     {
         $actor = Auth::user();
 
-        if ($this->canManageAllLeaves($actor) || $actor?->isManagerType()) {
+        if ($this->canManageAllLeaves($actor)) {
+            return;
+        }
+
+        if ($actor?->isManagerType() && $actor->canAccessUserId((int) $leaveRequest->user_id)) {
             return;
         }
 
@@ -522,14 +546,21 @@ class LeaveRequestService implements LeaveRequestServiceInterface
     {
         $actor = Auth::user();
 
+        if ((int) $leaveRequest->user_id === (int) $actor?->id) {
+            abort(403, 'You cannot approve or reject your own leave request.');
+        }
+
         if ($this->canManageAllLeaves($actor)) {
             return;
         }
 
-        if ($actor?->isManagerType()) {
+        if (
+            $actor?->isManagerType()
+            && $actor->canAccessUserId((int) $leaveRequest->user_id)
+        ) {
             return;
         }
 
-        abort(403, 'Only managers can approve or reject leave requests.');
+        abort(403, 'Only managers of this workspace or HR can approve or reject leave requests.');
     }
 }

@@ -73,7 +73,7 @@ export default function LeaveRequestForm({
         >
             <div className="col-span-1 md:col-span-2 flex flex-col gap-5 py-2">
                 <Select
-                    label="Leave Policy"
+                    label="Leave Type"
                     options={policyOptions}
                     value={form.formData.leavePolicyId}
                     onChange={(val) => form.setFormData({ ...form.formData, leavePolicyId: val })}

@@ -197,6 +197,71 @@ class User extends Authenticatable
         return $this->user_type === 'employee';
     }
 
+    public function isHrType(): bool
+    {
+        return $this->user_type === 'hr';
+    }
+
+    public function isElevatedStaff(): bool
+    {
+        return $this->hasRole('super-admin') || $this->isHrType();
+    }
+
+    /**
+     * User IDs that share at least one workspace with this user (includes self).
+     *
+     * @return list<int>
+     */
+    public function sharedWorkspaceMemberIds(): array
+    {
+        $workspaceIds = $this->workspaces()->pluck('workspaces.id');
+
+        if ($workspaceIds->isEmpty()) {
+            return [(int) $this->id];
+        }
+
+        return \Illuminate\Support\Facades\DB::table('workspace_users')
+            ->whereIn('workspace_id', $workspaceIds)
+            ->pluck('user_id')
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public function canAccessUserId(int $userId): bool
+    {
+        if ($this->isElevatedStaff()) {
+            return true;
+        }
+
+        if ((int) $this->id === $userId) {
+            return true;
+        }
+
+        if ($this->isManagerType()) {
+            return in_array($userId, $this->sharedWorkspaceMemberIds(), true);
+        }
+
+        return false;
+    }
+
+    /**
+     * @return list<int>|null null means unrestricted (elevated staff)
+     */
+    public function reportableUserIds(): ?array
+    {
+        if ($this->isElevatedStaff()) {
+            return null;
+        }
+
+        if ($this->isManagerType()) {
+            return $this->sharedWorkspaceMemberIds();
+        }
+
+        return [(int) $this->id];
+    }
+
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);

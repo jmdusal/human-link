@@ -102,7 +102,7 @@ export default function LeavePolicyIndex() {
         try {
             await LeaveBalanceService.deleteBalance(balanceToDelete.id);
             setLeaveBalances(prev => prev.filter(b => b.id !== balanceToDelete.id));
-            toast.success('Balance removed.');
+            toast.success('Leave credit removed.');
             setIsDeleteModalOpen(false);
         } finally {
             setIsDeleting(false);
@@ -164,13 +164,13 @@ export default function LeavePolicyIndex() {
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Leave Balance</h1>
-                        <p className="text-slate-400 text-sm font-medium">Monitor and adjust available leave credits for the current year.</p>
+                        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Leave Credits</h1>
+                        <p className="text-slate-400 text-sm font-medium">Track and adjust each employee&apos;s available leave days.</p>
                     </div>
                 </div>
 
                 {can('leave-balances-create') && (
-                    <Button variant="primary" icon={Plus} onClick={handleAdd}>New Balance</Button>
+                    <Button variant="primary" icon={Plus} onClick={handleAdd}>Assign Credits</Button>
                 )}
             </div>
 
@@ -217,7 +217,7 @@ export default function LeavePolicyIndex() {
                         setIsViewModalOpen(false);  
                         setSelectedBalance(null);
                     }}
-                    title="Leave Balances Overview"
+                    title="Leave Credits Overview"
                     data={selectedBalance}
                 />
             </AnimatePresence>
@@ -230,7 +230,7 @@ export default function LeavePolicyIndex() {
                         onClose={() => setIsDeleteModalOpen(false)}
                         onConfirm={handleConfirmDelete}
                         loading={isDeleting}
-                        title="Delete Balance"
+                        title="Delete Leave Credit"
                         message={`Are you sure you want to delete ${selectedLeaveBalance?.user}? This action is permanent.`}
                     />
                 )}

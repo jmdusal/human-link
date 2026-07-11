@@ -2,7 +2,7 @@ import type { Role } from '@/types/Role';
 import type { UserRate } from '@/types/UserRate';
 import type { Schedule, WeeklyScheduleDay } from '@/types/Schedule';
 
-export type UserType = 'employee' | 'manager';
+export type UserType = 'employee' | 'hr' | 'manager';
 
 export interface UserLeaveBalanceSummary {
     id: number;

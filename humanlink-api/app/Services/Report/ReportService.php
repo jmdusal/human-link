@@ -26,6 +26,7 @@ class ReportService implements ReportServiceInterface
 
         $users = User::query()
             ->where('status', 'active')
+            ->when($this->scopedUserIds(), fn ($q, $ids) => $q->whereIn('id', $ids))
             ->orderBy('name')
             ->get(['id', 'name', 'email']);
 
@@ -76,6 +77,7 @@ class ReportService implements ReportServiceInterface
         $balances = LeaveBalance::query()
             ->with(['user:id,name,email'])
             ->where('year', $year)
+            ->when($this->scopedUserIds(), fn ($q, $ids) => $q->whereIn('user_id', $ids))
             ->orderBy('user_id')
             ->get()
             ->groupBy('user_id');
@@ -116,6 +118,7 @@ class ReportService implements ReportServiceInterface
             ->with(['user:id,name,email', 'adjustments'])
             ->where('year', $year)
             ->where('month', $month)
+            ->when($this->scopedUserIds(), fn ($q, $ids) => $q->whereIn('user_id', $ids))
             ->orderBy('user_id')
             ->get();
 
@@ -216,13 +219,23 @@ class ReportService implements ReportServiceInterface
 
         if (
             $user->hasRole('super-admin')
-            || $user->hasRole('hr-manager')
+            || $user->isHrType()
             || $user->can('reports-view')
-            || $user->can('users-edit')
         ) {
             return;
         }
 
         abort(403, 'You are not allowed to export reports.');
+    }
+
+    /**
+     * @return list<int>|null
+     */
+    protected function scopedUserIds(): ?array
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
+
+        return $user?->reportableUserIds();
     }
 }

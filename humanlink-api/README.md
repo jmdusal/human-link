@@ -1,59 +1,206 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# HumanLink API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel API for **HumanLink** — attendance, leave, payroll, workspaces, and HR admin.
 
-## About Laravel
+Stack: Laravel 13 · PHP 8.4 · MySQL · Redis · Sanctum · Spatie Permission · Reverb
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Architecture (short)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| Layer | Role |
+| --- | --- |
+| Controllers | Thin: validate, call service, return JSON |
+| Services (`app/Services`) | Business logic |
+| Contracts (`app/Contracts`) | Service interfaces for DI |
+| Models | Eloquent + relations |
+| Middleware `permission` | Spatie permission gate; **super-admin bypasses all** |
 
-## Learning Laravel
+Frontend lives in sibling `../humanlink` (Vite, port `5173`).
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Access model
 
-## Laravel Sponsors
+**Roles (Spatie)** — only two:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+| Role | Access |
+| --- | --- |
+| `super-admin` | Everything. No `user_type` needed. |
+| `user` | Permissions come from **user type** |
 
-### Premium Partners
+**User types** (on role `user`):
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+| Type | Scope |
+| --- | --- |
+| `employee` | Own attendance, payroll, leave requests, reports; workspaces; no leave calendar / schedules admin |
+| `manager` | Team via shared workspace members; leave approve/reject for those members; schedules + leave calendar |
+| `hr` | Company-wide HR ops; Leaves admin; no Roles / Permissions / Activity Logs |
+| _(null)_ | Used for `super-admin` only |
 
-## Contributing
+Permissions are synced from `user_type` on user create/update (`App\Support\UserTypePermissions`).
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+## Domain flows
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+| Flow | What it does |
+| --- | --- |
+| **Auth** | Sanctum cookie login/logout; `/api/user` returns roles + permissions |
+| **Users** | Create/update people, rates, schedules, leave balances; assign role + user type |
+| **Workspaces / Projects / Tasks** | Team spaces, membership, task boards |
+| **Attendance** | Clock in/out, breaks, disputes |
+| **Schedules** | Weekly shift patterns per user |
+| **Leave** | Policies (types), credits, requests, approve/reject, calendar |
+| **Payroll** | Monthly payslips, deductions, adjustments, PDF |
+| **Reports** | Attendance summary, leave utilization, payroll register (scoped by user type) |
+| **Dashboard** | Summary cards / charts for the signed-in role |
+| **Activity logs** | Audit trail (super-admin) |
+| **Notifications** | Leave submitted / pending reminders / forgotten timers |
 
-## Security Vulnerabilities
+Scheduled / console helpers:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+- `leave:notify-pending-reminders` — remind approvers of stale pending leave
+- `attendance:notify-forgotten-timers` — remind users with open timers (see `app/Console/Commands`)
 
-## License
+---
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Requirements
+
+**With Docker:** Docker + Docker Compose
+
+**Without Docker:**
+
+- PHP **8.4+** (extensions: `pdo_mysql`, `mbstring`, `pcntl`, `bcmath`, `gd`, …)
+- Composer 2
+- MySQL 8
+- Redis (optional if you use `database` queue/cache)
+
+---
+
+## Run with Docker (recommended)
+
+From the **monorepo root** (`human-link/`), not inside `humanlink-api/` alone:
+
+```bash
+# 1. Env
+cp humanlink-api/.env.example humanlink-api/.env
+# Edit humanlink-api/.env — for containers use:
+#   DB_HOST=mysql
+#   DB_PORT=3306
+#   REDIS_HOST=redis
+#   APP_URL=http://localhost:8000
+#   FRONTEND_URL=http://localhost:5173
+#   SANCTUM_STATEFUL_DOMAINS=localhost:5173
+
+# 2. Start stack (API, UI, MySQL, Redis, queue, Reverb, phpMyAdmin)
+docker compose up -d --build
+
+# 3. Install + migrate + seed (inside API container)
+docker compose exec api composer install
+docker compose exec api php artisan key:generate
+docker compose exec api php artisan migrate --seed
+docker compose exec api php artisan permission:cache-reset
+```
+
+| Service | URL |
+| --- | --- |
+| API | http://localhost:8000 |
+| UI | http://localhost:5173 |
+| phpMyAdmin | http://localhost:8080 |
+| MySQL (host) | `localhost:3307` → container `3306` |
+| Reverb WS | http://localhost:8081 |
+
+Useful:
+
+```bash
+docker compose exec api php artisan migrate
+docker compose exec api php artisan db:seed --class=RoleSeeder
+docker compose exec api php artisan queue:work
+docker compose logs -f api
+```
+
+---
+
+## Run without Docker
+
+```bash
+cd humanlink-api
+
+cp .env.example .env
+# Point DB/Redis at your local services, e.g.:
+#   DB_HOST=127.0.0.1
+#   DB_PORT=3306          # or 3307 if MySQL only runs in Docker
+#   DB_DATABASE=human_link
+#   DB_USERNAME=root
+#   DB_PASSWORD=root
+#   REDIS_HOST=127.0.0.1
+#   APP_URL=http://localhost:8000
+#   FRONTEND_URL=http://localhost:5173
+
+composer install
+php artisan key:generate
+php artisan migrate --seed
+php artisan permission:cache-reset
+
+# API
+php artisan serve --host=0.0.0.0 --port=8000
+
+# Optional (other terminals)
+php artisan queue:work
+php artisan reverb:start --host=0.0.0.0 --port=8081
+```
+
+Create the MySQL database first if it does not exist:
+
+```sql
+CREATE DATABASE human_link CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+You can still run **only MySQL/Redis via Docker** and the API on the host:
+
+```bash
+# from monorepo root
+docker compose up -d mysql redis
+# then use DB_HOST=127.0.0.1 and DB_PORT=3307 in .env
+```
+
+---
+
+## Seeded accounts
+
+Password for all: `password`
+
+| Email | Role | User type |
+| --- | --- | --- |
+| `admin@admin.com` | `super-admin` | — |
+| `hr@user.com` | `user` | `hr` |
+| `manager@user.com` | `user` | `manager` |
+| `user@user.com` | `user` | `employee` |
+
+---
+
+## API basics
+
+- Base URL: `http://localhost:8000/api`
+- Auth: Sanctum SPA cookie (`POST /api/login` under `web` middleware)
+- After login, call `GET /api/user` for roles + permissions
+- Protected routes use `auth:sanctum` + `permission` middleware
+
+Local mail / debug: Telescope at http://localhost:8000/telescope (when `TELESCOPE_ENABLED=true`).
+
+---
+
+## Common artisan commands
+
+```bash
+php artisan migrate
+php artisan migrate:fresh --seed
+php artisan db:seed --class=PermissionSeeder
+php artisan db:seed --class=RoleSeeder
+php artisan db:seed --class=UserSeeder
+php artisan permission:cache-reset
+php artisan leave:notify-pending-reminders
+```
+
+Via Docker, prefix with `docker compose exec api`.

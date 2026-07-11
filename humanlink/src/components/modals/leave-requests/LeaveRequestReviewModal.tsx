@@ -67,8 +67,8 @@ export default function LeaveRequestReviewModal({
 
     const canReview = (
         user?.userType === 'manager'
+        || user?.userType === 'hr'
         || hasRole('super-admin')
-        || hasRole('hr-manager')
         || can('users-edit')
     ) && can('leave-requests-edit');
 
@@ -160,7 +160,7 @@ export default function LeaveRequestReviewModal({
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="rounded-lg border border-slate-100 p-3">
-                                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Policy</p>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Type</p>
                                     <p className="text-sm font-semibold text-slate-800 mt-1">{leaveRequest.leavePolicy?.name ?? '—'}</p>
                                 </div>
                                 <div className="rounded-lg border border-slate-100 p-3">

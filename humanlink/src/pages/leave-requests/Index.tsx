@@ -26,12 +26,11 @@ export default function LeaveRequestIndex() {
     const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
 
     const isManagerView = user?.userType === 'manager'
+        || user?.userType === 'hr'
         || hasRole('super-admin')
-        || hasRole('hr-manager')
         || can('users-edit');
 
-    const isEmployee = user?.userType === 'employee';
-    const canRequestLeave = isEmployee && can('leave-requests-create');
+    const canRequestLeave = Boolean(user?.userType) && can('leave-requests-create');
 
     const handleAdd = () => {
         setSelectedLeaveRequest(null);
@@ -131,7 +130,7 @@ export default function LeaveRequestIndex() {
         ] : []),
         columnHelper.accessor((row) => row.leavePolicy?.name ?? '', {
             id: 'policy',
-            header: 'Policy',
+            header: 'Type',
             cell: (info) => <TextCell title={info.getValue() || '—'} />,
         }),
         columnHelper.accessor('startDate', {
@@ -181,14 +180,13 @@ export default function LeaveRequestIndex() {
                                 label: 'Edit',
                                 icon: Pencil,
                                 onClick: () => handleEdit(request),
-                                show: isEmployee && isOwner && request.status === 'pending' && can('leave-requests-edit'),
+                                show: isOwner && request.status === 'pending' && can('leave-requests-edit'),
                             },
                             {
                                 label: 'Cancel',
                                 icon: Ban,
                                 onClick: () => handleCancel(request),
-                                show: isEmployee
-                                    && isOwner
+                                show: isOwner
                                     && ['pending', 'approved'].includes(request.status)
                                     && can('leave-requests-edit')
                                     && actionLoadingId !== request.id,
@@ -198,14 +196,14 @@ export default function LeaveRequestIndex() {
                                 icon: Trash2,
                                 onClick: () => handleDeleteClick(request),
                                 variant: 'danger',
-                                show: isEmployee && isOwner && request.status !== 'approved' && can('leave-requests-delete'),
+                                show: isOwner && request.status !== 'approved' && can('leave-requests-delete'),
                             },
                         ]}
                     />
                 );
             },
         }),
-    ], [isManagerView, can, user?.id, actionLoadingId, isEmployee]);
+    ], [isManagerView, can, user?.id, actionLoadingId]);
 
     return (
         <div className="space-y-6">

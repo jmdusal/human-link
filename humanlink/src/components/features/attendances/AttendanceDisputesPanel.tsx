@@ -19,8 +19,8 @@ function formatHours(ms?: number | null): string {
 }
 
 export default function AttendanceDisputesPanel() {
-    const { can, hasRole } = useAuth();
-    const canReview = hasRole('super-admin') || hasRole('hr-manager') || can('attendance-disputes-edit') || can('users-edit');
+    const { can, hasRole, user } = useAuth();
+    const canReview = hasRole('super-admin') || user?.userType === 'hr' || can('attendance-disputes-edit') || can('users-edit');
 
     const [disputes, setDisputes] = useState<AttendanceDispute[]>([]);
     const [loading, setLoading] = useState(true);

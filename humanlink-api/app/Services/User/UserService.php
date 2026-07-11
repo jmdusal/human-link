@@ -13,6 +13,7 @@ use App\Notifications\NewActivityNotification;
 use App\Services\User\Concerns\ManagesUserLeaveBalances;
 use App\Services\User\Concerns\ManagesUserRates;
 use App\Services\User\Concerns\ManagesUserSchedules;
+use App\Support\UserTypePermissions;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -51,7 +52,10 @@ class UserService implements UserServiceInterface
             $this->createUserRate($user, $data);
             $this->createUserSchedule($user, $data);
 
-            $user->assignRole($data['role'] ?? 'user');
+            $role = $data['role'] ?? 'user';
+            $user->assignRole($role);
+            $this->syncPermissionsForUserType($user, $role);
+
             $user->notify(new NewActivityNotification());
             $this->lifecycleService->ensureOnboardChecklist($user);
 
@@ -65,8 +69,13 @@ class UserService implements UserServiceInterface
             $user->update($this->userPayload($data));
 
             if (array_key_exists('role', $data)) {
-                $user->syncRoles($data['role']);
+                $user->syncRoles([$data['role']]);
             }
+
+            $this->syncPermissionsForUserType(
+                $user,
+                $data['role'] ?? $user->getRoleNames()->first()
+            );
 
             $this->syncUserRate($user, $data);
             $this->syncUserSchedule($user, $data);
@@ -114,5 +123,18 @@ class UserService implements UserServiceInterface
             'hired_at',
             'terminated_at',
         ]));
+    }
+
+    protected function syncPermissionsForUserType(User $user, ?string $role = null): void
+    {
+        $user->refresh();
+
+        if ($user->hasRole('super-admin') || $role === 'super-admin') {
+            $user->syncPermissions([]);
+
+            return;
+        }
+
+        $user->syncPermissions(UserTypePermissions::for($user->user_type));
     }
 }

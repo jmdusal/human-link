@@ -27,18 +27,24 @@ class NotifyPendingLeaveRemindersCommand extends Command
             ->where('created_at', '<=', $cutoff)
             ->get();
 
-        $recipients = User::query()
-            ->where('status', 'active')
-            ->where(function ($query): void {
-                $query->where('user_type', 'manager')
-                    ->orWhereHas('roles', function ($roles): void {
-                        $roles->whereIn('name', ['super-admin', 'hr-manager']);
-                    });
-            })
-            ->get();
-
         foreach ($pending as $leaveRequest) {
-            $targets = $recipients->where('id', '!=', $leaveRequest->user_id)->values();
+            $requester = $leaveRequest->user ?? User::query()->find($leaveRequest->user_id);
+            $workspaceMemberIds = $requester?->sharedWorkspaceMemberIds() ?? [(int) $leaveRequest->user_id];
+
+            $targets = User::query()
+                ->where('id', '!=', $leaveRequest->user_id)
+                ->where('status', 'active')
+                ->where(function ($query) use ($workspaceMemberIds): void {
+                    $query->where('user_type', 'hr')
+                        ->orWhereHas('roles', function ($roles): void {
+                            $roles->where('name', 'super-admin');
+                        })
+                        ->orWhere(function ($managers) use ($workspaceMemberIds): void {
+                            $managers->where('user_type', 'manager')
+                                ->whereIn('id', $workspaceMemberIds);
+                        });
+                })
+                ->get();
 
             if ($targets->isEmpty()) {
                 continue;

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Support\UserTypePermissions;
 use Illuminate\Database\Seeder;
 use App\Models\LeavePolicy;
 use App\Models\User;
@@ -20,7 +21,22 @@ class UserSeeder extends Seeder
                 'user_type' => null,
             ]
         );
-        $admin->assignRole('super-admin');
+        $admin->syncRoles(['super-admin']);
+        $admin->syncPermissions([]);
+
+        $hr = User::updateOrCreate(
+            ['email' => 'hr@user.com'],
+            [
+                'name' => 'HR User',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+                'status' => 'active',
+                'user_type' => 'hr',
+            ]
+        );
+        $hr->syncRoles(['user']);
+        $hr->syncPermissions(UserTypePermissions::for('hr'));
+        $this->ensureLeaveBalances($hr);
 
         $manager = User::updateOrCreate(
             ['email' => 'manager@user.com'],
@@ -33,6 +49,7 @@ class UserSeeder extends Seeder
             ]
         );
         $manager->syncRoles(['user']);
+        $manager->syncPermissions(UserTypePermissions::for('manager'));
         $this->ensureLeaveBalances($manager);
 
         $employee = User::updateOrCreate(
@@ -46,6 +63,7 @@ class UserSeeder extends Seeder
             ]
         );
         $employee->syncRoles(['user']);
+        $employee->syncPermissions(UserTypePermissions::for('employee'));
         $this->ensureLeaveBalances($employee);
     }
 

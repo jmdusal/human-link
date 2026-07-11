@@ -17,8 +17,8 @@ function localDateKey(year: number, monthIndex: number, day: number): string {
 }
 
 export default function AttendanceIndex() {
-    const { can, hasRole } = useAuth();
-    const isAdminView = hasRole('super-admin') || hasRole('hr-manager') || can('users-edit');
+    const { can, hasRole, user } = useAuth();
+    const isAdminView = hasRole('super-admin') || user?.userType === 'hr' || can('users-edit');
 
     const [currentDate, setCurrentDate] = useState(new Date());
     const [disputeAttendance, setDisputeAttendance] = useState<Attendance | null>(null);

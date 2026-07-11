@@ -144,8 +144,7 @@ class ScheduleService implements ScheduleServiceInterface
             return false;
         }
 
-        return $user->hasRole('super-admin')
-            || $user->hasRole('hr-manager')
+        return $user->isElevatedStaff()
             || $user->can('users-edit')
             || $user->can('schedules-edit')
             || $user->can('schedules-create');

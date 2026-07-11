@@ -54,8 +54,8 @@ function toAmount(value: string | number): number {
 }
 
 export default function PayrollIndex() {
-    const { can, hasRole } = useAuth();
-    const canManage = hasRole('super-admin') || hasRole('hr-manager') || can('users-edit') || can('payrolls-create');
+    const { can, hasRole, user } = useAuth();
+    const canManage = hasRole('super-admin') || user?.userType === 'hr' || can('users-edit') || can('payrolls-create');
 
     const now = useMemo(() => new Date(), []);
     const [year, setYear] = useState(() => now.getFullYear());

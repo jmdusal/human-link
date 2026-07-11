@@ -5,7 +5,7 @@ export interface LeaveRequestUser {
     id: number;
     name: string;
     email: string;
-    userType?: 'employee' | 'manager' | null;
+    userType?: 'employee' | 'hr' | 'manager' | null;
 }
 
 export interface LeaveRequestPolicy {

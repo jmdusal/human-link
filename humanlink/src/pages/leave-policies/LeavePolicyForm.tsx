@@ -26,7 +26,7 @@ export default function LeavePolicyForm({ isOpen, onClose, onSuccess, selectedLe
                 onSuccess(data);
                 onClose();
             },
-            "Policy",
+            "Leave Type",
                 !selectedLeavePolicy
         );
     };
@@ -59,8 +59,8 @@ export default function LeavePolicyForm({ isOpen, onClose, onSuccess, selectedLe
             isOpen={isOpen}
             onClose={onClose}
             onSubmit={onSubmit}
-            title={selectedLeavePolicy ? "Edit Policy" : "Create New Policy"}
-            description={selectedLeavePolicy ? "MODIFY EXISTING POLICY" : "SETUP A NEW POLICY"}
+            title={selectedLeavePolicy ? "Edit Leave Type" : "Create Leave Type"}
+            description={selectedLeavePolicy ? "MODIFY EXISTING LEAVE TYPE" : "SETUP A NEW LEAVE TYPE"}
             isUpdate={!!selectedLeavePolicy}
             loading={form.isSubmitting}
         >
@@ -130,8 +130,8 @@ export default function LeavePolicyForm({ isOpen, onClose, onSuccess, selectedLe
                     />
                 )}
                 <Switch
-                    label="Policy Status" 
-                    description="Enable or disable this leave policy across the system."
+                    label="Leave Type Status" 
+                    description="Enable or disable this leave type across the system."
                     checked={form.formData.isActive} 
                     onChange={(val) => form.handleChange('isActive', val)} 
                 />

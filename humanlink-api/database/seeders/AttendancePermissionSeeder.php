@@ -16,25 +16,6 @@ class AttendancePermissionSeeder extends Seeder
             Permission::updateOrCreate(['name' => "attendances-{$action}"]);
         });
 
-        $permissions = Permission::query()
-            ->where('name', 'like', 'attendances-%')
-            ->pluck('name')
-            ->all();
-
         Role::findByName('super-admin')?->givePermissionTo(Permission::all());
-
-        Role::findByName('hr-manager')?->givePermissionTo($permissions);
-
-        Role::findByName('manager')?->givePermissionTo([
-            'attendances-view',
-            'attendances-create',
-            'attendances-edit',
-        ]);
-
-        Role::findByName('user')?->givePermissionTo([
-            'attendances-view',
-            'attendances-create',
-            'attendances-edit',
-        ]);
     }
 }

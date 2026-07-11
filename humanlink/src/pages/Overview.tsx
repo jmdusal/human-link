@@ -25,7 +25,7 @@ interface StatProps {
 export default function Overview() {
     const navigate = useNavigate();
     const { can, user, hasRole, loading: authLoading } = useAuth();
-    const isAdminView = can('users-view') || hasRole('super-admin') || hasRole('hr-manager');
+    const isAdminView = can('users-view') || hasRole('super-admin') || user?.userType === 'hr';
     const canViewWorkspaces = can('workspaces-view');
 
     const { workspaces, loading: wLoading } = useWorkspaces(!authLoading && canViewWorkspaces);
@@ -90,7 +90,6 @@ export default function Overview() {
                             onClick={() => navigate('/reports')}
                             className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-[11px] font-bold uppercase tracking-wider hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-slate-200"
                         >
-                            <Zap size={14} className="text-yellow-400 fill-yellow-400" />
                             Generate Report
                         </button>
                         <div className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl shadow-sm">
@@ -112,7 +111,7 @@ export default function Overview() {
                     <div className="flex items-center justify-between">
                         <div>
                             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                <FolderKanban size={18} className="text-blue-500" />
+                                {/* <FolderKanban size={18} className="text-blue-500" /> */}
                                 My Workspaces
                             </h2>
                             <p className="text-slate-400 text-xs font-medium mt-0.5">

@@ -72,7 +72,7 @@ export default function LeavePolicyIndex() {
             await LeavePolicyService.deletePolicy(selectedLeavePolicy.id);
             
             setLeavePolicies(prev => prev.filter(u => u.id !== selectedLeavePolicy.id));
-            toast.success('Policy removed successfully.');
+            toast.success('Leave type removed successfully.');
             setIsDeleteModalOpen(false);
         } catch (err: any) {
             console.error("Delete Error:", err);
@@ -84,7 +84,7 @@ export default function LeavePolicyIndex() {
     
     const columns = useMemo(() => [
         columnHelper.accessor('name', {
-            header: 'Policy Name',
+            header: 'Leave Type',
             cell: (info) => <TextCell title={info.getValue()} />,
         }),
         columnHelper.accessor('defaultCredits', {
@@ -129,13 +129,13 @@ export default function LeavePolicyIndex() {
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Leave Policy Management</h1>
-                        <p className="text-slate-400 text-sm font-medium">Configure leave types, accruals, and policies.</p>
+                        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Leave Types</h1>
+                        <p className="text-slate-400 text-sm font-medium">Define leave categories and their rules.</p>
                     </div>
                 </div>
 
                 {can('leave-policies-create') && (
-                    <Button variant="primary" icon={Plus} onClick={handleAdd}>New Policy</Button>
+                    <Button variant="primary" icon={Plus} onClick={handleAdd}>New Leave Type</Button>
                 )}
             </div>
 
@@ -167,7 +167,7 @@ export default function LeavePolicyIndex() {
                         onClose={() => setIsDeleteModalOpen(false)}
                         onConfirm={handleConfirmDelete}
                         loading={isDeleting}
-                        title="Delete Policy"
+                        title="Delete Leave Type"
                         message={`Are you sure you want to delete ${selectedLeavePolicy?.name}? This action is permanent.`}
                     />
                 )}

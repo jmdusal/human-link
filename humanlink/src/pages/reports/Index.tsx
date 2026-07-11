@@ -55,8 +55,8 @@ const REPORTS: Array<{
 ];
 
 export default function ReportsIndex() {
-    const { can, hasRole } = useAuth();
-    const canExport = hasRole('super-admin') || hasRole('hr-manager') || can('reports-view') || can('payrolls-view');
+    const { can, hasRole, user } = useAuth();
+    const canExport = hasRole('super-admin') || user?.userType === 'hr' || can('reports-view');
 
     const now = useMemo(() => new Date(), []);
     const [year, setYear] = useState(() => now.getFullYear());
