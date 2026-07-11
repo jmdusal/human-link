@@ -13,7 +13,6 @@ use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Request;
 use Illuminate\Validation\ValidationException;
 
 class AttendanceService implements AttendanceServiceInterface
@@ -53,12 +52,12 @@ class AttendanceService implements AttendanceServiceInterface
         return $this->timerPayload($user->fresh());
     }
 
-    public function start(array $location = []): array
+    public function start(): array
     {
         /** @var User $user */
         $user = Auth::user();
 
-        return DB::transaction(function () use ($user, $location): array {
+        return DB::transaction(function () use ($user): array {
             $user = User::query()->lockForUpdate()->findOrFail($user->id);
             $this->syncDayBoundary($user);
 
@@ -75,7 +74,6 @@ class AttendanceService implements AttendanceServiceInterface
             $now = now();
             $attendance = $this->todayAttendance($user);
             $scheduleMeta = $this->scheduleMetaForUser($user, 0);
-            $ip = Request::ip();
 
             if ($attendance && $attendance->status === 'completed') {
                 throw ValidationException::withMessages([
@@ -83,10 +81,7 @@ class AttendanceService implements AttendanceServiceInterface
                 ]);
             }
 
-            $locationPayload = [
-                'start_ip' => $ip,
-                'start_latitude' => $location['latitude'] ?? null,
-                'start_longitude' => $location['longitude'] ?? null,
+            $schedulePayload = [
                 'scheduled_start' => $scheduleMeta['shift_start'],
                 'scheduled_end' => $scheduleMeta['shift_end'],
                 'required_ms' => $scheduleMeta['required_ms'],
@@ -99,14 +94,14 @@ class AttendanceService implements AttendanceServiceInterface
                     'started_at' => $now,
                     'total_ms' => 0,
                     'status' => 'working',
-                    ...$locationPayload,
+                    ...$schedulePayload,
                 ]);
             } else {
                 $attendance->update([
                     'status' => 'working',
                     'ended_at' => null,
                     'started_at' => $attendance->started_at ?? $now,
-                    ...$locationPayload,
+                    ...$schedulePayload,
                 ]);
             }
 
@@ -218,12 +213,12 @@ class AttendanceService implements AttendanceServiceInterface
         });
     }
 
-    public function end(array $location = []): array
+    public function end(): array
     {
         /** @var User $user */
         $user = Auth::user();
 
-        return DB::transaction(function () use ($user, $location): array {
+        return DB::transaction(function () use ($user): array {
             $user = User::query()->lockForUpdate()->findOrFail($user->id);
             $this->syncDayBoundary($user);
 
@@ -279,9 +274,6 @@ class AttendanceService implements AttendanceServiceInterface
                     'total_ms' => $elapsed,
                     'status' => 'completed',
                     'ended_at' => $now,
-                    'end_ip' => Request::ip(),
-                    'end_latitude' => $location['latitude'] ?? null,
-                    'end_longitude' => $location['longitude'] ?? null,
                     'break_ms' => (int) $attendance->break_ms,
                     'required_ms' => $scheduleMeta['required_ms'],
                     'scheduled_start' => $scheduleMeta['shift_start'],

@@ -3,7 +3,6 @@ import toast from 'react-hot-toast';
 import { AttendanceService } from '@/services/AttendanceService';
 import { echo } from '@/lib/echo';
 import { useAuth } from '@/context/AuthContext';
-import { getCurrentLocation } from '@/utils/geolocation';
 import type { AttendanceTimerState } from '@/types';
 
 const CHANNEL_NAME = 'humanlink-attendance-timer';
@@ -65,15 +64,14 @@ export const useAttendanceTimer = (enabled: boolean) => {
         try {
             let state: AttendanceTimerState;
 
-            if (action === 'start' || action === 'end') {
-                const location = await getCurrentLocation();
-                state = action === 'start'
-                    ? await AttendanceService.start(location ?? undefined)
-                    : await AttendanceService.end(location ?? undefined);
+            if (action === 'start') {
+                state = await AttendanceService.start();
             } else if (action === 'pause') {
                 state = await AttendanceService.pause();
-            } else {
+            } else if (action === 'resume') {
                 state = await AttendanceService.resume();
+            } else {
+                state = await AttendanceService.end();
             }
 
             applyingRemoteRef.current = true;

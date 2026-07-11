@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { getInitials } from '@/utils/userUtils';
 import { formatISODate } from '@/utils/dateUtils';
 import Card from '@/components/ui/Card';
@@ -8,8 +8,6 @@ interface Props {
     data: Attendance[];
     currentDate: Date;
     loading?: boolean;
-    onSelectAttendance?: (attendance: Attendance) => void;
-    onDayAttendancesChange?: (attendances: Attendance[]) => void;
 }
 
 function formatDuration(ms: number): string {
@@ -19,7 +17,7 @@ function formatDuration(ms: number): string {
     return `${hours}h ${String(minutes).padStart(2, '0')}m`;
 }
 
-export default function AttendanceCalendar({ data, currentDate, loading, onSelectAttendance, onDayAttendancesChange }: Props) {
+export default function AttendanceCalendar({ data, currentDate, loading }: Props) {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -48,10 +46,6 @@ export default function AttendanceCalendar({ data, currentDate, loading, onSelec
         ? `${year}-${String(month + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`
         : null;
     const selectedAttendances = selectedKey ? (byDate.get(selectedKey) ?? []) : [];
-
-    useEffect(() => {
-        onDayAttendancesChange?.(selectedKey ? (byDate.get(selectedKey) ?? []) : []);
-    }, [selectedKey, byDate, onDayAttendancesChange]);
 
     const cells: Array<number | null> = [
         ...Array.from({ length: firstWeekday }, () => null),
@@ -153,11 +147,9 @@ export default function AttendanceCalendar({ data, currentDate, loading, onSelec
                 ) : (
                     <div className="space-y-3 max-h-[520px] overflow-auto pr-1">
                         {selectedAttendances.map((item) => (
-                            <button
-                                type="button"
+                            <div
                                 key={item.id}
-                                onClick={() => onSelectAttendance?.(item)}
-                                className="w-full flex items-center justify-between gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50/50 hover:border-blue-200 hover:bg-blue-50/40 text-left transition-colors"
+                                className="w-full flex items-center justify-between gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50/50"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
                                     <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-[10px] font-bold uppercase shrink-0">
@@ -167,7 +159,6 @@ export default function AttendanceCalendar({ data, currentDate, loading, onSelec
                                         <p className="text-sm font-bold text-slate-800 truncate">{item.user?.name}</p>
                                         <p className="text-[11px] text-slate-400 capitalize">
                                             {item.status}
-                                            {item.startIp ? ` · ${item.startIp}` : ''}
                                         </p>
                                     </div>
                                 </div>
@@ -181,7 +172,7 @@ export default function AttendanceCalendar({ data, currentDate, loading, onSelec
                                         </p>
                                     )}
                                 </div>
-                            </button>
+                            </div>
                         ))}
                     </div>
                 )}

@@ -2,11 +2,12 @@ import { useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { createColumnHelper } from '@tanstack/react-table';
 import { AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Eye, FileSpreadsheet, Trash2, UserRound, Wallet } from 'lucide-react';
+import { Eye, FileSpreadsheet, Trash2, UserRound, Wallet } from 'lucide-react';
 import { DataTable } from '@/components/shared/Datatable';
 import TableActions from '@/components/shared/TableActions';
 import { TextCell, UserCell } from '@/components/shared/TableCells';
 import Button from '@/components/ui/Button';
+import Select from '@/components/ui/Select';
 import GenerateIndividualPayslipModal from '@/components/modals/payrolls/GenerateIndividualPayslipModal';
 import MonthlyPayrollSummaryModal from '@/components/modals/payrolls/MonthlyPayrollSummaryModal';
 import PayslipViewModal from '@/components/modals/payrolls/PayslipViewModal';
@@ -20,8 +21,31 @@ import { formatCurrency } from '@/utils/formatUtils';
 
 const columnHelper = createColumnHelper<Payslip>();
 
-function monthLabel(date: Date): string {
-    return date.toLocaleString('default', { month: 'long', year: 'numeric' });
+const MONTH_OPTIONS = [
+    { label: 'January', value: '1' },
+    { label: 'February', value: '2' },
+    { label: 'March', value: '3' },
+    { label: 'April', value: '4' },
+    { label: 'May', value: '5' },
+    { label: 'June', value: '6' },
+    { label: 'July', value: '7' },
+    { label: 'August', value: '8' },
+    { label: 'September', value: '9' },
+    { label: 'October', value: '10' },
+    { label: 'November', value: '11' },
+    { label: 'December', value: '12' },
+    { label: '13th Month', value: '13' },
+] as const;
+
+function periodLabel(year: number, month: number): string {
+    if (month === 13) {
+        return `13th Month ${year}`;
+    }
+
+    return new Date(year, month - 1, 1).toLocaleString('default', {
+        month: 'long',
+        year: 'numeric',
+    });
 }
 
 function toAmount(value: string | number): number {
@@ -33,9 +57,17 @@ export default function PayrollIndex() {
     const { can, hasRole } = useAuth();
     const canManage = hasRole('super-admin') || hasRole('hr-manager') || can('users-edit') || can('payrolls-create');
 
-    const [currentDate, setCurrentDate] = useState(() => new Date());
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth() + 1;
+    const now = useMemo(() => new Date(), []);
+    const [year, setYear] = useState(() => now.getFullYear());
+    const [month, setMonth] = useState(() => now.getMonth() + 1);
+
+    const yearOptions = useMemo(() => {
+        const currentYear = now.getFullYear();
+        return Array.from({ length: 7 }, (_, index) => {
+            const value = String(currentYear - 3 + index);
+            return { label: value, value };
+        });
+    }, [now]);
 
     const { payslips, loading, setPayslips, fetchPayslips } = usePayrolls(true, year, month);
     const { userOptions } = useUsers(canManage);
@@ -72,9 +104,8 @@ export default function PayrollIndex() {
         try {
             const result = await PayrollService.generateThirteenthMonth(year);
             toast.success(result.message || `Generated ${result.meta.generated ?? 0} 13th-month payslip(s).`);
-            if (month === 13) {
-                setPayslips(result.data);
-            }
+            setMonth(13);
+            setPayslips(result.data);
         } catch (error: any) {
             toast.error(error?.response?.data?.message || 'Failed to generate 13th month.');
         } finally {
@@ -82,15 +113,12 @@ export default function PayrollIndex() {
         }
     };
 
-    const goPrevMonth = () => {
-        setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
-    };
-
-    const goNextMonth = () => {
-        setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
-    };
-
     const handleGenerateAll = async () => {
+        if (month === 13) {
+            await handleGenerate13th();
+            return;
+        }
+
         setIsGenerating(true);
         try {
             const result = await PayrollService.generate({ year, month });
@@ -212,7 +240,7 @@ export default function PayrollIndex() {
 
     return (
         <div className="w-full">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Payroll</h1>
                     <p className="text-slate-400 text-sm font-medium">
@@ -220,41 +248,28 @@ export default function PayrollIndex() {
                     </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex items-center gap-1 mr-2">
-                        <Button variant="ghost" icon={ChevronLeft} onClick={goPrevMonth} aria-label="Previous month" />
-                        <span className="min-w-[140px] text-center text-sm font-semibold text-slate-700">
-                            {monthLabel(currentDate)}
-                        </span>
-                        <Button variant="ghost" icon={ChevronRight} onClick={goNextMonth} aria-label="Next month" />
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <div className="w-[110px]">
+                            <Select
+                                options={yearOptions}
+                                value={String(year)}
+                                onChange={(value) => setYear(Number(value))}
+                                placeholder="Year"
+                            />
+                        </div>
+                        <div className="w-[160px]">
+                            <Select
+                                options={MONTH_OPTIONS}
+                                value={String(month)}
+                                onChange={(value) => setMonth(Number(value))}
+                                placeholder="Month"
+                            />
+                        </div>
                     </div>
 
-                    <Button
-                        variant="secondary"
-                        icon={Wallet}
-                        onClick={() => setIsSummaryOpen(true)}
-                        disabled={payslips.length === 0}
-                    >
-                        Full Summary
-                    </Button>
-
-                    {canManage && (
-                        <>
-                            <Button
-                                variant="secondary"
-                                icon={UserRound}
-                                onClick={() => setIsGenerateIndividualOpen(true)}
-                            >
-                                Individual
-                            </Button>
-                            <Button
-                                variant="secondary"
-                                icon={Wallet}
-                                onClick={handleGenerate13th}
-                                loading={isGenerating}
-                            >
-                                13th Month
-                            </Button>
+                    <div className="flex flex-wrap items-center gap-2">
+                        {canManage && month !== 13 && (
                             <Button
                                 variant="primary"
                                 icon={FileSpreadsheet}
@@ -263,15 +278,44 @@ export default function PayrollIndex() {
                             >
                                 Generate All
                             </Button>
-                        </>
-                    )}
+                        )}
+                        <Button
+                            variant="secondary"
+                            icon={Wallet}
+                            onClick={() => setIsSummaryOpen(true)}
+                            disabled={payslips.length === 0}
+                        >
+                            Full Summary
+                        </Button>
+                        {canManage && (
+                            <>
+                                {month !== 13 && (
+                                    <Button
+                                        variant="secondary"
+                                        icon={UserRound}
+                                        onClick={() => setIsGenerateIndividualOpen(true)}
+                                    >
+                                        Individual
+                                    </Button>
+                                )}
+                                <Button
+                                    variant="secondary"
+                                    icon={Wallet}
+                                    onClick={handleGenerate13th}
+                                    loading={isGenerating}
+                                >
+                                    13th Month
+                                </Button>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
 
             {payslips.length > 0 && (
                 <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <p className="text-sm text-slate-500 font-medium">
-                        {payslips.length} payslip{payslips.length === 1 ? '' : 's'} for {monthLabel(currentDate)}
+                        {payslips.length} payslip{payslips.length === 1 ? '' : 's'} for {periodLabel(year, month)}
                     </p>
                     <p className="text-sm font-bold text-slate-800">
                         Gross: ₱{formatCurrency(monthTotals.grossPay)} · Net: ₱{formatCurrency(monthTotals.netPay)}

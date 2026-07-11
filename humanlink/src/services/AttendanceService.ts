@@ -1,6 +1,6 @@
 import api from '@/api/axios';
 import { API_ROUTES } from '@/constants';
-import type { Attendance, AttendanceLocationPayload, AttendanceTimerState } from '@/types';
+import type { Attendance, AttendanceTimerState } from '@/types';
 
 export const AttendanceService = {
     async list(params?: { start?: string; end?: string }): Promise<Attendance[]> {
@@ -13,8 +13,8 @@ export const AttendanceService = {
         return response.data.data;
     },
 
-    async start(location?: AttendanceLocationPayload): Promise<AttendanceTimerState> {
-        const response = await api.post(API_ROUTES.ATTENDANCES.START, location ?? {});
+    async start(): Promise<AttendanceTimerState> {
+        const response = await api.post(API_ROUTES.ATTENDANCES.START);
         return response.data.data;
     },
 
@@ -28,8 +28,8 @@ export const AttendanceService = {
         return response.data.data;
     },
 
-    async end(location?: AttendanceLocationPayload): Promise<AttendanceTimerState> {
-        const response = await api.post(API_ROUTES.ATTENDANCES.END, location ?? {});
+    async end(): Promise<AttendanceTimerState> {
+        const response = await api.post(API_ROUTES.ATTENDANCES.END);
         return response.data.data;
     },
 };

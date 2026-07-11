@@ -17,9 +17,11 @@ interface ModalFormProps {
     isUpdate?: boolean;
     size?: ModalSize;
     showFooter?: boolean;
+    /** Allow dropdowns/popovers to escape the modal body without clipping */
+    overflowVisible?: boolean;
 }
 
-export default function ModalForm({ isOpen, onClose, onSubmit, title, description, children, loading, isUpdate, size = '3xl', showFooter = true }: ModalFormProps) {
+export default function ModalForm({ isOpen, onClose, onSubmit, title, description, children, loading, isUpdate, size = '3xl', showFooter = true, overflowVisible = false }: ModalFormProps) {
     const sizeClasses: Record<ModalSize, string> = {
         'sm': 'max-w-sm', 'md': 'max-w-md', 'lg': 'max-w-lg', 'xl': 'max-w-xl',
         '2xl': 'max-w-2xl', '3xl': 'max-w-3xl', '4xl': 'max-w-4xl', '5xl': 'max-w-5xl',
@@ -53,11 +55,12 @@ export default function ModalForm({ isOpen, onClose, onSubmit, title, descriptio
                     transition: { type: 'spring', duration: 0.5, bounce: 0.3 }
                 }}
                 className={`
-                    relative w-full ${sizeClasses[size]} bg-white rounded-3xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] 
-                    flex flex-col max-h-[90vh] border border-slate-200/60 overflow-hidden
+                    relative w-full ${sizeClasses[size]} bg-white rounded-3xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)]
+                    flex flex-col max-h-[90vh] border border-slate-200/60
+                    ${overflowVisible ? 'overflow-visible' : 'overflow-hidden'}
                 `}
             >
-                <div className="px-10 py-8 flex justify-between items-start bg-white shrink-0">
+                <div className="px-10 py-8 flex justify-between items-start bg-white shrink-0 rounded-t-3xl">
                     <div className="space-y-1.5">
                         <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
                             {title}
@@ -75,14 +78,14 @@ export default function ModalForm({ isOpen, onClose, onSubmit, title, descriptio
                     </button>
                 </div>
 
-                <div className="overflow-y-auto flex-1 px-10 pb-10 custom-scrollbar">
+                <div className={`flex-1 px-10 pb-10 custom-scrollbar ${overflowVisible ? 'overflow-visible relative z-10' : 'overflow-y-auto'}`}>
                     <form id="modal-form" onSubmit={onSubmit} className="space-y-6">
                         {children}
                     </form>
                 </div>
 
                 {showFooter && (
-                    <div className="px-10 py-6 border-t border-slate-100 bg-slate-50/50 shrink-0 flex justify-end items-center gap-3">
+                    <div className={`px-10 py-6 border-t border-slate-100 bg-slate-50/50 shrink-0 flex justify-end items-center gap-3 rounded-b-3xl ${overflowVisible ? 'relative z-0' : ''}`}>
                         <button
                             onClick={onClose}
                             type="button"

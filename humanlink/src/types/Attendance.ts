@@ -29,12 +29,6 @@ export interface Attendance {
     requiredMs?: number;
     scheduledStart?: string | null;
     scheduledEnd?: string | null;
-    startIp?: string | null;
-    endIp?: string | null;
-    startLatitude?: number | string | null;
-    startLongitude?: number | string | null;
-    endLatitude?: number | string | null;
-    endLongitude?: number | string | null;
     status: 'working' | 'paused' | 'completed';
     user?: AttendanceUser;
     breaks?: AttendanceBreak[];
@@ -50,11 +44,6 @@ export interface AttendanceScheduleMeta {
     requiredMs: number;
     remainingMs: number;
     canEnd: boolean;
-}
-
-export interface AttendanceLocationPayload {
-    latitude?: number | null;
-    longitude?: number | null;
 }
 
 export interface AttendanceTimerState {

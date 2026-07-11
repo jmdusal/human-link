@@ -17,10 +17,9 @@ interface AttendanceServiceInterface
     public function status(): array;
 
     /**
-     * @param  array{latitude?: float|null, longitude?: float|null}  $location
      * @return array<string, mixed>
      */
-    public function start(array $location = []): array;
+    public function start(): array;
 
     /**
      * @return array<string, mixed>
@@ -33,8 +32,7 @@ interface AttendanceServiceInterface
     public function resume(): array;
 
     /**
-     * @param  array{latitude?: float|null, longitude?: float|null}  $location
      * @return array<string, mixed>
      */
-    public function end(array $location = []): array;
+    public function end(): array;
 }

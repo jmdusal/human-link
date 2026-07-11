@@ -95,9 +95,10 @@ export default function GenerateIndividualPayslipModal({
             title="Generate Individual Payslip"
             description="CREATE A PAYSLIP FOR ONE EMPLOYEE AND MONTH"
             loading={loading}
-            size="md"
+            size="xl"
+            overflowVisible
         >
-            <div className="flex flex-col gap-5 py-2">
+            <div className="flex flex-col gap-6 py-2 min-h-[280px]">
                 <div>
                     <Select
                         label="Employee"
@@ -108,6 +109,8 @@ export default function GenerateIndividualPayslipModal({
                             setErrors((prev) => ({ ...prev, userId: [] }));
                         }}
                         placeholder="Select employee"
+                        menuMaxHeightClass="max-h-72"
+                        wrapLabels
                     />
                     {errors.userId?.[0] && (
                         <p className="text-xs text-red-500 font-medium mt-1.5">{errors.userId[0]}</p>
@@ -120,6 +123,7 @@ export default function GenerateIndividualPayslipModal({
                         options={MONTH_OPTIONS}
                         value={selectedMonth}
                         onChange={setSelectedMonth}
+                        menuMaxHeightClass="max-h-64"
                     />
                     <Select
                         label="Year"

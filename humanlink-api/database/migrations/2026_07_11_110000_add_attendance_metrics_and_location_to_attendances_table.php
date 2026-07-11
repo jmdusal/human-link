@@ -18,12 +18,6 @@ return new class extends Migration
             $table->bigInteger('required_ms')->default(0)->after('break_ms');
             $table->time('scheduled_start')->nullable()->after('required_ms');
             $table->time('scheduled_end')->nullable()->after('scheduled_start');
-            $table->string('start_ip', 45)->nullable()->after('scheduled_end');
-            $table->string('end_ip', 45)->nullable()->after('start_ip');
-            $table->decimal('start_latitude', 10, 7)->nullable()->after('end_ip');
-            $table->decimal('start_longitude', 10, 7)->nullable()->after('start_latitude');
-            $table->decimal('end_latitude', 10, 7)->nullable()->after('start_longitude');
-            $table->decimal('end_longitude', 10, 7)->nullable()->after('end_latitude');
         });
     }
 
@@ -38,12 +32,6 @@ return new class extends Migration
                 'required_ms',
                 'scheduled_start',
                 'scheduled_end',
-                'start_ip',
-                'end_ip',
-                'start_latitude',
-                'start_longitude',
-                'end_latitude',
-                'end_longitude',
             ]);
         });
     }

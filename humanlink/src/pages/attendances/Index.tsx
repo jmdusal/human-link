@@ -1,14 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { useAuth } from '@/context/AuthContext';
 import { useAttendanceTimer } from '@/hooks/use-attendance-timer';
 import { useAttendances } from '@/hooks/use-attendances';
 import AttendanceCalendar from '@/components/features/attendances/AttendanceCalendar';
-import AttendanceLocationMap from '@/components/features/attendances/AttendanceLocationMap';
 import MyAttendanceTimer from '@/components/features/attendances/MyAttendanceTimer';
 import MyAttendanceList from '@/components/features/attendances/MyAttendanceList';
-import type { Attendance } from '@/types';
 
 function localDateKey(year: number, monthIndex: number, day: number): string {
     return `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -19,8 +17,6 @@ export default function AttendanceIndex() {
     const isAdminView = hasRole('super-admin') || hasRole('hr-manager') || can('users-edit');
 
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [selectedAttendance, setSelectedAttendance] = useState<Attendance | null>(null);
-    const [dayAttendances, setDayAttendances] = useState<Attendance[]>([]);
 
     const range = useMemo(() => {
         const year = currentDate.getFullYear();
@@ -78,17 +74,6 @@ export default function AttendanceIndex() {
 
     const monthLabel = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
 
-    const mapAttendances = useMemo(() => {
-        if (selectedAttendance) return [selectedAttendance];
-        if (dayAttendances.length > 0) return dayAttendances;
-        return attendances;
-    }, [attendances, selectedAttendance, dayAttendances]);
-
-    const handleDayAttendancesChange = useCallback((rows: Attendance[]) => {
-        setDayAttendances(rows);
-        setSelectedAttendance(null);
-    }, []);
-
     if (!isAdminView) {
         return (
             <div className="w-full max-w-3xl mx-auto space-y-6">
@@ -124,7 +109,7 @@ export default function AttendanceIndex() {
                 <div>
                     <h1 className="text-2xl font-black text-slate-800 tracking-tight">Attendance</h1>
                     <p className="text-sm text-slate-500 mt-1">
-                        Calendar of presence with clock locations on the map.
+                        Calendar of employee presence for the selected month.
                     </p>
                 </div>
 
@@ -151,20 +136,11 @@ export default function AttendanceIndex() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-[1.35fr_0.85fr] gap-6 items-start">
-                <AttendanceCalendar
-                    data={attendances}
-                    currentDate={currentDate}
-                    loading={listLoading}
-                    onSelectAttendance={setSelectedAttendance}
-                    onDayAttendancesChange={handleDayAttendancesChange}
-                />
-                <AttendanceLocationMap
-                    attendances={mapAttendances}
-                    selectedAttendanceId={selectedAttendance?.id}
-                    onSelect={setSelectedAttendance}
-                />
-            </div>
+            <AttendanceCalendar
+                data={attendances}
+                currentDate={currentDate}
+                loading={listLoading}
+            />
         </div>
     );
 }

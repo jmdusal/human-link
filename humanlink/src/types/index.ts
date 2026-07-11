@@ -24,7 +24,6 @@ export type { WorkspaceMember } from '@/types/WorkspaceMember';
 export type {
     Attendance,
     AttendanceBreak,
-    AttendanceLocationPayload,
     AttendanceTimerState,
     AttendanceUser,
     AttendanceScheduleMeta,

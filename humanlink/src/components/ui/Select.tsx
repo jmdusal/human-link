@@ -10,16 +10,29 @@ interface Option {
 interface SelectProps {
     label?: string;
     helperText?: string;
-    options: readonly Option[]; 
+    options: readonly Option[];
     value: string;
     onChange: (value: string) => void;
     placeholder?: string;
+    /** Tailwind max-height class for the options list. Default: max-h-48 */
+    menuMaxHeightClass?: string;
+    /** Allow long option labels to wrap instead of truncating */
+    wrapLabels?: boolean;
 }
 
-export default function Select({ label, helperText, options, value, onChange, placeholder = "Select option" }: SelectProps) {
+export default function Select({
+    label,
+    helperText,
+    options,
+    value,
+    onChange,
+    placeholder = "Select option",
+    menuMaxHeightClass = 'max-h-48',
+    wrapLabels = false,
+}: SelectProps) {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
-    
+
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -34,7 +47,7 @@ export default function Select({ label, helperText, options, value, onChange, pl
 
     return (
         <div className="space-y-1.5 text-left w-full relative" ref={containerRef}>
-            
+
             {label && (
                 <div className="flex items-center justify-between">
                     <FormLabel>{label}</FormLabel>
@@ -45,33 +58,33 @@ export default function Select({ label, helperText, options, value, onChange, pl
                     )}
                 </div>
             )}
-            
+
             {/* Trigger Button */}
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
                 className={`
-                    w-full flex items-center justify-between px-3 py-2 bg-white border rounded-md text-sm 
+                    w-full flex items-center justify-between gap-3 px-3 py-2.5 bg-white border rounded-md text-sm
                     transition-all duration-150 outline-none shadow-sm
-                    ${isOpen 
-                        ? 'border-blue-500 ring-1 ring-blue-500/20' 
+                    ${isOpen
+                        ? 'border-blue-500 ring-1 ring-blue-500/20'
                         : 'border-slate-200 text-slate-600 hover:border-slate-300'
                     }
                 `}
             >
-                <span className={`truncate ${selectedOption ? 'text-slate-900 font-medium' : 'text-slate-400'}`}>
+                <span className={`text-left ${wrapLabels ? 'break-all' : 'truncate'} ${selectedOption ? 'text-slate-900 font-medium' : 'text-slate-400'}`}>
                     {selectedOption?.label || placeholder}
                 </span>
-                <ChevronDown 
-                    size={16} 
-                    className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
+                <ChevronDown
+                    size={16}
+                    className={`text-slate-400 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
                 />
             </button>
 
             {/* Dropdown Menu */}
             {isOpen && (
-                <div className="absolute z-50 w-full mt-1.5 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
-                    <div className="p-1 max-h-48 overflow-y-auto custom-scrollbar">
+                <div className="absolute z-[60] w-full mt-1.5 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div className={`p-1 overflow-y-auto custom-scrollbar ${menuMaxHeightClass}`}>
                         {options.map((option) => {
                             const isSelected = value === option.value;
                             return (
@@ -83,15 +96,17 @@ export default function Select({ label, helperText, options, value, onChange, pl
                                         setIsOpen(false);
                                     }}
                                     className={`
-                                        w-full flex items-center justify-between px-2.5 py-2 text-sm rounded-md transition-colors
-                                        ${isSelected 
-                                            ? 'bg-blue-50 text-blue-700 font-semibold' 
+                                        w-full flex items-start justify-between gap-3 px-2.5 py-2.5 text-sm rounded-md transition-colors
+                                        ${isSelected
+                                            ? 'bg-blue-50 text-blue-700 font-semibold'
                                             : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                                         }
                                     `}
                                 >
-                                    <span className="truncate text-left">{option.label}</span>
-                                    {isSelected && <Check size={14} strokeWidth={2.5} className="text-blue-600 shrink-0" />}
+                                    <span className={`text-left ${wrapLabels ? 'break-all whitespace-normal' : 'truncate'}`}>
+                                        {option.label}
+                                    </span>
+                                    {isSelected && <Check size={14} strokeWidth={2.5} className="text-blue-600 shrink-0 mt-0.5" />}
                                 </button>
                             );
                         })}
