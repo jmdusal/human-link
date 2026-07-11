@@ -13,19 +13,21 @@ trait ManagesUserLeaveBalances
     {
         $currentYear = (int) date('Y');
 
-        $balances = LeavePolicy::query()
+        $policies = LeavePolicy::query()
             ->where('is_active', true)
-            ->get()
-            ->map(fn (LeavePolicy $policy): array => [
-                'leave_policy_id' => $policy->id,
-                'allowed' => $policy->default_credits,
-                'used' => 0.00,
-                'year' => $currentYear,
-            ])
-            ->all();
+            ->get();
 
-        if ($balances !== []) {
-            $user->leaveBalances()->createMany($balances);
+        foreach ($policies as $policy) {
+            $user->leaveBalances()->firstOrCreate(
+                [
+                    'leave_policy_id' => $policy->id,
+                    'year' => $currentYear,
+                ],
+                [
+                    'allowed' => $policy->default_credits,
+                    'used' => 0.00,
+                ]
+            );
         }
     }
 }

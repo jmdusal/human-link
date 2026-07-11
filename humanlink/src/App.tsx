@@ -29,40 +29,54 @@ export default function App() {
                         <Route path="/login" element={<LoginPage />} />
                         
                         <Route element={<DashboardLayout />}>
-                            {navItems
-                            // .filter(item => item.path !== '/workspaces/:slug')
-                            .filter(item => !item.hidden)
-                            .map((item) => (
-                                <React.Fragment key={item.path}>
+                            {(() => {
+                                const registered = new Set<string>();
+                                const routes: React.ReactElement[] = [];
 
-                                    <Route
-                                        path={item.path}
-                                        element={
-                                            <PrivateRoute permission={item.permission}>
-                                                {item.component}
-                                            </PrivateRoute>
+                                navItems
+                                    .filter((item) => !item.hidden)
+                                    .forEach((item) => {
+                                        if (item.path && item.component && !registered.has(item.path)) {
+                                            registered.add(item.path);
+                                            routes.push(
+                                                <Route
+                                                    key={item.path}
+                                                    path={item.path}
+                                                    element={
+                                                        <PrivateRoute permission={item.permission}>
+                                                            {item.component}
+                                                        </PrivateRoute>
+                                                    }
+                                                />
+                                            );
                                         }
-                                    />
 
-                                    {item.children?.map((child: any) => {
-                                        const fullPath = child.path.startsWith('/') 
-                                            ? child.path 
-                                            : `${item.path}/${child.path}`.replace(/\/+/g, '/');
+                                        item.children?.forEach((child: any) => {
+                                            const fullPath = child.path.startsWith('/')
+                                                ? child.path
+                                                : `${item.path}/${child.path}`.replace(/\/+/g, '/');
 
-                                        return (
-                                            <Route
-                                                key={fullPath}
-                                                path={fullPath}
-                                                element={
-                                                    <PrivateRoute permission={child.permission}>
-                                                        {child.component}
-                                                    </PrivateRoute>
-                                                }
-                                            />
-                                        );
-                                    })}
-                                </React.Fragment>
-                            ))}
+                                            if (registered.has(fullPath)) {
+                                                return;
+                                            }
+
+                                            registered.add(fullPath);
+                                            routes.push(
+                                                <Route
+                                                    key={fullPath}
+                                                    path={fullPath}
+                                                    element={
+                                                        <PrivateRoute permission={child.permission}>
+                                                            {child.component}
+                                                        </PrivateRoute>
+                                                    }
+                                                />
+                                            );
+                                        });
+                                    });
+
+                                return routes;
+                            })()}
                         </Route>
                         
                         {/* this navItem will not load the dashboardlayout */}

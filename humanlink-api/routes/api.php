@@ -18,6 +18,12 @@ use App\Http\Controllers\Api\WorkspaceController;
 use App\Http\Controllers\Api\StatusController;
 use App\Http\Controllers\Api\TaskCommentController;
 use App\Http\Controllers\Api\TaskAttachmentController;
+use App\Http\Controllers\Api\AttendanceController;
+use App\Http\Controllers\Api\PayrollController;
+use App\Http\Controllers\Api\PayrollDeductionController;
+use App\Http\Controllers\Api\LeaveRequestController;
+use App\Http\Controllers\Api\MeController;
+use App\Http\Controllers\Api\NotificationController;
 
 Route::group(['middleware' => ['web']], function () {
     Route::post('/login', [AuthenticationController::class, 'login']);
@@ -44,12 +50,25 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
     // });
     Route::post('/logout', [AuthenticationController::class, 'logout']);
 
+    Route::controller(MeController::class)->prefix('me')->name('me.')->group(function () {
+        Route::get('/', 'show')->name('show');
+        Route::put('/', 'update')->name('update');
+        Route::patch('/', 'update')->name('patch');
+    });
+
+    Route::controller(NotificationController::class)->prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/', 'index')->name('fetch');
+        Route::post('/read-all', 'markAllAsRead')->name('readAll');
+        Route::post('/{id}/read', 'markAsRead')->name('read');
+    });
+
     Route::controller(ActivityLogController::class)->prefix('activity-logs')->name('activity-logs.')->group(function () {
         Route::get('/', 'index')->name('index');
     });
 
     Route::controller(UserController::class)->prefix('users')->name('users.')->group(function () {
         Route::get('/', 'index')->name('index');
+        Route::get('/managers', 'managers')->name('managers');
         Route::post('/', 'store')->name('store');
         Route::get('/{user}', 'show')->name('show');
         Route::put('/{user}', 'update')->name('update');
@@ -149,5 +168,43 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::get('/', 'index')->name('index');
     });
 
+    Route::controller(LeaveRequestController::class)->prefix('leave-requests')->name('leave-requests.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/policy-options', 'policyOptions')->name('policyOptions');
+        Route::get('/calendar', 'calendar')->name('calendar');
+        Route::post('/', 'store')->name('store');
+        Route::get('/{leaveRequest}', 'show')->name('show');
+        Route::get('/{leaveRequest}/conflicts', 'conflicts')->name('conflicts');
+        Route::put('/{leaveRequest}', 'update')->name('update');
+        Route::post('/{leaveRequest}/approve', 'approve')->name('approve');
+        Route::post('/{leaveRequest}/reject', 'reject')->name('reject');
+        Route::post('/{leaveRequest}/cancel', 'cancel')->name('cancel');
+        Route::delete('/{leaveRequest}', 'destroy')->name('destroy');
+    });
 
+    Route::controller(AttendanceController::class)->prefix('attendances')->name('attendances.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/status', 'status')->name('status');
+        Route::post('/start', 'start')->name('start');
+        Route::post('/pause', 'pause')->name('pause');
+        Route::post('/resume', 'resume')->name('resume');
+        Route::post('/end', 'end')->name('end');
+    });
+
+    Route::controller(PayrollController::class)->prefix('payrolls')->name('payrolls.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/generate', 'generate')->name('generate');
+        Route::post('/generate-individual', 'generateIndividual')->name('generateIndividual');
+        Route::post('/generate-13th-month', 'generateThirteenthMonth')->name('generateThirteenthMonth');
+        Route::get('/{payslip}/pdf', 'pdf')->name('pdf');
+        Route::get('/{payslip}', 'show')->name('show');
+        Route::delete('/{payslip}', 'destroy')->name('destroy');
+    });
+
+    Route::controller(PayrollDeductionController::class)->prefix('payroll-deductions')->name('payroll-deductions.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::put('/{payrollDeduction}', 'update')->name('update');
+        Route::delete('/{payrollDeduction}', 'destroy')->name('destroy');
+    });
 });

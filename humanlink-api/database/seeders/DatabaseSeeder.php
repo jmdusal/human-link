@@ -19,7 +19,8 @@ class DatabaseSeeder extends Seeder
             PermissionSeeder::class,
             LeavePolicySeeder::class,
             RoleSeeder::class,
-            UserSeeder::class
+            UserSeeder::class,
+            StatutoryContributionSeeder::class,
         ]);
 
         // $adminRole = Role::create(['name' => 'admin']);

@@ -4,7 +4,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import {
     Users, ShieldCheck, Key, FileText, ArrowUpRight,
     TrendingUp, ArrowDownRight, Plus, History,
-    Zap, Activity, ExternalLink, Settings, FolderKanban, Globe
+    Zap, Activity, ExternalLink, Settings, FolderKanban, Globe, Clock3
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useUsers } from '@/hooks/use-users';
@@ -178,6 +178,31 @@ export default function Overview() {
                             })}
                         </div>
                     )}
+                </section>
+            )}
+
+            {!isAdminView && can('attendances-view') && (
+                <section>
+                    <button
+                        type="button"
+                        onClick={() => navigate('/attendances')}
+                        className="w-full text-left bg-white p-6 rounded-[1.75rem] border border-slate-100 shadow-sm hover:shadow-xl hover:border-emerald-100 hover:-translate-y-0.5 transition-all duration-300 group"
+                    >
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                                    <Clock3 size={20} />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-bold text-slate-800">My Attendance</h2>
+                                    <p className="text-xs text-slate-400 mt-0.5">
+                                        Start, pause, and resume your work time.
+                                    </p>
+                                </div>
+                            </div>
+                            <ExternalLink size={16} className="text-slate-300 group-hover:text-emerald-500" />
+                        </div>
+                    </button>
                 </section>
             )}
 

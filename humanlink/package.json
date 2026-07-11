@@ -19,6 +19,7 @@
     "@tiptap/react": "^3.22.3",
     "@tiptap/starter-kit": "^3.22.3",
     "@types/humps": "^2.0.6",
+    "@vis.gl/react-google-maps": "^1.9.0",
     "axios": "^1.13.6",
     "framer-motion": "^12.34.3",
     "humps": "^2.0.1",

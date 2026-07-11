@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 
 class PermissionSeeder extends Seeder
 {
@@ -20,12 +20,17 @@ class PermissionSeeder extends Seeder
             'leaves',
             'leave-balances',
             'leave-policies',
+            'leave-requests',
             'activity-logs',
-            'schedules'
+            'schedules',
+            'attendances',
+            'payrolls',
+            'payroll-deductions',
+            'leave-calendar',
         ];
 
         collect($models)->each(function ($model) {
-            if (in_array($model, ['activity-log', 'schedule', 'leave'])) {
+            if (in_array($model, ['activity-logs', 'schedules', 'leaves', 'leave-calendar'], true)) {
                 Permission::updateOrCreate(['name' => "{$model}-view"]);
                 return;
             }
@@ -34,5 +39,7 @@ class PermissionSeeder extends Seeder
                 Permission::updateOrCreate(['name' => "{$model}-{$action}"]);
             });
         });
+
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
     }
 }

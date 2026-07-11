@@ -1,5 +1,5 @@
 import { lazy } from 'react';
-import { LayoutDashboard, Users, History, Shield, ShieldCheck, CalendarDays } from 'lucide-react';
+import { LayoutDashboard, Users, History, Shield, ShieldCheck, CalendarDays, Clock3, Wallet, UserRound } from 'lucide-react';
 
 const Overview = lazy(() => import('@/pages/Overview'));
 const ActivityLogIndex = lazy(() => import('@/pages/activity-logs/Index'));
@@ -10,7 +10,12 @@ const WorkspaceIndex = lazy(() => import('@/pages/workspaces/Index'));
 
 const LeavePolicyIndex = lazy(() => import('@/pages/leave-policies/Index'));
 const LeaveBalanceIndex = lazy(() => import('@/pages/leave-balances/Index'));
+const LeaveRequestIndex = lazy(() => import('@/pages/leave-requests/Index'));
+const LeaveCalendarIndex = lazy(() => import('@/pages/leave-calendar/Index'));
 const ScheduleIndex = lazy(() => import('@/pages/schedules/Index'));
+const AttendanceIndex = lazy(() => import('@/pages/attendances/Index'));
+const PayrollIndex = lazy(() => import('@/pages/payrolls/Index'));
+const MyProfileIndex = lazy(() => import('@/pages/me/Index'));
 
 const Workspace = lazy(() => import('@/pages/workspaces/Workspace'));
 const AcceptInvitation = lazy(() => import('@/pages/workspaces/AcceptInvitation'));
@@ -23,6 +28,32 @@ export const navItems = [
         title: 'Dashboard | Admin Panel',
         icon: <LayoutDashboard size={18}/>, 
         component: <Overview /> 
+    },
+    {
+        path: '/my-profile',
+        label: 'My Profile',
+        title: 'My Profile',
+        icon: <UserRound size={18}/>,
+        component: <MyProfileIndex />,
+        hideFromNav: true,
+    },
+    {
+        path: '/attendances',
+        label: 'Attendance',
+        title: 'Attendance',
+        category: 'Manage',
+        icon: <Clock3 size={18}/>,
+        component: <AttendanceIndex />,
+        permission: 'attendances-view'
+    },
+    {
+        path: '/payrolls',
+        label: 'Payroll',
+        title: 'Payroll',
+        category: 'Manage',
+        icon: <Wallet size={18}/>,
+        component: <PayrollIndex />,
+        permission: 'payrolls-view'
     },
     {
         path: '/users',
@@ -53,6 +84,27 @@ export const navItems = [
         permission: 'schedules-view'
     },
     {
+        path: '/leave-calendar',
+        label: 'Leave Calendar',
+        title: 'Leave Calendar',
+        category: 'Manage',
+        icon: <CalendarDays size={18}/>,
+        component: <LeaveCalendarIndex />,
+        permission: 'leave-calendar-view',
+        hideIfCan: 'leaves-view',
+    },
+    {
+        path: '/leave-requests',
+        label: 'Leave Request',
+        title: 'Leave Requests',
+        category: 'Manage',
+        icon: <CalendarDays size={18}/>,
+        component: <LeaveRequestIndex />,
+        permission: 'leave-requests-view',
+        // Hide for admins who already see Requests under Leaves
+        hideIfCan: 'leaves-view',
+    },
+    {
         label: 'Leaves',
         title: 'Leaves',
         category: 'Manage',
@@ -72,6 +124,20 @@ export const navItems = [
                 title: 'Leave Balance',
                 component: <LeaveBalanceIndex />,
                 permission: 'leave-balances-view'  
+            },
+            {
+                path: '/leave-requests',
+                label: 'Requests',
+                title: 'Leave Requests',
+                component: <LeaveRequestIndex />,
+                permission: 'leave-requests-view'
+            },
+            {
+                path: '/leave-calendar',
+                label: 'Calendar',
+                title: 'Leave Calendar',
+                component: <LeaveCalendarIndex />,
+                permission: 'leave-calendar-view'
             },
         ]
     },

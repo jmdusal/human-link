@@ -2,13 +2,19 @@ import type { User, UserFormData } from '@/types';
 import { getToday } from '@/utils/dateUtils';
 
 export const DAYS_NAME = [
-    'Sunday', 
-    'Monday', 
-    'Tuesday', 
-    'Wednesday', 
-    'Thursday', 
-    'Friday', 
+    'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
     'Saturday'
+];
+
+export const USER_TYPE_OPTIONS = [
+    { value: '', label: 'None (Admin/HR)' },
+    { value: 'employee', label: 'Employee' },
+    { value: 'manager', label: 'Manager' },
 ];
 
 // generates a blank 7-day schedule template
@@ -22,13 +28,17 @@ export const createEmptySchedules = (startDate: string) => Array.from({ length: 
     startDate: startDate,
 }));
 
-// export const INITIAL_USER_FORM_STATE = (today: string): UserFormData => ({
 export const INITIAL_USER_FORM_STATE: UserFormData = {
     name: '',
     email: '',
     password: '',
     role: 'user',
     status: 'active',
+    userType: 'employee',
+    sssNumber: '',
+    philhealthNumber: '',
+    pagibigNumber: '',
+    tin: '',
     monthlyRate: '',
     dailyRate: '',
     hourlyRate: '',
@@ -41,7 +51,7 @@ export const INITIAL_USER_FORM_STATE: UserFormData = {
 
 export const formatUserFormData = (user: User): UserFormData => {
     const today = getToday();
-    const { rate, schedule, roles, name, email, status } = user;
+    const { rate, schedule, roles, name, email, status, userType, sssNumber, philhealthNumber, pagibigNumber, tin } = user;
     const mainStartDate = schedule?.startDate || today;
     const displaySchedules = schedule?.weeklyData?.length ? schedule.weeklyData : createEmptySchedules(today);
 
@@ -51,6 +61,11 @@ export const formatUserFormData = (user: User): UserFormData => {
         status,
         password: '',
         role: roles?.[0]?.name || 'user',
+        userType: userType ?? '',
+        sssNumber: sssNumber ?? '',
+        philhealthNumber: philhealthNumber ?? '',
+        pagibigNumber: pagibigNumber ?? '',
+        tin: tin ?? '',
         monthlyRate: rate?.monthlyRate ? Number(rate.monthlyRate).toFixed(2) : '',
         dailyRate: rate?.dailyRate || '',
         hourlyRate: rate?.hourlyRate || '',
@@ -70,12 +85,12 @@ export const formatUserFormData = (user: User): UserFormData => {
 
 export const getInitials = (name: string): string => {
     if (!name) return '?';
-    
+
     const parts = name.trim().split(/\s+/);
-    
+
     if (parts.length > 1) {
         return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
     }
-    
+
     return parts[0].slice(0, 2).toUpperCase();
 };

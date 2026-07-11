@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Contracts\ActivityLogServiceInterface;
+use App\Contracts\AttendanceServiceInterface;
+use App\Contracts\PayrollServiceInterface;
 use App\Contracts\AuthServiceInterface;
 use App\Contracts\LeaveBalanceServiceInterface;
 use App\Contracts\LeavePolicyServiceInterface;
@@ -23,6 +25,8 @@ use App\Contracts\UserServiceInterface;
 use App\Contracts\WorkspaceServiceInterface;
 use App\Listeners\UpdateModelsAfterMigration;
 use App\Services\ActivityLog\ActivityLogService;
+use App\Services\Attendance\AttendanceService;
+use App\Services\Payroll\PayrollService;
 use App\Services\Auth\AuthService;
 use App\Services\Leave\LeaveService;
 use App\Services\LeaveBalance\LeaveBalanceService;
@@ -68,6 +72,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(RoleServiceInterface::class, RoleService::class);
         $this->app->bind(PermissionServiceInterface::class, PermissionService::class);
         $this->app->bind(AuthServiceInterface::class, AuthService::class);
+        $this->app->bind(AttendanceServiceInterface::class, AttendanceService::class);
+        $this->app->bind(PayrollServiceInterface::class, PayrollService::class);
     }
 
     public function boot(): void

@@ -26,6 +26,13 @@ class UserController extends Controller
         ], 200);
     }
 
+    public function managers(): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->userService->listManagers(),
+        ], 200);
+    }
+
     public function store(StoreUserRequest $request): JsonResponse
     {
         $user = $this->userService->create($request->validated());

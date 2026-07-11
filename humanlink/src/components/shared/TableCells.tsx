@@ -1,7 +1,7 @@
 
 import { Calendar } from 'lucide-react';
 import { getInitials } from '@/utils/userUtils';
-import { formatDisplayDate } from '@/utils/dateUtils';
+import { formatDisplayDate, formatSimpleDate } from '@/utils/dateUtils';
 
 // text
 export const TextCell = ({ title }: { title: string | number }) => (
@@ -13,33 +13,46 @@ export const TextCell = ({ title }: { title: string | number }) => (
 );
 
 // Date
-export const DateCell = ({ date }: { date: string | Date | null | undefined }) => (
+export const DateCell = ({
+    date,
+    dateOnly = false,
+}: {
+    date: string | Date | null | undefined;
+    dateOnly?: boolean;
+}) => (
     <div className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-slate-50 border border-slate-100/50 group-hover:bg-white transition-colors duration-200">
         <Calendar size={12} className="text-slate-400 shrink-0" />
         
         <span className="text-[11px] font-semibold text-slate-600 tabular-nums tracking-tight whitespace-nowrap">
-            {formatDisplayDate(date)}
+            {dateOnly ? formatSimpleDate(date) : formatDisplayDate(date)}
         </span>
     </div>
 );
 
 // status
 export const StatusBadge = ({ status = 'active' }: { status?: string }) => {
-    const isInactive = status.toLowerCase() === 'inactive';
+    const normalized = status.toLowerCase();
+    const isInactive = normalized === 'inactive' || normalized === 'rejected' || normalized === 'cancelled';
+    const isPending = normalized === 'pending';
+    const isApproved = normalized === 'approved' || normalized === 'active' || normalized === 'completed';
+
+    let classes = 'bg-slate-50 text-slate-400 border-slate-100';
+    let dot = 'bg-slate-300';
+
+    if (isPending) {
+        classes = 'bg-amber-50/50 text-amber-600 border-amber-100/50';
+        dot = 'bg-amber-500';
+    } else if (isApproved && !isInactive) {
+        classes = 'bg-emerald-50/50 text-emerald-600 border-emerald-100/50';
+        dot = 'bg-emerald-500 animate-pulse shadow-emerald-200';
+    } else if (isInactive) {
+        classes = 'bg-slate-50 text-slate-400 border-slate-100';
+        dot = 'bg-slate-300';
+    }
 
     return (
-        <div className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full border transition-all duration-300
-            ${isInactive 
-                ? 'bg-slate-50 text-slate-400 border-slate-100' 
-                : 'bg-emerald-50/50 text-emerald-600 border-emerald-100/50'
-            }`}
-        >
-            <div className={`h-1.5 w-1.5 rounded-full shadow-sm ${
-                isInactive 
-                    ? 'bg-slate-300' 
-                    : 'bg-emerald-500 animate-pulse shadow-emerald-200'
-            }`} />
-            
+        <div className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full border transition-all duration-300 ${classes}`}>
+            <div className={`h-1.5 w-1.5 rounded-full shadow-sm ${dot}`} />
             <span className="text-[10px] font-bold uppercase tracking-wider">
                 {status}
             </span>

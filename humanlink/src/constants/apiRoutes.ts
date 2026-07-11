@@ -8,6 +8,7 @@ export const API_ROUTES = {
     },
     USERS: {
         LIST: '/users',
+        MANAGERS: '/users/managers',
         STORE: '/users',
         UPDATE: (id: number) => `/users/${id}`,
         DELETE: (id: number) => `/users/${id}`,
@@ -86,7 +87,52 @@ export const API_ROUTES = {
         UPDATE: (id: number) => `/leave-policies/${id}`,
         DELETE: (id: number) => `/leave-policies/${id}`,
     },
+    LEAVE_REQUESTS: {
+        LIST: '/leave-requests',
+        POLICY_OPTIONS: '/leave-requests/policy-options',
+        CALENDAR: '/leave-requests/calendar',
+        STORE: '/leave-requests',
+        SHOW: (id: number) => `/leave-requests/${id}`,
+        CONFLICTS: (id: number) => `/leave-requests/${id}/conflicts`,
+        UPDATE: (id: number) => `/leave-requests/${id}`,
+        APPROVE: (id: number) => `/leave-requests/${id}/approve`,
+        REJECT: (id: number) => `/leave-requests/${id}/reject`,
+        CANCEL: (id: number) => `/leave-requests/${id}/cancel`,
+        DELETE: (id: number) => `/leave-requests/${id}`,
+    },
     SCHEDULES: {
         LIST: '/schedules',
-    }
+    },
+    ATTENDANCES: {
+        LIST: '/attendances',
+        STATUS: '/attendances/status',
+        START: '/attendances/start',
+        PAUSE: '/attendances/pause',
+        RESUME: '/attendances/resume',
+        END: '/attendances/end',
+    },
+    PAYROLLS: {
+        LIST: '/payrolls',
+        SHOW: (id: number) => `/payrolls/${id}`,
+        PDF: (id: number) => `/payrolls/${id}/pdf`,
+        GENERATE: '/payrolls/generate',
+        GENERATE_INDIVIDUAL: '/payrolls/generate-individual',
+        GENERATE_13TH_MONTH: '/payrolls/generate-13th-month',
+        DELETE: (id: number) => `/payrolls/${id}`,
+    },
+    PAYROLL_DEDUCTIONS: {
+        LIST: '/payroll-deductions',
+        STORE: '/payroll-deductions',
+        UPDATE: (id: number) => `/payroll-deductions/${id}`,
+        DELETE: (id: number) => `/payroll-deductions/${id}`,
+    },
+    ME: {
+        SHOW: '/me',
+        UPDATE: '/me',
+    },
+    NOTIFICATIONS: {
+        LIST: '/notifications',
+        READ: (id: string) => `/notifications/${id}/read`,
+        READ_ALL: '/notifications/read-all',
+    },
 } as const;

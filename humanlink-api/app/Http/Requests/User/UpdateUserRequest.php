@@ -54,6 +54,11 @@ class UpdateUserRequest extends FormRequest
             'password' => ['nullable', 'string', 'min:6'],
             'status'   => ['sometimes', Rule::in(['active', 'inactive'])],
             'role'     => ['sometimes', 'string', 'exists:roles,name'],
+            'user_type' => ['sometimes', 'nullable', Rule::in(['employee', 'manager'])],
+            'sss_number' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'philhealth_number' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'pagibig_number' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'tin' => ['sometimes', 'nullable', 'string', 'max:50'],
             'start_date' => ['sometimes', 'nullable', 'date'],
 
             'monthly_rate'      => ['sometimes', 'numeric', 'min:0'],

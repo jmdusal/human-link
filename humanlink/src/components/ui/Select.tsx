@@ -71,7 +71,7 @@ export default function Select({ label, helperText, options, value, onChange, pl
             {/* Dropdown Menu */}
             {isOpen && (
                 <div className="absolute z-50 w-full mt-1.5 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
-                    <div className="p-1">
+                    <div className="p-1 max-h-48 overflow-y-auto custom-scrollbar">
                         {options.map((option) => {
                             const isSelected = value === option.value;
                             return (
@@ -90,8 +90,8 @@ export default function Select({ label, helperText, options, value, onChange, pl
                                         }
                                     `}
                                 >
-                                    {option.label}
-                                    {isSelected && <Check size={14} strokeWidth={2.5} className="text-blue-600" />}
+                                    <span className="truncate text-left">{option.label}</span>
+                                    {isSelected && <Check size={14} strokeWidth={2.5} className="text-blue-600 shrink-0" />}
                                 </button>
                             );
                         })}

@@ -27,15 +27,21 @@ export const UserService = {
         }));
     },
 
+    async getManagers(): Promise<User[]> {
+        const response = await api.get(API_ROUTES.USERS.MANAGERS);
+        return response.data.data;
+    },
+
     async saveUser(formData: UserFormData, userId?: number): Promise<User> {
         const normalizeTime = (time: unknown) => {
             if (typeof time !== 'string' || !time) return '08:00';
             return time.slice(0, 5);
         };
 
-        const { scheduleStartDate, weeklyData, ...rest } = formData;
+        const { scheduleStartDate, weeklyData, userType, ...rest } = formData;
         const payload: any = {
             ...rest,
+            userType: userType || null,
             startDate: scheduleStartDate,
             weeklyData: weeklyData.map((day: any) => ({
                 dayOfWeek: Number(day.dayOfWeek),

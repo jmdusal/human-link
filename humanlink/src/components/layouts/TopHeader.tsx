@@ -92,7 +92,14 @@ export default function TopHeader() {
                                 </div>
                                 
                                 <div className="space-y-0.5">
-                                    <button className="w-full flex items-center justify-between px-3 py-2.5 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-all text-sm font-medium group">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsOpen(false);
+                                            navigate('/my-profile');
+                                        }}
+                                        className="w-full flex items-center justify-between px-3 py-2.5 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-all text-sm font-medium group"
+                                    >
                                         <div className="flex items-center gap-3">
                                             <div className="p-1.5 bg-white border border-slate-100 rounded-md shadow-sm group-hover:border-blue-100">
                                                 <User size={15} className="text-slate-500 group-hover:text-blue-500" />

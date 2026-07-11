@@ -14,6 +14,46 @@
 namespace App\Models{
 /**
  * @property int $id
+ * @property int $user_id
+ * @property \Illuminate\Support\Carbon $date
+ * @property \Illuminate\Support\Carbon|null $started_at
+ * @property \Illuminate\Support\Carbon|null $ended_at
+ * @property int $total_ms
+ * @property string $status
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\AttendanceBreak> $breaks
+ * @property-read int|null $breaks_count
+ * @property-read \App\Models\User $user
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereDate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereEndedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereStartedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereTotalMs($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereUserId($value)
+ */
+	class Attendance extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @property-read \App\Models\Attendance|null $attendance
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AttendanceBreak newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AttendanceBreak newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AttendanceBreak query()
+ */
+	class AttendanceBreak extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
  * @property int $leave_request_id
  * @property string $file_path
  * @property string $file_name
@@ -143,6 +183,69 @@ namespace App\Models{
  * @mixin \Eloquent
  */
 	class LeaveRequest extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @property-read \App\Models\User|null $user
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PayrollDeduction newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PayrollDeduction newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PayrollDeduction query()
+ */
+	class PayrollDeduction extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property int $user_id
+ * @property int $year
+ * @property int $month
+ * @property \Illuminate\Support\Carbon $period_start
+ * @property \Illuminate\Support\Carbon $period_end
+ * @property int $days_worked
+ * @property numeric $paid_leave_days
+ * @property numeric $hours_worked
+ * @property numeric $monthly_rate
+ * @property numeric $daily_rate
+ * @property numeric $hourly_rate
+ * @property numeric $allowance_monthly
+ * @property numeric $basic_pay
+ * @property numeric $allowance_pay
+ * @property numeric $gross_pay
+ * @property string $currency
+ * @property int|null $generated_by
+ * @property \Illuminate\Support\Carbon|null $generated_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\User|null $generator
+ * @property-read \App\Models\User $user
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereAllowanceMonthly($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereAllowancePay($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereBasicPay($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereCurrency($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereDailyRate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereDaysWorked($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereGeneratedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereGeneratedBy($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereGrossPay($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereHourlyRate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereHoursWorked($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereMonth($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereMonthlyRate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip wherePaidLeaveDays($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip wherePeriodEnd($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip wherePeriodStart($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereUserId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Payslip whereYear($value)
+ */
+	class Payslip extends \Eloquent {}
 }
 
 namespace App\Models{
@@ -330,6 +433,15 @@ namespace App\Models{
  * @mixin \Eloquent
  */
 	class Status extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|StatutoryContributionBracket newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|StatutoryContributionBracket newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|StatutoryContributionBracket query()
+ */
+	class StatutoryContributionBracket extends \Eloquent {}
 }
 
 namespace App\Models{
@@ -642,7 +754,20 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereIsActive($value)
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\TaskComment> $taskComments
  * @property-read int|null $task_comments_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Attendance> $attendances
+ * @property-read int|null $attendances_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Payslip> $payslips
+ * @property-read int|null $payslips_count
+ * @property string|null $user_type
+ * @property int|null $manager_id
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, User> $employees
+ * @property-read int|null $employees_count
+ * @property-read User|null $manager
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereManagerId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereUserType($value)
  * @mixin \Eloquent
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\PayrollDeduction> $payrollDeductions
+ * @property-read int|null $payroll_deductions_count
  */
 	class User extends \Eloquent {}
 }
@@ -706,9 +831,9 @@ namespace App\Models{
  * @property-read int|null $statuses_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Tag> $tags
  * @property-read int|null $tags_count
- * @mixin \Eloquent
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $acceptedMembers
  * @property-read int|null $accepted_members_count
+ * @mixin \Eloquent
  */
 	class Workspace extends \Eloquent {}
 }
@@ -719,6 +844,10 @@ namespace App\Models{
  * @property int $workspace_id
  * @property int $user_id
  * @property string $role
+ * @property string $status
+ * @property string|null $invitation_token
+ * @property \Illuminate\Support\Carbon|null $invited_at
+ * @property \Illuminate\Support\Carbon|null $accepted_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\User $user
@@ -726,12 +855,17 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser whereAcceptedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser whereInvitationToken($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser whereInvitedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser whereRole($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser whereStatus($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser whereUserId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser whereWorkspaceId($value)
+ * @mixin \Eloquent
  */
 	class WorkspaceUser extends \Eloquent {}
 }

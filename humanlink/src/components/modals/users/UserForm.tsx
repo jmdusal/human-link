@@ -8,7 +8,7 @@ import Checkbox from '@/components/ui/Checkbox';
 import FormLabel from '@/components/ui/FormLabel';
 import type { User, UserFormData } from '@/types';
 import { USER_STATUS_OPTIONS } from '@/constants';
-import { formatUserFormData, INITIAL_USER_FORM_STATE, DAYS_NAME } from '@/utils/userUtils';
+import { formatUserFormData, INITIAL_USER_FORM_STATE, DAYS_NAME, USER_TYPE_OPTIONS } from '@/utils/userUtils';
 import { UserService } from '@/services/UserService';
 import { useRoles } from '@/hooks/use-roles';
 import { useForm } from '@/hooks/use-form';
@@ -148,7 +148,44 @@ export default function UserForm({ isOpen, onClose, onSuccess, selectedUser }: U
                             options={roleOptions}
                             value={form.formData.role}
                             onChange={(val) => form.setFormData({ ...form.formData, role: val })}
-                        /> 
+                        />
+                        <Select
+                            label="User Type"
+                            options={USER_TYPE_OPTIONS}
+                            value={form.formData.userType}
+                            onChange={(val) => form.setFormData({
+                                ...form.formData,
+                                userType: val as UserFormData['userType'],
+                            })}
+                        />
+                        <Input
+                            label="SSS Number"
+                            placeholder="XX-XXXXXXX-X"
+                            value={form.formData.sssNumber}
+                            onChange={(e) => form.handleChange('sssNumber', e.target.value)}
+                            error={form.errors.sssNumber?.[0]}
+                        />
+                        <Input
+                            label="PhilHealth Number"
+                            placeholder="XX-XXXXXXXXX-X"
+                            value={form.formData.philhealthNumber}
+                            onChange={(e) => form.handleChange('philhealthNumber', e.target.value)}
+                            error={form.errors.philhealthNumber?.[0]}
+                        />
+                        <Input
+                            label="Pag-IBIG Number"
+                            placeholder="XXXX-XXXX-XXXX"
+                            value={form.formData.pagibigNumber}
+                            onChange={(e) => form.handleChange('pagibigNumber', e.target.value)}
+                            error={form.errors.pagibigNumber?.[0]}
+                        />
+                        <Input
+                            label="TIN"
+                            placeholder="XXX-XXX-XXX-XXX"
+                            value={form.formData.tin}
+                            onChange={(e) => form.handleChange('tin', e.target.value)}
+                            error={form.errors.tin?.[0]}
+                        />
                         <div className="col-span-2">
                             <Toggle
                                 label="Account Status"

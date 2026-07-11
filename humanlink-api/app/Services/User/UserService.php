@@ -79,6 +79,15 @@ class UserService implements UserServiceInterface
         return $project->projectMembers()->get();
     }
 
+    public function listManagers(): Collection
+    {
+        return User::query()
+            ->where('user_type', 'manager')
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'user_type']);
+    }
+
     protected function userPayload(array $data): array
     {
         return array_intersect_key($data, array_flip([
@@ -86,6 +95,11 @@ class UserService implements UserServiceInterface
             'email',
             'password',
             'status',
+            'user_type',
+            'sss_number',
+            'philhealth_number',
+            'pagibig_number',
+            'tin',
         ]));
     }
 }

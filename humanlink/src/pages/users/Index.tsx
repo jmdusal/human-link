@@ -13,7 +13,7 @@ import { useAuth } from '@/context/AuthContext';
 import type { User } from '@/types';
 import { UserService } from '@/services/UserService';
 import { useUsers } from '@/hooks/use-users';
-import { DateCell, StatusBadge, UserCell, RoleBadge } from '@/components/shared/TableCells';
+import { DateCell, StatusBadge, UserCell, RoleBadge, TextCell } from '@/components/shared/TableCells';
 import { AnimatePresence } from 'framer-motion';
 
 const columnHelper = createColumnHelper<User>();
@@ -124,6 +124,13 @@ export default function UserIndex() {
                 const roleName = roles?.[0]?.name; 
                 
                 return <RoleBadge roleName={roleName} />;
+            },
+        }),
+        columnHelper.accessor('userType', {
+            header: 'Type',
+            cell: (info) => {
+                const userType = info.getValue();
+                return <TextCell title={userType ? userType.charAt(0).toUpperCase() + userType.slice(1) : '—'} />;
             },
         }),
         columnHelper.accessor('status', {

@@ -10,9 +10,6 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
-use Illuminate\Database\Eloquent\Attributes\Cast;
-// use Illuminate\Database\Eloquent\Attributes\Casts;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
@@ -87,6 +84,27 @@ use Spatie\Activitylog\Support\LogOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereIsActive($value)
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\TaskComment> $taskComments
  * @property-read int|null $task_comments_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Attendance> $attendances
+ * @property-read int|null $attendances_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Payslip> $payslips
+ * @property-read int|null $payslips_count
+ * @property string|null $user_type
+ * @property int|null $manager_id
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, User> $employees
+ * @property-read int|null $employees_count
+ * @property-read User|null $manager
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereManagerId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereUserType($value)
+ * @property string|null $sss_number
+ * @property string|null $philhealth_number
+ * @property string|null $pagibig_number
+ * @property string|null $tin
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\PayrollDeduction> $payrollDeductions
+ * @property-read int|null $payroll_deductions_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User wherePagibigNumber($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User wherePhilhealthNumber($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereSssNumber($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereTin($value)
  * @mixin \Eloquent
  */
 class User extends Authenticatable
@@ -99,6 +117,11 @@ class User extends Authenticatable
         'email',
         'password',
         'status',
+        'user_type',
+        'sss_number',
+        'philhealth_number',
+        'pagibig_number',
+        'tin',
         'timer_started_at',
         'timer_accumulated_ms',
         'timer_status',
@@ -113,6 +136,8 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
+            'timer_started_at' => 'datetime',
+            'timer_accumulated_ms' => 'integer',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
@@ -150,6 +175,31 @@ class User extends Authenticatable
     public function leaveRequests(): HasMany
     {
         return $this->hasMany(LeaveRequest::class);
+    }
+
+    public function isManagerType(): bool
+    {
+        return $this->user_type === 'manager';
+    }
+
+    public function isEmployeeType(): bool
+    {
+        return $this->user_type === 'employee';
+    }
+
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
+    public function payslips(): HasMany
+    {
+        return $this->hasMany(Payslip::class);
+    }
+
+    public function payrollDeductions(): HasMany
+    {
+        return $this->hasMany(PayrollDeduction::class);
     }
 
     public function workspaces(): BelongsToMany

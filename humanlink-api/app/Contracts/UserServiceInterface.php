@@ -22,4 +22,6 @@ interface UserServiceInterface
     public function listByWorkspace(Workspace $workspace): Collection;
 
     public function listByProject(Project $project): Collection;
+
+    public function listManagers(): Collection;
 }

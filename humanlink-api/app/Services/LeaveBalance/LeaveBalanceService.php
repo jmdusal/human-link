@@ -6,17 +6,24 @@ namespace App\Services\LeaveBalance;
 
 use App\Contracts\LeaveBalanceServiceInterface;
 use App\Models\LeaveBalance;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class LeaveBalanceService implements LeaveBalanceServiceInterface
 {
     public function list(): Collection
     {
-        return LeaveBalance::query()
+        $query = LeaveBalance::query()
             ->with(['user', 'leavePolicy'])
-            ->latest()
-            ->get();
+            ->latest();
+
+        if (! $this->canManageBalances()) {
+            $query->where('user_id', Auth::id());
+        }
+
+        return $query->get();
     }
 
     public function create(array $data): LeaveBalance
@@ -38,5 +45,19 @@ class LeaveBalanceService implements LeaveBalanceServiceInterface
     public function delete(LeaveBalance $leaveBalance): void
     {
         DB::transaction(fn () => $leaveBalance->delete());
+    }
+
+    protected function canManageBalances(?User $user = null): bool
+    {
+        $user ??= Auth::user();
+
+        if (! $user) {
+            return false;
+        }
+
+        return $user->hasRole('super-admin')
+            || $user->hasRole('hr-manager')
+            || $user->can('leave-balances-edit')
+            || $user->can('users-edit');
     }
 }

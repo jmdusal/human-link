@@ -4,9 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Support\Facades\Log;
 
 class AuthorizePermission
 {
@@ -14,7 +12,7 @@ class AuthorizePermission
     {
         $routeName = $request->route()?->getName();
 
-        if (!$routeName) {
+        if (! $routeName) {
             return $next($request);
         }
 
@@ -22,12 +20,33 @@ class AuthorizePermission
             return $next($request);
         }
 
+        // Auth-only modules (no Spatie permission required).
+        if (str_starts_with($routeName, 'me.') || str_starts_with($routeName, 'notifications.')) {
+            return $next($request);
+        }
+
         $permissionMap = [
-            'index'   => 'view',
-            'show'    => 'view',
-            'store'   => 'create',
-            'update'  => 'edit',
-            'patch'   => 'edit',
+            'index' => 'view',
+            'show' => 'view',
+            'status' => 'view',
+            'managers' => 'view',
+            'policyOptions' => 'view',
+            'calendar' => 'view',
+            'conflicts' => 'view',
+            'pdf' => 'view',
+            'store' => 'create',
+            'start' => 'create',
+            'generate' => 'create',
+            'generateIndividual' => 'create',
+            'generateThirteenthMonth' => 'create',
+            'update' => 'edit',
+            'patch' => 'edit',
+            'pause' => 'edit',
+            'resume' => 'edit',
+            'end' => 'edit',
+            'approve' => 'edit',
+            'reject' => 'edit',
+            'cancel' => 'edit',
             'destroy' => 'delete',
         ];
 
@@ -40,16 +59,9 @@ class AuthorizePermission
             if (isset($permissionMap[$action])) {
                 $permission = "{$module}-{$permissionMap[$action]}";
 
-                if (!$request->user() || !$request->user()->can($permission)) {
-
-                    // Log::warning("Unauthorized Access Attempt", [
-                    //     'user_id' => $request->user()?->id,
-                    //     'route' => $routeName,
-                    //     'required_permission' => $permission
-                    // ]);
-
+                if (! $request->user() || ! $request->user()->can($permission)) {
                     return response()->json([
-                        'message' => "Forbidden: You need the '{$permission}' permission."
+                        'message' => "Forbidden: You need the '{$permission}' permission.",
                     ], 403);
                 }
             }
