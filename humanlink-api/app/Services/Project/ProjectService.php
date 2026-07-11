@@ -7,6 +7,7 @@ namespace App\Services\Project;
 use App\Contracts\ProjectServiceInterface;
 use App\Models\Project;
 use App\Models\Workspace;
+use App\Services\Project\Concerns\AppliesProjectTemplate;
 use App\Services\Project\Concerns\ManagesProjectMembers;
 use App\Services\Workspace\Concerns\ManagesWorkspaceAccess;
 use Illuminate\Database\Eloquent\Collection;
@@ -15,17 +16,22 @@ use Illuminate\Support\Facades\DB;
 
 class ProjectService implements ProjectServiceInterface
 {
+    use AppliesProjectTemplate;
     use ManagesProjectMembers;
     use ManagesWorkspaceAccess;
 
-    public function listByWorkspace(Workspace $workspace): Collection
+    public function listByWorkspace(Workspace $workspace, bool $includeArchived = false): Collection
     {
         $workspace->loadMissing('members');
         $this->assertCanAccessWorkspace($workspace);
 
         $query = $workspace->projects()
-            ->select(['id', 'workspace_id', 'name', 'description', 'status', 'start_date', 'end_date', 'created_at'])
+            ->select(['id', 'workspace_id', 'name', 'description', 'status', 'start_date', 'end_date', 'archived_at', 'created_at'])
             ->with('projectMembers');
+
+        if (! $includeArchived) {
+            $query->whereNull('archived_at');
+        }
 
         if (! $this->isSuperAdmin() && ! $this->isWorkspaceAdminOrOwner($workspace)) {
             $query->whereHas('projectMembers', fn ($q) => $q->where('users.id', Auth::id()));
@@ -36,17 +42,21 @@ class ProjectService implements ProjectServiceInterface
 
     public function create(array $data): Project
     {
-        $workspace = Workspace::query()->with('members')->findOrFail($data['workspace_id']);
+        $workspace = Workspace::query()->with(['members', 'statuses', 'tags'])->findOrFail($data['workspace_id']);
         $this->assertCanManageWorkspace($workspace);
 
-        return DB::transaction(function () use ($data): Project {
+        return DB::transaction(function () use ($data, $workspace): Project {
+            if (! empty($data['template'])) {
+                $this->applyProjectTemplate($workspace, $data['template']);
+            }
+
             $project = Project::create($this->projectPayload($data));
 
             if (isset($data['project_members'])) {
                 $this->syncProjectMembers($project, $data['project_members']);
             }
 
-            return $project->load('projectMembers', 'workspace');
+            return $project->load('projectMembers', 'workspace.statuses', 'workspace.tags');
         });
     }
 
@@ -72,6 +82,26 @@ class ProjectService implements ProjectServiceInterface
         $this->assertCanManageWorkspace($project->workspace);
 
         $project->delete();
+    }
+
+    public function archive(Project $project): Project
+    {
+        $project->loadMissing('workspace.members');
+        $this->assertCanManageWorkspace($project->workspace);
+
+        $project->update(['archived_at' => now()]);
+
+        return $project->fresh(['projectMembers', 'workspace']);
+    }
+
+    public function restore(Project $project): Project
+    {
+        $project->loadMissing('workspace.members');
+        $this->assertCanManageWorkspace($project->workspace);
+
+        $project->update(['archived_at' => null]);
+
+        return $project->fresh(['projectMembers', 'workspace']);
     }
 
     protected function projectPayload(array $data): array

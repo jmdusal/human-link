@@ -31,7 +31,7 @@ export default function StatusesTab({
     setIsStatusFormOpen,
     onSuccess,
 }: SettingsTabProps) {
-    usePageTitle('Staging');
+    usePageTitle('Statuses');
     const [currentPage, setCurrentPage] = useState(1);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
     const [isReorderOpen, setIsReorderOpen] = useState(false);
@@ -40,13 +40,13 @@ export default function StatusesTab({
     const sortedStatuses = [...(statuses || [])].sort((a, b) => a.position - b.position);
     const gridOrderKey = sortedStatuses.map((s) => `${s.id}-${s.position}`).join('|');
 
-    const filteredStages = sortedStatuses.filter((status: Status) =>
+    const filteredStatuses = sortedStatuses.filter((status: Status) =>
         status.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const totalPages = Math.ceil(filteredStages.length / itemsPerPage);
+    const totalPages = Math.ceil(filteredStatuses.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedStages = filteredStages.slice(startIndex, startIndex + itemsPerPage);
+    const paginatedStatuses = filteredStatuses.slice(startIndex, startIndex + itemsPerPage);
 
     const handleSearch = (val: string) => {
         setSearchQuery(val);
@@ -62,7 +62,7 @@ export default function StatusesTab({
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 flex flex-col min-h-full">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
-                    <h3 className="text-3xl font-bold text-slate-900 tracking-tight">Stages</h3>
+                    <h3 className="text-3xl font-bold text-slate-900 tracking-tight">Statuses</h3>
                     <p className="text-slate-400 text-sm mt-1 font-medium">
                         Configure workflow columns for {data.name}.
                     </p>
@@ -89,7 +89,7 @@ export default function StatusesTab({
                     <Searchbar
                         value={searchQuery}
                         onChange={handleSearch}
-                        placeholder="Filter stages..."
+                        placeholder="Filter statuses..."
                     />
 
                     <Button variant="primary" onClick={() => setIsReorderOpen(true)}>
@@ -104,16 +104,16 @@ export default function StatusesTab({
                             setIsStatusFormOpen(true);
                         }}
                     >
-                        New Stage
+                        New Status
                     </Button>
                 </div>
             </div>
 
             <div className="flex-1" key={gridOrderKey}>
-                {paginatedStages.length > 0 ? (
+                {paginatedStatuses.length > 0 ? (
                     viewMode === 'grid' ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {paginatedStages.map((status: Status) => (
+                            {paginatedStatuses.map((status: Status) => (
                                 <Card
                                     key={`${status.id}-${status.position}`}
                                     hover
@@ -173,7 +173,7 @@ export default function StatusesTab({
                                                     handleEditStatus(status);
                                                 }}
                                                 className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                                                title="Edit stage"
+                                                title="Edit status"
                                             >
                                                 <Pencil size={13} strokeWidth={2.5} />
                                             </button>
@@ -183,7 +183,7 @@ export default function StatusesTab({
                                                     handleDeleteStatus(status);
                                                 }}
                                                 className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                                title="Delete stage"
+                                                title="Delete status"
                                             >
                                                 <Trash2 size={13} strokeWidth={2.5} />
                                             </button>
@@ -195,13 +195,13 @@ export default function StatusesTab({
                     ) : (
                         <Card className="!p-0 overflow-hidden">
                             <div className="px-6 py-3 bg-slate-50/80 flex items-center text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100">
-                                <div className="flex-[1.4]">Stage</div>
+                                <div className="flex-[1.4]">Status</div>
                                 <div className="flex-1 text-center">Color</div>
                                 <div className="flex-1 text-center">Position</div>
                                 <div className="w-20 text-right">Actions</div>
                             </div>
 
-                            {paginatedStages.map((status: Status) => (
+                            {paginatedStatuses.map((status: Status) => (
                                 <div
                                     key={`${status.id}-${status.position}`}
                                     onClick={() => handleEditStatus(status)}
@@ -266,12 +266,12 @@ export default function StatusesTab({
                             <ListTodo size={24} className="text-slate-300" />
                         </div>
                         <h4 className="text-lg font-bold text-slate-900 tracking-tight">
-                            {searchQuery ? 'No matches found' : 'No stages yet'}
+                            {searchQuery ? 'No matches found' : 'No statuses yet'}
                         </h4>
                         <p className="text-slate-400 text-sm mt-2 max-w-[260px] text-center font-medium leading-relaxed">
                             {searchQuery
                                 ? `We couldn't find any status matching "${searchQuery}"`
-                                : 'Create stages to build your board workflow.'}
+                                : 'Create statuses to build your board workflow.'}
                         </p>
                     </Card>
                 )}
@@ -283,7 +283,7 @@ export default function StatusesTab({
                         currentPage={currentPage}
                         totalPages={totalPages}
                         itemsPerPage={itemsPerPage}
-                        totalItems={filteredStages.length}
+                        totalItems={filteredStatuses.length}
                         onPageChange={setCurrentPage}
                     />
                 </div>

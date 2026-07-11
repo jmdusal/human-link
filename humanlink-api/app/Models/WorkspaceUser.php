@@ -69,6 +69,8 @@ class WorkspaceUser extends Model
 
     public const STATUS_ACCEPTED = 'accepted';
 
+    public const INVITATION_TTL_DAYS = 7;
+
     protected $fillable = [
         'workspace_id',
         'user_id',
@@ -105,5 +107,20 @@ class WorkspaceUser extends Model
     public function isAccepted(): bool
     {
         return $this->status === self::STATUS_ACCEPTED;
+    }
+
+    public function isInvitationExpired(): bool
+    {
+        if (! $this->isPending()) {
+            return false;
+        }
+
+        $invitedAt = $this->invited_at ?? $this->created_at;
+
+        if (! $invitedAt) {
+            return false;
+        }
+
+        return $invitedAt->lte(now()->subDays(self::INVITATION_TTL_DAYS));
     }
 }

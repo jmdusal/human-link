@@ -4,7 +4,9 @@ import { Download, UserRound } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
-import { MeService } from '@/services/MeService';
+import MyContractCard from '@/components/shared/MyContractCard';
+import { AuthService } from '@/services/AuthService';
+import { MeService, type TwoFactorSetup } from '@/services/MeService';
 import { PayrollService } from '@/services/PayrollService';
 import { usePayrolls } from '@/hooks/use-payrolls';
 import { useAttendances } from '@/hooks/use-attendances';
@@ -34,6 +36,11 @@ export default function MyProfilePage() {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [verifying, setVerifying] = useState(false);
+    const [mfaLoading, setMfaLoading] = useState(false);
+    const [twoFactorSetup, setTwoFactorSetup] = useState<TwoFactorSetup | null>(null);
+    const [mfaCode, setMfaCode] = useState('');
+    const [mfaPassword, setMfaPassword] = useState('');
 
     const { payslips, loading: payslipsLoading } = usePayrolls(true, year, month);
     const { attendances, loading: attendanceLoading } = useAttendances(true, range.start, range.end);
@@ -93,6 +100,60 @@ export default function MyProfilePage() {
         }
     };
 
+    const handleResendVerification = async () => {
+        setVerifying(true);
+        try {
+            await AuthService.sendVerificationEmail();
+            toast.success('Verification email sent.');
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'Failed to send verification email.');
+        } finally {
+            setVerifying(false);
+        }
+    };
+
+    const handleEnableTwoFactor = async () => {
+        setMfaLoading(true);
+        try {
+            const setup = await MeService.enableTwoFactor();
+            setTwoFactorSetup(setup);
+            toast.success('Scan the secret in your authenticator app, then confirm.');
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'Failed to start 2FA setup.');
+        } finally {
+            setMfaLoading(false);
+        }
+    };
+
+    const handleConfirmTwoFactor = async () => {
+        setMfaLoading(true);
+        try {
+            const updated = await MeService.confirmTwoFactor(mfaCode);
+            setProfile(updated);
+            setTwoFactorSetup(null);
+            setMfaCode('');
+            toast.success('Two-factor authentication enabled.');
+        } catch (error: any) {
+            toast.error(error?.response?.data?.errors?.code?.[0] || error?.response?.data?.message || 'Invalid code.');
+        } finally {
+            setMfaLoading(false);
+        }
+    };
+
+    const handleDisableTwoFactor = async () => {
+        setMfaLoading(true);
+        try {
+            const updated = await MeService.disableTwoFactor(mfaPassword);
+            setProfile(updated);
+            setMfaPassword('');
+            toast.success('Two-factor authentication disabled.');
+        } catch (error: any) {
+            toast.error(error?.response?.data?.errors?.password?.[0] || error?.response?.data?.message || 'Failed to disable 2FA.');
+        } finally {
+            setMfaLoading(false);
+        }
+    };
+
     const handleDownload = async (id: number) => {
         try {
             await PayrollService.downloadPdf(id);
@@ -111,9 +172,11 @@ export default function MyProfilePage() {
             <div>
                 <h1 className="text-2xl font-black text-slate-800 tracking-tight">My Profile</h1>
                 <p className="text-sm text-slate-500 mt-1">
-                    Update your contact details and review leave, attendance, and payslips.
+                    Update your contact details and review leave, attendance, payslips, and contract.
                 </p>
             </div>
+
+            <MyContractCard contract={profile?.latestContract} />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card className="border-slate-200 space-y-4">
@@ -130,22 +193,96 @@ export default function MyProfilePage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                     />
+
+                    <div className="rounded-xl border border-slate-200 p-3 space-y-2">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <p className="text-sm font-semibold text-slate-800">Email verification</p>
+                                <p className="text-xs text-slate-500">
+                                    {profile?.emailVerifiedAt
+                                        ? `Verified ${formatSimpleDate(profile.emailVerifiedAt)}`
+                                        : 'Your email is not verified yet.'}
+                                </p>
+                            </div>
+                            {!profile?.emailVerifiedAt && (
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    loading={verifying}
+                                    onClick={handleResendVerification}
+                                >
+                                    Resend
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 p-3 space-y-3">
+                        <div>
+                            <p className="text-sm font-semibold text-slate-800">Two-factor authentication</p>
+                            <p className="text-xs text-slate-500">
+                                {profile?.hasTwoFactorEnabled
+                                    ? 'Enabled. Required at sign-in.'
+                                    : 'Optional. Add an authenticator app for stronger sign-in.'}
+                            </p>
+                        </div>
+
+                        {twoFactorSetup && !profile?.hasTwoFactorEnabled && (
+                            <div className="space-y-2 rounded-lg bg-slate-50 p-3">
+                                <p className="text-xs text-slate-600 break-all">
+                                    Secret: <span className="font-mono">{twoFactorSetup.secret}</span>
+                                </p>
+                                <p className="text-[11px] text-slate-500 break-all">{twoFactorSetup.qrCodeUrl}</p>
+                                <p className="text-[11px] text-slate-500">
+                                    Recovery codes (store safely): {twoFactorSetup.recoveryCodes.join(', ')}
+                                </p>
+                                <Input
+                                    label="Confirm code from app"
+                                    value={mfaCode}
+                                    onChange={(e) => setMfaCode(e.target.value)}
+                                    placeholder="123456"
+                                />
+                                <Button type="button" loading={mfaLoading} onClick={handleConfirmTwoFactor}>
+                                    Confirm & enable
+                                </Button>
+                            </div>
+                        )}
+
+                        {profile?.hasTwoFactorEnabled ? (
+                            <div className="space-y-2">
+                                <Input
+                                    label="Current password to disable"
+                                    type="password"
+                                    value={mfaPassword}
+                                    onChange={(e) => setMfaPassword(e.target.value)}
+                                />
+                                <Button type="button" variant="danger" loading={mfaLoading} onClick={handleDisableTwoFactor}>
+                                    Disable 2FA
+                                </Button>
+                            </div>
+                        ) : !twoFactorSetup ? (
+                            <Button type="button" variant="secondary" loading={mfaLoading} onClick={handleEnableTwoFactor}>
+                                Set up 2FA
+                            </Button>
+                        ) : null}
+                    </div>
+
                     <div className="grid grid-cols-2 gap-3 text-xs text-slate-500 pt-2">
                         <div>
                             <p className="font-bold uppercase tracking-wider text-[10px] text-slate-400">SSS</p>
-                            <p>{profile?.sssNumber || '—'}</p>
+                            <p>{profile?.details?.sssNumber || '—'}</p>
                         </div>
                         <div>
                             <p className="font-bold uppercase tracking-wider text-[10px] text-slate-400">PhilHealth</p>
-                            <p>{profile?.philhealthNumber || '—'}</p>
+                            <p>{profile?.details?.philhealthNumber || '—'}</p>
                         </div>
                         <div>
                             <p className="font-bold uppercase tracking-wider text-[10px] text-slate-400">Pag-IBIG</p>
-                            <p>{profile?.pagibigNumber || '—'}</p>
+                            <p>{profile?.details?.pagibigNumber || '—'}</p>
                         </div>
                         <div>
                             <p className="font-bold uppercase tracking-wider text-[10px] text-slate-400">TIN</p>
-                            <p>{profile?.tin || '—'}</p>
+                            <p>{profile?.details?.tin || '—'}</p>
                         </div>
                     </div>
                     <Button variant="primary" onClick={handleSave} loading={saving}>

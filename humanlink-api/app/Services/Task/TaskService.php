@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace App\Services\Task;
 
 use App\Contracts\TaskServiceInterface;
+use App\Models\Project;
 use App\Models\Task;
+use App\Models\Workspace;
+use App\Models\WorkspaceUser;
 use App\Services\Task\Concerns\LogsTaskActivity;
 use App\Services\Task\Concerns\ManagesTaskAssignees;
 use App\Services\Task\Concerns\ManagesTaskTags;
+use App\Services\Workspace\Concerns\ManagesWorkspaceAccess;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,21 +22,60 @@ class TaskService implements TaskServiceInterface
     use LogsTaskActivity;
     use ManagesTaskAssignees;
     use ManagesTaskTags;
+    use ManagesWorkspaceAccess;
 
     public function list(): Collection
     {
+        $query = Task::query()
+            ->with(['project:id,name,workspace_id', 'status', 'assignees:id,name,email', 'creator:id,name'])
+            ->latest();
+
+        if (! $this->isSuperAdmin()) {
+            $workspaceIds = $this->accessibleWorkspaceIds();
+
+            $query->whereHas('project', fn ($q) => $q->whereIn('workspace_id', $workspaceIds));
+        }
+
+        return $query->get();
+    }
+
+    public function listByWorkspace(Workspace $workspace): Collection
+    {
+        $workspace->loadMissing('members');
+        $this->assertCanAccessWorkspace($workspace);
+
+        $projectQuery = $workspace->projects()->whereNull('archived_at');
+
+        if (! $this->isSuperAdmin() && ! $this->isWorkspaceAdminOrOwner($workspace)) {
+            $projectQuery->whereHas('projectMembers', fn ($q) => $q->where('users.id', Auth::id()));
+        }
+
+        $projectIds = $projectQuery->pluck('id');
+
+        if ($projectIds->isEmpty()) {
+            return new Collection;
+        }
+
         return Task::query()
-            ->with(['project:id,name', 'status', 'assignees:id,name,email', 'creator:id,name'])
-            ->latest()
+            ->whereIn('project_id', $projectIds)
+            ->with([
+                'assignees:id,name,email',
+                'tags:id,name,color',
+                'status:id,workspace_id,name,color_hex,position',
+                'subtasks',
+            ])
+            ->orderBy('position')
             ->get();
     }
 
     public function create(array $data): Task
     {
+        $project = Project::query()->with('workspace.members')->findOrFail($data['project_id']);
+        $this->assertCanCreateOrDeleteTasks($project->workspace);
+
         return DB::transaction(function () use ($data): Task {
             $payload = $this->taskPayload($data);
             $payload['creator_id'] = Auth::id();
-            $payload['due_date'] = $payload['due_date'] ?? now();
 
             $task = Task::create($payload);
 
@@ -45,12 +88,14 @@ class TaskService implements TaskServiceInterface
                 $this->syncTags($task, $tagIds);
             }
 
-            return $task->load(['assignees', 'status', 'tags']);
+            return $task->load(['assignees', 'status', 'tags', 'project.workspace']);
         });
     }
 
     public function update(Task $task, array $data): Task
     {
+        $this->assertCanAccessTaskWorkspace($task);
+
         return DB::transaction(function () use ($task, $data): Task {
             $oldStatusId = $task->status_id;
             $oldPriority = $task->priority;
@@ -74,12 +119,14 @@ class TaskService implements TaskServiceInterface
                 $this->syncTags($task, $data['tag_ids'] ?? $data['tagIds'] ?? [], withTimestamps: true);
             }
 
-            return $task->fresh(['assignees', 'status', 'tags', 'activities.user']);
+            return $task->fresh(['assignees', 'status', 'tags', 'activities.user', 'project.workspace']);
         });
     }
 
     public function updatePosition(Task $task, array $data): Task
     {
+        $this->assertCanAccessTaskWorkspace($task);
+
         return DB::transaction(function () use ($task, $data): Task {
             $oldStatusId = $task->status_id;
             $newStatusId = (int) $data['status_id'];
@@ -90,13 +137,33 @@ class TaskService implements TaskServiceInterface
 
             $task->update($data);
 
-            return $task->load(['assignees', 'status', 'activities.user']);
+            return $task->load(['assignees', 'status', 'activities.user', 'project.workspace']);
         });
     }
 
     public function delete(Task $task): void
     {
+        $task->loadMissing('project.workspace.members');
+        $this->assertCanCreateOrDeleteTasks($task->project->workspace);
+
         $task->delete();
+    }
+
+    protected function assertCanAccessTaskWorkspace(Task $task): void
+    {
+        $task->loadMissing('project.workspace.members');
+        $this->assertCanAccessWorkspace($task->project->workspace);
+    }
+
+    protected function accessibleWorkspaceIds(): array
+    {
+        return Workspace::query()
+            ->whereHas('members', function ($query): void {
+                $query->where('users.id', Auth::id())
+                    ->where('workspace_users.status', WorkspaceUser::STATUS_ACCEPTED);
+            })
+            ->pluck('id')
+            ->all();
     }
 
     protected function taskPayload(array $data): array

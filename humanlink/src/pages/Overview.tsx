@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getInitials } from '@/utils/userUtils';
 import { DashboardService } from '@/services/DashboardService';
 import { formatCurrency } from '@/utils/formatUtils';
+import MyContractCard from '@/components/shared/MyContractCard';
 import type { DashboardSummary, Workspace } from '@/types';
 
 interface StatProps {
@@ -187,7 +188,7 @@ export default function Overview() {
                                                 )}
                                             </div>
                                             <span className="text-[11px] font-bold text-slate-400 tabular-nums">
-                                                {ws.projects?.length || 0} projects
+                                                {ws.projectsCount ?? ws.projects?.length ?? 0} projects
                                             </span>
                                         </div>
                                     </button>
@@ -199,40 +200,44 @@ export default function Overview() {
             )}
 
             {!isAdminView && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <OverviewStat
-                        label="Timer"
-                        value={String(kpis?.timerStatus ?? 'offline')}
-                        icon={<Clock3 size={20} />}
-                        trend="Live status"
-                        isUp={(kpis?.timerStatus ?? 'offline') === 'working'}
-                        onClick={() => navigate('/attendances')}
-                    />
-                    <OverviewStat
-                        label="Days MTD"
-                        value={kpis?.attendanceDaysMtd ?? 0}
-                        icon={<CalendarDays size={20} />}
-                        trend="This month"
-                        isUp
-                        onClick={() => navigate('/attendances')}
-                    />
-                    <OverviewStat
-                        label="Pending Leave"
-                        value={kpis?.pendingLeaves ?? 0}
-                        icon={<FileText size={20} />}
-                        trend="Awaiting review"
-                        isUp={(kpis?.pendingLeaves ?? 0) === 0}
-                        onClick={() => navigate('/leave-requests')}
-                    />
-                    <OverviewStat
-                        label="Payslips"
-                        value={kpis?.payslipsThisMonth ?? 0}
-                        icon={<Wallet size={20} />}
-                        trend="This month"
-                        isUp
-                        onClick={() => navigate('/my-profile')}
-                    />
-                </div>
+                <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <OverviewStat
+                            label="Timer"
+                            value={String(kpis?.timerStatus ?? 'offline')}
+                            icon={<Clock3 size={20} />}
+                            trend="Live status"
+                            isUp={(kpis?.timerStatus ?? 'offline') === 'working'}
+                            onClick={() => navigate('/attendances')}
+                        />
+                        <OverviewStat
+                            label="Days MTD"
+                            value={kpis?.attendanceDaysMtd ?? 0}
+                            icon={<CalendarDays size={20} />}
+                            trend="This month"
+                            isUp
+                            onClick={() => navigate('/attendances')}
+                        />
+                        <OverviewStat
+                            label="Pending Leave"
+                            value={kpis?.pendingLeaves ?? 0}
+                            icon={<FileText size={20} />}
+                            trend="Awaiting review"
+                            isUp={(kpis?.pendingLeaves ?? 0) === 0}
+                            onClick={() => navigate('/leave-requests')}
+                        />
+                        <OverviewStat
+                            label="Payslips"
+                            value={kpis?.payslipsThisMonth ?? 0}
+                            icon={<Wallet size={20} />}
+                            trend="This month"
+                            isUp
+                            onClick={() => navigate('/my-profile')}
+                        />
+                    </div>
+
+                    <MyContractCard contract={dashboard?.contract} />
+                </>
             )}
 
             {isAdminView && (

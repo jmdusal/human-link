@@ -4,10 +4,12 @@ export interface PayslipUser {
     id: number;
     name: string;
     email: string;
-    sssNumber?: string | null;
-    philhealthNumber?: string | null;
-    pagibigNumber?: string | null;
-    tin?: string | null;
+    details?: {
+        sssNumber?: string | null;
+        philhealthNumber?: string | null;
+        pagibigNumber?: string | null;
+        tin?: string | null;
+    } | null;
 }
 
 export interface Payslip {

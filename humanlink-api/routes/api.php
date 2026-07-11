@@ -28,31 +28,37 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\EmployeeLifecycleController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\UserDocumentController;
+use App\Http\Controllers\Api\ContractTemplateController;
 
 Route::group(['middleware' => ['web']], function () {
     Route::post('/login', [AuthenticationController::class, 'login']);
+    Route::post('/login/two-factor', [AuthenticationController::class, 'twoFactorLogin']);
+    Route::post('/forgot-password', [AuthenticationController::class, 'forgotPassword']);
+    Route::post('/reset-password', [AuthenticationController::class, 'resetPassword']);
+    Route::get('/email/verify/{id}/{hash}', [AuthenticationController::class, 'verifyEmail'])
+        ->middleware(['signed'])
+        ->name('verification.verify');
 });
 
 // Authenticated routes
 Route::middleware('auth:sanctum', 'permission')->group(function () {
     Route::get('/user', function (Request $request) {
-        // return response()->json([
-        //     'id' => $request->user()->id,
-        //     'name' => $request->user()->name,
-        //     'email' => $request->user()->email,
-        //     'roles' => $request->user()->getRoleNames(), // Spatie method
-        //     'permissions' => $request->user()->getAllPermissions()->pluck('name'), // Spatie method
-        // ]);
         return response()->json([
             'user' => $request->user(),
             'roles' => $request->user()->getRoleNames(),
             'permissions' => $request->user()->getAllPermissions()->pluck('name'),
         ]);
     });
-    // Route::get('/user', function (Request $request) {
-    //     return $request->user();
-    // });
     Route::post('/logout', [AuthenticationController::class, 'logout']);
+    Route::post('/email/verification-notification', [AuthenticationController::class, 'sendVerificationEmail'])
+        ->name('me.sendVerificationEmail');
+    Route::post('/me/two-factor', [AuthenticationController::class, 'enableTwoFactor'])
+        ->name('me.twoFactorEnable');
+    Route::post('/me/two-factor/confirm', [AuthenticationController::class, 'confirmTwoFactor'])
+        ->name('me.twoFactorConfirm');
+    Route::delete('/me/two-factor', [AuthenticationController::class, 'disableTwoFactor'])
+        ->name('me.twoFactorDisable');
 
     Route::controller(MeController::class)->prefix('me')->name('me.')->group(function () {
         Route::get('/', 'show')->name('show');
@@ -81,6 +87,10 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::get('/{user}', 'show')->name('show');
         Route::put('/{user}', 'update')->name('update');
         Route::delete('/{user}', 'destroy')->name('destroy');
+        Route::post('/{user}/resend-invite', 'resendInvite')->name('resendInvite');
+        Route::post('/{user}/force-password-reset', 'forcePasswordReset')->name('forcePasswordReset');
+        Route::post('/{user}/deactivate', 'deactivate')->name('deactivate');
+        Route::post('/{user}/activate', 'activate')->name('activate');
 
         Route::get('/workspace/{workspace}', 'getWorkspaceUsers')->name('workspace');
         Route::get('/project/{project}', 'getProjectUsers')->name('project');
@@ -104,6 +114,18 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/', 'store')->name('store');
         Route::post('/invitations/{token}/accept', 'acceptInvitation')->name('acceptInvitation');
+        Route::post('/invitations/{token}/decline', 'declineInvitation')->name('declineInvitation');
+        Route::post('/{workspace}/members', 'inviteMember')->name('inviteMember');
+        Route::patch('/{workspace}/members/{user}', 'changeMemberRole')->name('changeMemberRole');
+        Route::delete('/{workspace}/members/{user}', 'removeMember')->name('removeMember');
+        Route::post('/{workspace}/members/{user}/resend-invitation', 'resendInvitation')->name('resendInvitation');
+        Route::delete('/{workspace}/members/{user}/invitation', 'cancelInvitation')->name('cancelInvitation');
+        Route::post('/{workspace}/leave', 'leave')->name('leave');
+        Route::post('/{workspace}/transfer-ownership', 'transferOwnership')->name('transferOwnership');
+        Route::post('/{workspace}/archive', 'archive')->name('archive');
+        Route::post('/{workspace}/restore', 'restore')->name('restore');
+        Route::get('/{workspace}/activity', 'activity')->name('activity');
+        Route::get('/{workspace}/tasks', [TaskController::class, 'listByWorkspace'])->name('tasks');
         Route::put('/{workspace}', 'update')->name('update');
         Route::delete('/{workspace}', 'destroy')->name('destroy');
         Route::get('/{slug}', 'showBySlug')->name('show');
@@ -113,9 +135,9 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::get('/{workspace}', 'index')->name('index');
         Route::post('/', 'store')->name('store');
         Route::put('/{project}', 'update')->name('update');
+        Route::post('/{project}/archive', 'archive')->name('archive');
+        Route::post('/{project}/restore', 'restore')->name('restore');
         Route::delete('/{project}', 'destroy')->name('destroy');
-        // Route::get('/{workspace}/projects', 'index')->name('index');
-
     });
 
     Route::controller(TaskController::class)->prefix('tasks')->name('tasks.')->group(function () {
@@ -167,6 +189,15 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::post('/', 'store')->name('store');
         Route::put('/{leavePolicy}', 'update')->name('update');
         Route::delete('/{leavePolicy}', 'destroy')->name('destroy');
+    });
+
+    Route::controller(ContractTemplateController::class)->prefix('contract-templates')->name('contract-templates.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::post('/preview', 'previewDraft')->name('previewDraft');
+        Route::get('/{contractTemplate}/preview', 'preview')->name('preview');
+        Route::put('/{contractTemplate}', 'update')->name('update');
+        Route::delete('/{contractTemplate}', 'destroy')->name('destroy');
     });
 
     Route::controller(LeaveBalanceController::class)->prefix('leave-balances')->name('leave-balances.')->group(function () {
@@ -240,5 +271,12 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::get('/{user}/lifecycle', 'show')->name('lifecycle');
         Route::post('/{user}/lifecycle/items/{item}/toggle', 'toggleItem')->name('toggleLifecycleItem');
         Route::post('/{user}/offboard', 'offboard')->name('offboard');
+    });
+
+    Route::controller(UserDocumentController::class)->prefix('users/{user}/documents')->name('users.documents.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::post('/generate-contract', 'generateContract')->name('generateContract');
+        Route::delete('/{document}', 'destroy')->name('destroy');
     });
 });

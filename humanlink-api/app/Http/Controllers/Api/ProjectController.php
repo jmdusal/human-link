@@ -11,6 +11,7 @@ use App\Http\Requests\Project\UpdateProjectRequest;
 use App\Models\Project;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ProjectController extends Controller
 {
@@ -18,9 +19,11 @@ class ProjectController extends Controller
         private ProjectServiceInterface $projectService
     ) {}
 
-    public function index(Workspace $workspace): JsonResponse
+    public function index(Request $request, Workspace $workspace): JsonResponse
     {
-        return response()->json($this->projectService->listByWorkspace($workspace));
+        return response()->json([
+            'data' => $this->projectService->listByWorkspace($workspace, $request->boolean('include_archived')),
+        ], 200);
     }
 
     public function store(StoreProjectRequest $request): JsonResponse
@@ -39,6 +42,26 @@ class ProjectController extends Controller
 
         return response()->json([
             'message' => 'Project updated successfully.',
+            'data' => $project,
+        ], 200);
+    }
+
+    public function archive(Project $project): JsonResponse
+    {
+        $project = $this->projectService->archive($project);
+
+        return response()->json([
+            'message' => 'Project archived successfully.',
+            'data' => $project,
+        ], 200);
+    }
+
+    public function restore(Project $project): JsonResponse
+    {
+        $project = $this->projectService->restore($project);
+
+        return response()->json([
+            'message' => 'Project restored successfully.',
             'data' => $project,
         ], 200);
     }

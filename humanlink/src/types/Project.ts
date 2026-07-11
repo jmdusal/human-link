@@ -9,10 +9,13 @@ export interface Project {
   status: 'active' | 'completed' | 'on-hold';
   startDate: string | null;
   endDate: string | null;
+  archivedAt?: string | null;
   createdAt: string;
   projectMembers?: ProjectMember[];
   tasks?: Task[];
 }
+
+export type ProjectTemplate = 'sprint' | 'hr_ops' | 'client_delivery';
 
 export interface ProjectFormData {
   name: string;
@@ -22,4 +25,5 @@ export interface ProjectFormData {
   startDate: string;
   endDate: string;
   projectMembers: ProjectMember[];
+  template?: ProjectTemplate | null;
 }

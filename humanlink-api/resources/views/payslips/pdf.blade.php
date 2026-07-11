@@ -28,7 +28,7 @@
     <p>
         <strong>{{ $payslip->user?->name }}</strong><br>
         {{ $payslip->user?->email }}<br>
-        @if($payslip->user?->tin) TIN: {{ $payslip->user->tin }}<br>@endif
+        @if($payslip->user?->details?->tin) TIN: {{ $payslip->user->details->tin }}<br>@endif
         Period: {{ $payslip->period_start?->format('Y-m-d') }} to {{ $payslip->period_end?->format('Y-m-d') }}
     </p>
 

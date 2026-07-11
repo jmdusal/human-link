@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('attendance:notify-forgotten-timers')->dailyAt('19:00');
 Schedule::command('leave:notify-pending-reminders')->dailyAt('09:00');
+Schedule::command('workspaces:expire-invitations')->dailyAt('00:30');

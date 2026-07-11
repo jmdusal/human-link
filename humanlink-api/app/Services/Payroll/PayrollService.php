@@ -60,7 +60,8 @@ class PayrollService implements PayrollServiceInterface
         $this->authorizePayslipAccess($payslip);
 
         $payslip->load([
-            'user:id,name,email,sss_number,philhealth_number,pagibig_number,tin',
+            'user:id,name,email',
+            'user.details',
             'generator:id,name',
             'adjustments.creator:id,name',
         ]);

@@ -34,6 +34,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read int|null $tasks_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $projectMembers
  * @property-read int|null $project_members_count
+ * @property \Illuminate\Support\Carbon|null $archived_at
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Project active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Project whereArchivedAt($value)
  * @mixin \Eloquent
  */
 /**
@@ -63,6 +66,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read int|null $tasks_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $projectMembers
  * @property-read int|null $project_members_count
+ * @property \Illuminate\Support\Carbon|null $archived_at
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Project active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Project whereArchivedAt($value)
  * @mixin \Eloquent
  */
 class Project extends Model
@@ -74,7 +80,25 @@ class Project extends Model
         'start_date',
         'end_date',
         'status',
+        'archived_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'archived_at' => 'datetime',
+        ];
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->whereNull('archived_at');
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
+    }
 
     public function workspace(): BelongsTo
     {

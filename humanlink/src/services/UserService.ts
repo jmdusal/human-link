@@ -38,10 +38,11 @@ export const UserService = {
             return time.slice(0, 5);
         };
 
-        const { scheduleStartDate, weeklyData, userType, ...rest } = formData;
+        const { scheduleStartDate, weeklyData, userType, employmentType, ...rest } = formData;
         const payload: any = {
             ...rest,
             userType: userType || null,
+            employmentType: employmentType || null,
             startDate: scheduleStartDate,
             weeklyData: weeklyData.map((day: any) => ({
                 dayOfWeek: Number(day.dayOfWeek),
@@ -52,7 +53,23 @@ export const UserService = {
             })),
         };
 
+        const hasRate = [payload.monthlyRate, payload.dailyRate, payload.hourlyRate]
+            .some((value) => value !== '' && value !== null && value !== undefined);
+
+        if (!hasRate) {
+            delete payload.monthlyRate;
+            delete payload.dailyRate;
+            delete payload.hourlyRate;
+            delete payload.allowanceMonthly;
+            delete payload.effectiveDate;
+            delete payload.isActive;
+        }
+
         if (userId && !payload.password) {
+            delete payload.password;
+        }
+
+        if (!userId && payload.sendInvite) {
             delete payload.password;
         }
 
@@ -88,5 +105,25 @@ export const UserService = {
 
     async deleteUser(id: number): Promise<void> {
         await api.delete(API_ROUTES.USERS.DELETE(id));
-    }
+    },
+
+    async resendInvite(id: number): Promise<User> {
+        const response = await api.post(API_ROUTES.USERS.RESEND_INVITE(id));
+        return response.data.data;
+    },
+
+    async forcePasswordReset(id: number): Promise<User> {
+        const response = await api.post(API_ROUTES.USERS.FORCE_PASSWORD_RESET(id));
+        return response.data.data;
+    },
+
+    async deactivateUser(id: number): Promise<User> {
+        const response = await api.post(API_ROUTES.USERS.DEACTIVATE(id));
+        return response.data.data;
+    },
+
+    async activateUser(id: number): Promise<User> {
+        const response = await api.post(API_ROUTES.USERS.ACTIVATE(id));
+        return response.data.data;
+    },
 };

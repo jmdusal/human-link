@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { navItems } from '@/routes/routes';
 import { useAuth } from '@/context/AuthContext';
 import { NavItem } from '@/components/layouts/NavItem';
@@ -24,9 +24,15 @@ const CATEGORY_ORDER = [
     'System',
 ];
 
-export default function Sidebar() {
-    const { can, loading } = useAuth();
-    const [isCollapsed, setIsCollapsed] = useState(false);
+interface SidebarProps {
+    isCollapsed?: boolean;
+    onToggleCollapse?: () => void;
+}
+
+export default function Sidebar({
+    isCollapsed = false,
+}: SidebarProps) {
+    const { can } = useAuth();
 
     const groupedItems = useMemo(() => {
         const allowed = (navItems as NavEntry[]).filter((item) => {
@@ -55,8 +61,6 @@ export default function Sidebar() {
             }));
     }, [can]);
 
-    if (loading) return null;
-
     const showCategoryLabel = (category: string, index: number) => {
         if (isCollapsed) return false;
         if (category === 'Overview' && index === 0) return false;
@@ -66,14 +70,9 @@ export default function Sidebar() {
     return (
         <aside className={`relative ${isCollapsed ? 'w-20' : 'w-64'} bg-[#F0F2F5] border-r border-slate-300/50 flex flex-col p-4 transition-all duration-300 ease-in-out h-screen sticky top-0`}>
             <div className="flex items-center gap-3 px-2 mb-8">
-                <button
-                    type="button"
-                    onClick={() => setIsCollapsed((prev) => !prev)}
-                    className="h-8 w-8 bg-blue-600 rounded-lg shadow-lg flex items-center justify-center text-white font-bold shrink-0"
-                    aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                >
+                <div className="h-8 w-8 bg-blue-600 rounded-lg shadow-lg flex items-center justify-center text-white font-bold shrink-0">
                     HL
-                </button>
+                </div>
                 <AnimatePresence>
                     {!isCollapsed && (
                         <motion.span

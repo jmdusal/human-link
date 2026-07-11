@@ -18,6 +18,9 @@ class UserSeeder extends Seeder
                 'name' => 'Admin User',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
+                'must_set_password' => false,
+                'is_active' => true,
+                'status' => 'active',
                 'user_type' => null,
             ]
         );
@@ -30,6 +33,8 @@ class UserSeeder extends Seeder
                 'name' => 'HR User',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
+                'must_set_password' => false,
+                'is_active' => true,
                 'status' => 'active',
                 'user_type' => 'hr',
             ]
@@ -44,6 +49,8 @@ class UserSeeder extends Seeder
                 'name' => 'Team Manager',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
+                'must_set_password' => false,
+                'is_active' => true,
                 'status' => 'active',
                 'user_type' => 'manager',
             ]
@@ -58,6 +65,8 @@ class UserSeeder extends Seeder
                 'name' => 'Regular User',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
+                'must_set_password' => false,
+                'is_active' => true,
                 'status' => 'active',
                 'user_type' => 'employee',
             ]

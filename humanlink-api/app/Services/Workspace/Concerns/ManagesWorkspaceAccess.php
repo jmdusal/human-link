@@ -76,18 +76,44 @@ trait ManagesWorkspaceAccess
         }
     }
 
+    /**
+     * Create / delete tasks — owners and admins only.
+     * Members may still update and move tasks via assertCanAccessWorkspace.
+     */
+    protected function assertCanCreateOrDeleteTasks(Workspace $workspace): void
+    {
+        $this->assertCanManageWorkspace($workspace);
+    }
+
+    protected function assertIsWorkspaceOwner(Workspace $workspace): void
+    {
+        if ($this->isSuperAdmin()) {
+            return;
+        }
+
+        $user = Auth::user();
+
+        if (! $user || (int) $workspace->owner_id !== (int) $user->id) {
+            throw new AccessDeniedHttpException('Only the workspace owner can perform this action.');
+        }
+    }
+
     protected function filterProjectsForCurrentUser(Workspace $workspace): Workspace
     {
         if ($this->isSuperAdmin() || $this->isWorkspaceAdminOrOwner($workspace)) {
             return $workspace;
         }
 
-        $userId = Auth::id();
+        $userId = (int) Auth::id();
 
         $workspace->setRelation(
             'projects',
             $workspace->projects
-                ->filter(fn ($project) => $project->projectMembers->contains('id', $userId))
+                ->filter(function ($project) use ($userId): bool {
+                    return $project->projectMembers->contains(
+                        fn ($member) => (int) $member->id === $userId
+                    );
+                })
                 ->values()
         );
 

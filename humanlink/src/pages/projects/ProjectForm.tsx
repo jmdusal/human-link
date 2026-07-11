@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
-import { UserPlus } from 'lucide-react';
+import { LayoutTemplate, UserPlus } from 'lucide-react';
 import ModalForm from '@/components/modals/ModalForm';
 import Input from '@/components/ui/Input';
-import type { Project, ProjectFormData } from '@/types';
+import type { Project, ProjectFormData, ProjectTemplate } from '@/types';
 import { ProjectService } from '@/services/ProjectService';
-import { INITIAL_PROJECT_FORM_STATE, formatProjectFormData } from '@/utils/projectUtils';
+import { INITIAL_PROJECT_FORM_STATE, formatProjectFormData, PROJECT_TEMPLATES } from '@/utils/projectUtils';
 import { useForm } from '@/hooks/use-form';
 import DateInput from '@/components/ui/DateInput';
 import Textarea from '@/components/ui/Textarea';
@@ -79,6 +79,49 @@ export default function ProjectForm({ isOpen, onClose, onSuccess, workspaceId, s
                     error={form.errors.description?.[0]}
                     className="resize-none"
                 />
+
+                {!selectedProject && (
+                    <Card className="!p-4">
+                        <div className="flex items-start gap-3 mb-4">
+                            <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center shrink-0">
+                                <LayoutTemplate size={18} strokeWidth={2.5} />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-bold text-slate-900">Project template</h4>
+                                <p className="text-[12px] text-slate-400 font-medium mt-0.5">
+                                    Optional presets for statuses and tags. Existing ones are kept; missing ones are added.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            {PROJECT_TEMPLATES.map((template) => {
+                                const selected = form.formData.template === template.key;
+                                return (
+                                    <button
+                                        key={template.key}
+                                        type="button"
+                                        onClick={() =>
+                                            form.handleChange(
+                                                'template',
+                                                selected ? null : (template.key as ProjectTemplate),
+                                            )
+                                        }
+                                        className={`text-left rounded-xl border px-3 py-3 transition-all ${
+                                            selected
+                                                ? 'border-blue-500 bg-blue-50 shadow-sm'
+                                                : 'border-slate-200 bg-white hover:border-blue-200'
+                                        }`}
+                                    >
+                                        <p className="text-sm font-bold text-slate-900">{template.label}</p>
+                                        <p className="text-[11px] text-slate-400 font-medium mt-1 leading-snug">
+                                            {template.description}
+                                        </p>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </Card>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                     <DateInput

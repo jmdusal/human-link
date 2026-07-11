@@ -62,6 +62,46 @@ class UserController extends Controller
         ], 200);
     }
 
+    public function resendInvite(User $user): JsonResponse
+    {
+        $user = $this->userService->resendInvite($user);
+
+        return response()->json([
+            'message' => 'Invite email resent successfully',
+            'data' => $user,
+        ], 200);
+    }
+
+    public function forcePasswordReset(User $user): JsonResponse
+    {
+        $user = $this->userService->forcePasswordReset($user);
+
+        return response()->json([
+            'message' => 'Password reset email sent successfully',
+            'data' => $user,
+        ], 200);
+    }
+
+    public function deactivate(User $user): JsonResponse
+    {
+        $user = $this->userService->deactivate($user);
+
+        return response()->json([
+            'message' => 'User deactivated successfully',
+            'data' => $user,
+        ], 200);
+    }
+
+    public function activate(User $user): JsonResponse
+    {
+        $user = $this->userService->activate($user);
+
+        return response()->json([
+            'message' => 'User activated successfully',
+            'data' => $user,
+        ], 200);
+    }
+
     public function getWorkspaceUsers(Workspace $workspace): JsonResponse
     {
         return response()->json([

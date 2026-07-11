@@ -1,25 +1,35 @@
-import { usePageTitle } from '@/hooks/use-title';
-import { getInitials } from '@/utils/userUtils';
 import { Target, Users2, Layers, CheckCircle2, ArrowUpRight, PieChart, Trophy } from 'lucide-react';
 import Card from '@/components/ui/Card';
+import { usePageTitle } from '@/hooks/use-title';
+import { getInitials } from '@/utils/userUtils';
+import {
+    acceptedMembers,
+    findDoneStatus,
+    getDoneStatusIds,
+    getTaskStatusId,
+    isTaskDone,
+    resolveWorkspaceStatuses,
+    taskHasAssignee,
+} from '@/utils/workspaceMetrics';
 
 interface AnalyticsProps {
     workspace: any;
+    projects?: any[];
 }
 
-export default function AnalyticsTab({ workspace }: AnalyticsProps) {
-    usePageTitle("Analytics")
-    const projects = workspace?.projects || [];
-    const members = workspace?.members || [];
-    const statuses = workspace?.task_statuses || [];
+export default function AnalyticsTab({ workspace, projects: projectsProp }: AnalyticsProps) {
+    usePageTitle('Analytics');
+    const projects = projectsProp || workspace?.projects || [];
+    const members = acceptedMembers(workspace?.members || []);
+    const statuses = resolveWorkspaceStatuses(workspace);
     const workspaceName = workspace?.name || 'Workspace';
 
-    const doneStatus = statuses.find((s: any) => s.name === 'Done');
-    const doneStatusId = doneStatus?.id;
+    const doneStatus = findDoneStatus(statuses);
+    const doneStatusIds = getDoneStatusIds(statuses);
 
     const totalTasks = projects.reduce((acc: number, p: any) => acc + (p.tasks?.length || 0), 0);
     const completedTasks = projects.reduce((acc: number, p: any) => {
-        const doneInProject = p.tasks?.filter((t: any) => t.statusId === doneStatusId).length || 0;
+        const doneInProject = p.tasks?.filter((t: any) => isTaskDone(t, doneStatusIds)).length || 0;
         return acc + doneInProject;
     }, 0);
 
@@ -28,7 +38,7 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
     const memberStats = members.map((member: any) => {
         const completedCount = projects.reduce((acc: number, project: any) => {
             const memberDone = project.tasks?.filter((t: any) =>
-                t.statusId === doneStatusId && t.assigned_to === member.id
+                isTaskDone(t, doneStatusIds) && taskHasAssignee(t, member.id)
             ).length || 0;
             return acc + memberDone;
         }, 0);
@@ -37,7 +47,7 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
 
     const statusCounts = statuses.map((status: any) => {
         const count = projects.reduce((acc: number, p: any) =>
-            acc + (p.tasks?.filter((t: any) => t.statusId === status.id).length || 0), 0
+            acc + (p.tasks?.filter((t: any) => getTaskStatusId(t) === status.id).length || 0), 0
         );
         return { ...status, count };
     });
@@ -45,7 +55,7 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
     const workloadData = members.map((member: any) => {
         const activeTasksCount = projects.reduce((acc: number, project: any) => {
             const memberActive = project.tasks?.filter((t: any) =>
-                t.statusId !== doneStatusId && t.assigned_to === member.id
+                !isTaskDone(t, doneStatusIds) && taskHasAssignee(t, member.id)
             ).length || 0;
             return acc + memberActive;
         }, 0);
@@ -141,9 +151,9 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
                          <h4 className="text-lg font-bold text-slate-900">Project Progress</h4>
                     </div>
                     <div className="space-y-6">
-                        {projects.map((project: any) => {
+                        {projects.length > 0 ? projects.map((project: any) => {
                             const pTotal = project.tasks?.length || 0;
-                            const pDone = project.tasks?.filter((t: any) => t.statusId === doneStatusId).length || 0;
+                            const pDone = project.tasks?.filter((t: any) => isTaskDone(t, doneStatusIds)).length || 0;
                             const pRate = pTotal > 0 ? Math.round((pDone / pTotal) * 100) : 0;
 
                             return (
@@ -163,7 +173,9 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
                                     </div>
                                 </div>
                             );
-                        })}
+                        }) : (
+                            <p className="text-sm text-slate-400 font-medium">No projects yet.</p>
+                        )}
                     </div>
                 </Card>
 
@@ -173,7 +185,7 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
                          <h4 className="text-lg font-bold text-slate-900">Task Distribution</h4>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                        {statusCounts.map((status: any) => (
+                        {statusCounts.length > 0 ? statusCounts.map((status: any) => (
                             <Card key={status.id} className="!p-4 bg-slate-50/50">
                                 <div className="flex items-center gap-2 mb-1">
                                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: status.colorHex }} />
@@ -181,7 +193,9 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
                                 </div>
                                 <p className="text-2xl font-bold text-slate-900">{status.count}</p>
                             </Card>
-                        ))}
+                        )) : (
+                            <p className="text-sm text-slate-400 font-medium col-span-2">No statuses configured.</p>
+                        )}
                     </div>
                 </Card>
             </div>
@@ -195,13 +209,13 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
                     <span className="text-xs font-medium text-slate-400 italic">Based on completed tasks</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                    {memberStats.map((member: any, index: number) => (
+                    {memberStats.some((m: any) => m.completedCount > 0) ? memberStats.map((member: any, index: number) => (
                         <div key={member.id} className="flex flex-col items-center text-center p-4 rounded-2xl hover:bg-slate-50 transition-colors">
                             <div className="relative mb-3">
                                 <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border-2 border-white shadow-sm">
                                     {getInitials(member.name)}
                                 </div>
-                                {index === 0 && (
+                                {index === 0 && member.completedCount > 0 && (
                                     <div className="absolute -top-2 -right-2 bg-amber-400 text-white rounded-full p-1 shadow-sm">
                                         <Trophy className="w-3 h-3" />
                                     </div>
@@ -210,7 +224,9 @@ export default function AnalyticsTab({ workspace }: AnalyticsProps) {
                             <p className="text-sm font-bold text-slate-900 truncate w-full">{member.name}</p>
                             <p className="text-xs font-medium text-slate-400 mt-1">{member.completedCount} Tasks Done</p>
                         </div>
-                    ))}
+                    )) : (
+                        <p className="text-sm text-slate-400 font-medium col-span-full">No completed assignee work yet.</p>
+                    )}
                 </div>
             </Card>
 

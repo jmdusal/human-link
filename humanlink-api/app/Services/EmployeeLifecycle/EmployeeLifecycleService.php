@@ -9,8 +9,8 @@ use App\Contracts\PayrollServiceInterface;
 use App\Models\EmployeeChecklist;
 use App\Models\EmployeeChecklistItem;
 use App\Models\LeaveBalance;
-use App\Models\Payslip;
 use App\Models\User;
+use App\Models\UserDocument;
 use App\Models\WorkspaceUser;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -26,16 +26,28 @@ class EmployeeLifecycleService implements EmployeeLifecycleServiceInterface
         'set_schedule' => 'Set schedule',
         'assign_leave_balances' => 'Assign leave balances',
         'workspace_access' => 'Workspace access',
+        'upload_contract' => 'Upload contract',
+        'upload_id_scan' => 'Upload ID scan',
+        'sign_policies' => 'Signed policies',
         'welcome_complete' => 'Welcome complete',
     ];
 
     public const OFFBOARD_ITEMS = [
         'resign_notice' => 'Resign notice',
         'access_revoke' => 'Revoke access',
+        'archive_documents' => 'Archive / collect documents',
         'final_payslip' => 'Final payslip',
         'leave_payout' => 'Leave payout',
         'exit_interview' => 'Exit interview',
         'deactivate_account' => 'Deactivate account',
+    ];
+
+    /** Soft document steps — may be toggled without a file. */
+    public const SOFT_DOCUMENT_KEYS = [
+        'upload_contract',
+        'upload_id_scan',
+        'sign_policies',
+        'archive_documents',
     ];
 
     public function __construct(
@@ -51,9 +63,16 @@ class EmployeeLifecycleService implements EmployeeLifecycleServiceInterface
             ->where('type', 'offboard')
             ->first();
 
+        if ($offboard) {
+            $this->syncMissingItems($offboard, self::OFFBOARD_ITEMS);
+            $offboard = $offboard->fresh('items');
+        }
+
         return [
             'onboard' => $onboard->load('items'),
             'offboard' => $offboard,
+            'documents' => $user->documents()->with('uploader:id,name')->get(),
+            'soft_document_keys' => self::SOFT_DOCUMENT_KEYS,
         ];
     }
 
@@ -65,11 +84,12 @@ class EmployeeLifecycleService implements EmployeeLifecycleServiceInterface
             ->where('type', 'onboard')
             ->first();
 
-        if ($existing) {
-            return $existing;
-        }
+        $checklist = $existing ?? $this->createChecklist($user, 'onboard', self::ONBOARD_ITEMS);
 
-        return $this->createChecklist($user, 'onboard', self::ONBOARD_ITEMS);
+        $this->syncMissingItems($checklist, self::ONBOARD_ITEMS);
+        $this->syncOnboardProgress($checklist->fresh('items'), $user);
+
+        return $checklist->fresh('items');
     }
 
     public function toggleItem(User $user, EmployeeChecklistItem $item): EmployeeChecklistItem
@@ -91,6 +111,60 @@ class EmployeeLifecycleService implements EmployeeLifecycleServiceInterface
         $this->syncChecklistStatus($checklist->fresh('items'));
 
         return $item->fresh(['doneBy:id,name', 'checklist']);
+    }
+
+    public function markOnboardItemDone(User $user, string $key): void
+    {
+        $checklist = $this->ensureOnboardChecklist($user);
+        $this->markChecklistItemsDone($checklist, [$key]);
+    }
+
+    /**
+     * Mark onboard steps that were already completed during user create / invite activation.
+     */
+    protected function syncOnboardProgress(EmployeeChecklist $checklist, User $user): void
+    {
+        $user->loadMissing(['roles', 'rate', 'schedule', 'leaveBalances', 'documents']);
+
+        $doneKeys = ['create_account'];
+
+        if ($user->roles->isNotEmpty()) {
+            $doneKeys[] = 'assign_role';
+        }
+
+        if ($user->rate) {
+            $doneKeys[] = 'set_rates';
+        }
+
+        if ($user->schedule) {
+            $doneKeys[] = 'set_schedule';
+        }
+
+        if ($user->leaveBalances->isNotEmpty()) {
+            $doneKeys[] = 'assign_leave_balances';
+        }
+
+        $hasWorkspaceAccess = WorkspaceUser::query()
+            ->where('user_id', $user->id)
+            ->where('status', WorkspaceUser::STATUS_ACCEPTED)
+            ->exists();
+
+        if ($hasWorkspaceAccess) {
+            $doneKeys[] = 'workspace_access';
+        }
+
+        foreach (UserDocument::TYPE_CHECKLIST_KEYS as $docType => $checklistKey) {
+            if ($user->documents->contains('type', $docType)) {
+                $doneKeys[] = $checklistKey;
+            }
+        }
+
+        // Invite flow leaves must_set_password true until they activate; then welcome is complete.
+        if (! $user->must_set_password && $user->hasVerifiedEmail()) {
+            $doneKeys[] = 'welcome_complete';
+        }
+
+        $this->markChecklistItemsDone($checklist, $doneKeys);
     }
 
     public function offboard(User $user, array $data): array
@@ -116,6 +190,7 @@ class EmployeeLifecycleService implements EmployeeLifecycleServiceInterface
             $user->update([
                 'terminated_at' => $terminatedAt->toDateString(),
                 'status' => 'inactive',
+                'is_active' => false,
                 'timer_status' => 'offline',
                 'timer_started_at' => null,
                 'timer_accumulated_ms' => 0,
@@ -163,7 +238,7 @@ class EmployeeLifecycleService implements EmployeeLifecycleServiceInterface
             }
 
             return [
-                'user' => $user->fresh(['roles', 'rate', 'schedule', 'checklists.items']),
+                'user' => $user->fresh(['roles', 'rate', 'schedule', 'details', 'leaveBalances', 'checklists', 'documents']),
                 'checklist' => $checklist->fresh('items'),
                 'payslip' => $payslip,
             ];
@@ -179,7 +254,9 @@ class EmployeeLifecycleService implements EmployeeLifecycleServiceInterface
             ->first();
 
         if ($existing) {
-            return $existing;
+            $this->syncMissingItems($existing, self::OFFBOARD_ITEMS);
+
+            return $existing->fresh('items');
         }
 
         return $this->createChecklist($user, 'offboard', self::OFFBOARD_ITEMS);
@@ -203,14 +280,42 @@ class EmployeeLifecycleService implements EmployeeLifecycleServiceInterface
                 'employee_checklist_id' => $checklist->id,
                 'key' => $key,
                 'label' => $label,
-                'is_done' => $key === 'create_account' && $type === 'onboard',
-                'done_at' => $key === 'create_account' && $type === 'onboard' ? now() : null,
-                'done_by' => $key === 'create_account' && $type === 'onboard' ? Auth::id() : null,
+                'is_done' => false,
+                'done_at' => null,
+                'done_by' => null,
                 'sort_order' => $sortOrder++,
             ]);
         }
 
         return $checklist->load('items');
+    }
+
+    /**
+     * Add any newly defined checklist keys to an existing checklist.
+     *
+     * @param  array<string, string>  $items
+     */
+    protected function syncMissingItems(EmployeeChecklist $checklist, array $items): void
+    {
+        $checklist->loadMissing('items');
+        $existingKeys = $checklist->items->pluck('key')->all();
+        $sortOrder = (int) $checklist->items->max('sort_order');
+
+        foreach ($items as $key => $label) {
+            if (in_array($key, $existingKeys, true)) {
+                continue;
+            }
+
+            EmployeeChecklistItem::query()->create([
+                'employee_checklist_id' => $checklist->id,
+                'key' => $key,
+                'label' => $label,
+                'is_done' => false,
+                'done_at' => null,
+                'done_by' => null,
+                'sort_order' => ++$sortOrder,
+            ]);
+        }
     }
 
     /**

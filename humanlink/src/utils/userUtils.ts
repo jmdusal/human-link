@@ -17,6 +17,12 @@ export const USER_TYPE_OPTIONS = [
     { value: 'manager', label: 'Manager' },
 ];
 
+export const EMPLOYMENT_TYPE_OPTIONS = [
+    { value: 'regular', label: 'Regular' },
+    { value: 'probationary', label: 'Probationary' },
+    { value: 'contractor', label: 'Contractor' },
+];
+
 // generates a blank 7-day schedule template
 export const createEmptySchedules = (startDate: string) => Array.from({ length: 7 }, (_, i) => ({
     dayOfWeek: i,
@@ -32,9 +38,18 @@ export const INITIAL_USER_FORM_STATE: UserFormData = {
     name: '',
     email: '',
     password: '',
+    sendInvite: true,
     role: 'user',
     status: 'active',
     userType: 'employee',
+    hiredAt: getToday(),
+    jobTitle: '',
+    department: '',
+    employmentType: 'regular',
+    mobile: '',
+    emergencyContactName: '',
+    emergencyContactPhone: '',
+    emergencyContactRelationship: '',
     sssNumber: '',
     philhealthNumber: '',
     pagibigNumber: '',
@@ -51,7 +66,7 @@ export const INITIAL_USER_FORM_STATE: UserFormData = {
 
 export const formatUserFormData = (user: User): UserFormData => {
     const today = getToday();
-    const { rate, schedule, roles, name, email, status, userType, sssNumber, philhealthNumber, pagibigNumber, tin } = user;
+    const { rate, schedule, roles, name, email, status, userType, details, hiredAt } = user;
     const mainStartDate = schedule?.startDate || today;
     const displaySchedules = schedule?.weeklyData?.length ? schedule.weeklyData : createEmptySchedules(today);
 
@@ -60,12 +75,21 @@ export const formatUserFormData = (user: User): UserFormData => {
         email,
         status,
         password: '',
+        sendInvite: false,
         role: roles?.[0]?.name || 'user',
         userType: userType ?? '',
-        sssNumber: sssNumber ?? '',
-        philhealthNumber: philhealthNumber ?? '',
-        pagibigNumber: pagibigNumber ?? '',
-        tin: tin ?? '',
+        hiredAt: hiredAt || today,
+        jobTitle: details?.jobTitle ?? '',
+        department: details?.department ?? '',
+        employmentType: details?.employmentType ?? '',
+        mobile: details?.mobile ?? '',
+        emergencyContactName: details?.emergencyContactName ?? '',
+        emergencyContactPhone: details?.emergencyContactPhone ?? '',
+        emergencyContactRelationship: details?.emergencyContactRelationship ?? '',
+        sssNumber: details?.sssNumber ?? '',
+        philhealthNumber: details?.philhealthNumber ?? '',
+        pagibigNumber: details?.pagibigNumber ?? '',
+        tin: details?.tin ?? '',
         monthlyRate: rate?.monthlyRate ? Number(rate.monthlyRate).toFixed(2) : '',
         dailyRate: rate?.dailyRate || '',
         hourlyRate: rate?.hourlyRate || '',

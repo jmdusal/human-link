@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { createColumnHelper } from "@tanstack/react-table";
 import { useNavigate } from 'react-router-dom';
-import { Plus, Pencil, ExternalLink, LayoutGrid, List, Globe, Calendar, Trash2, FolderKanban, Columns2Icon, Columns3 } from 'lucide-react';
+import { Plus, Pencil, ExternalLink, LayoutGrid, List, Globe, Calendar, Archive, FolderKanban } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { DataTable } from '@/components/shared/Datatable';
 import Button from '@/components/ui/Button';
@@ -9,7 +9,7 @@ import WorkspaceForm from '@/pages/workspaces/WorkspaceForm';
 import ModalConfirmation from '@/components/modals/ModalConfirmation';
 import TableActions from '@/components/shared/TableActions';
 import { useAuth } from '@/context/AuthContext';
-import type { Workspace, Project } from '@/types';
+import type { Workspace } from '@/types';
 import { WorkspaceService } from '@/services/WorkspaceService';
 import { useWorkspaces } from '@/hooks/use-workspace';
 import { TextCell, DateCell } from '@/components/shared/TableCells';
@@ -29,8 +29,6 @@ export default function WorkspaceIndex() {
     const [globalFilter, setGlobalFilter] = useState('');
     
     const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
-    
-    const [openDropdown, setOpenDropdown] = useState<number | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -77,19 +75,18 @@ export default function WorkspaceIndex() {
     const handleDeleteClick = (workspace: Workspace) => {
         setSelectedWorkspace(workspace);
         setIsDeleteModalOpen(true);
-        setOpenDropdown(null);
     };
 
     const handleConfirmDelete = async () => {
         if (!selectedWorkspace) return;
         setIsDeleting(true);
         try {
-            await WorkspaceService.deleteWorkspace(selectedWorkspace.id);
+            await WorkspaceService.archiveWorkspace(selectedWorkspace.id);
             setWorkspaces(prev => prev.filter(w => w.id !== selectedWorkspace.id));
-            toast.success('Workspace removed successfully.');
+            toast.success('Workspace archived.');
             setIsDeleteModalOpen(false);
         } catch (err: any) {
-            toast.error("Failed to delete workspace.");
+            toast.error(err?.response?.data?.message || 'Failed to archive workspace.');
         } finally {
             setIsDeleting(false);
             setSelectedWorkspace(null);
@@ -98,12 +95,20 @@ export default function WorkspaceIndex() {
     
     const columns = useMemo(() => [
         columnHelper.accessor('name', {
-            header: 'Workspace Name',
+            header: 'Workspace',
             cell: (info) => (
-                <div className="flex flex-col">
-                    <TextCell title={info.getValue()} />
-                    <span className="text-xs text-slate-400 font-mono">/{info.row.original.slug}</span>
-                </div>
+                <button
+                    type="button"
+                    onClick={() => handleOpenWorkspace(info.row.original)}
+                    className="text-left w-full -m-1 p-1 rounded-lg hover:bg-slate-50/80 transition-colors cursor-pointer border-none bg-transparent"
+                >
+                    <div className="flex flex-col min-w-0">
+                        <TextCell title={info.getValue()} />
+                        <span className="text-[11px] text-slate-400 font-mono truncate mt-0.5">
+                            /{info.row.original.slug}
+                        </span>
+                    </div>
+                </button>
             ),
         }),
         columnHelper.display({
@@ -147,9 +152,16 @@ export default function WorkspaceIndex() {
                 );
             },
         }),
+        columnHelper.display({
+            id: 'projects',
+            header: 'Projects',
+            cell: (info) => (
+                <TextCell title={info.row.original.projectsCount ?? info.row.original.projects?.length ?? 0} />
+            ),
+        }),
         columnHelper.accessor('createdAt', {
             header: 'Created',
-            cell: (info) => <DateCell date={info.getValue()} />,
+            cell: (info) => <DateCell date={info.getValue()} dateOnly />,
         }),
         columnHelper.display({
             id: 'actions',
@@ -171,8 +183,8 @@ export default function WorkspaceIndex() {
                             show: can('workspaces-edit')
                         },
                         {
-                            label: 'Delete',
-                            icon: Trash2,
+                            label: 'Archive',
+                            icon: Archive,
                             onClick: () => handleDeleteClick(info.row.original),
                             variant: 'danger',
                             show: can('workspaces-delete')
@@ -181,7 +193,7 @@ export default function WorkspaceIndex() {
                 />
             ),
         }),
-    ], [openDropdown, can, user]);
+    ], [can, user]);
 
     return (
         <div className="w-full">
@@ -193,18 +205,21 @@ export default function WorkspaceIndex() {
                 <div className="flex items-center gap-4">
                     <div className="flex items-center bg-slate-100/50 p-1 rounded-xl border border-slate-200/60 mr-2">
                         <button 
+                            type="button"
                             onClick={() => setViewMode('grid')}
                             className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                             <LayoutGrid size={18} />
                         </button>
                         <button 
+                            type="button"
                             onClick={() => setViewMode('list')}
                             className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                             <List size={18} />
                         </button>
                         <button
+                            type="button"
                             onClick={() => setViewMode('timeline')}
                             className={`p-2 rounded-lg transition-all ${viewMode === 'timeline' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
                         >
@@ -223,7 +238,8 @@ export default function WorkspaceIndex() {
                     columns={columns}
                     data={workspaces}
                     loading={loading}
-                    showSearch={true} 
+                    showSearch={true}
+                    countLabel={`${workspaces.length} ${workspaces.length === 1 ? 'workspace' : 'workspaces'}`}
                 />
             )}
             
@@ -282,8 +298,8 @@ export default function WorkspaceIndex() {
                                                         show: can('workspaces-edit')
                                                     },
                                                     {
-                                                        label: 'Delete',
-                                                        icon: Trash2,
+                                                        label: 'Archive',
+                                                        icon: Archive,
                                                         onClick: () => handleDeleteClick(ws),
                                                         variant: 'danger',
                                                         show: can('workspaces-delete')
@@ -387,7 +403,7 @@ export default function WorkspaceIndex() {
                                                 ))}
                                             </div>
                                             <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase">
-                                                {ws.projects?.length || 0} Projects
+                                                {ws.projectsCount ?? ws.projects?.length ?? 0} Projects
                                             </span>
                                         </div>
                                     </div>
@@ -439,8 +455,8 @@ export default function WorkspaceIndex() {
                         onClose={() => setIsDeleteModalOpen(false)}
                         onConfirm={handleConfirmDelete}
                         loading={isDeleting}
-                        title="Delete Workspace"
-                        message={`Are you sure you want to delete ${selectedWorkspace?.name}? All projects and tasks within this workspace will be lost.`}
+                        title="Archive Workspace"
+                        message={`Archive ${selectedWorkspace?.name}? It will be hidden from your list. Projects and tasks stay intact and can be restored later.`}
                     /> 
                 )}
             </AnimatePresence>

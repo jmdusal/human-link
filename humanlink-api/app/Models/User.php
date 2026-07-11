@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Crypt;
 use Spatie\Permission\Traits\HasRoles;
 
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -95,25 +96,30 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read User|null $manager
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereManagerId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereUserType($value)
- * @property string|null $sss_number
- * @property string|null $philhealth_number
- * @property string|null $pagibig_number
- * @property string|null $tin
+ * @property-read \App\Models\UserDetail|null $details
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\PayrollDeduction> $payrollDeductions
  * @property-read int|null $payroll_deductions_count
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User wherePagibigNumber($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User wherePhilhealthNumber($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereSssNumber($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereTin($value)
  * @property \Illuminate\Support\Carbon|null $hired_at
  * @property \Illuminate\Support\Carbon|null $terminated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\EmployeeChecklist> $checklists
  * @property-read int|null $checklists_count
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereHiredAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereTerminatedAt($value)
+ * @property bool $must_set_password
+ * @property string|null $two_factor_secret
+ * @property string|null $two_factor_recovery_codes
+ * @property \Illuminate\Support\Carbon|null $two_factor_confirmed_at
+ * @property-read bool $has_two_factor_enabled
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereMustSetPassword($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereTwoFactorConfirmedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereTwoFactorRecoveryCodes($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereTwoFactorSecret($value)
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\UserDocument> $documents
+ * @property-read int|null $documents_count
+ * @property-read string $hr_status
  * @mixin \Eloquent
  */
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasRoles, HasFactory, Notifiable, LogsActivity;
@@ -122,23 +128,31 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'must_set_password',
+        'is_active',
+        'email_verified_at',
         'status',
         'user_type',
-        'sss_number',
-        'philhealth_number',
-        'pagibig_number',
-        'tin',
         'hired_at',
         'terminated_at',
         'timer_started_at',
         'timer_accumulated_ms',
         'timer_status',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+        'two_factor_confirmed_at',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
-        // 'updated_at'
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+    ];
+
+    protected $appends = [
+        'has_two_factor_enabled',
+        'hr_status',
     ];
 
     protected function casts(): array
@@ -149,9 +163,122 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'must_set_password' => 'boolean',
+            'two_factor_confirmed_at' => 'datetime',
             'hired_at' => 'date:Y-m-d',
             'terminated_at' => 'date:Y-m-d',
         ];
+    }
+
+    public function getHasTwoFactorEnabledAttribute(): bool
+    {
+        return $this->hasTwoFactorEnabled();
+    }
+
+    /**
+     * HR pipeline status for the users list: incomplete | ready | active | inactive | offboarding.
+     *
+     * Incomplete — missing rates, schedule, or leave balances
+     * Ready — core setup done; finishing soft onboard / invite
+     * Active — core setup done and account is live
+     * Inactive — soft-deactivated (access revoked, not terminated)
+     * Offboarding — terminated or offboard checklist in progress
+     */
+    public function getHrStatusAttribute(): string
+    {
+        $this->loadMissing(['checklists', 'rate', 'schedule', 'leaveBalances']);
+
+        $offboard = $this->checklists->firstWhere('type', 'offboard');
+
+        if ($offboard && $offboard->status === 'in_progress') {
+            return 'offboarding';
+        }
+
+        if ($this->terminated_at !== null) {
+            return 'offboarding';
+        }
+
+        if ($this->status === 'inactive') {
+            return 'inactive';
+        }
+
+        $hasRates = (bool) $this->rate;
+        $hasSchedule = (bool) $this->schedule;
+        $hasLeave = $this->leaveBalances->isNotEmpty();
+
+        if (! $hasRates || ! $hasSchedule || ! $hasLeave) {
+            return 'incomplete';
+        }
+
+        // Soft document / welcome steps may still be open — still "ready" until account is fully live.
+        if ($this->must_set_password || ! $this->hasVerifiedEmail()) {
+            return 'ready';
+        }
+
+        return 'active';
+    }
+
+    public function hasTwoFactorEnabled(): bool
+    {
+        return filled($this->two_factor_secret) && $this->two_factor_confirmed_at !== null;
+    }
+
+    public function getTwoFactorSecret(): ?string
+    {
+        if (! $this->two_factor_secret) {
+            return null;
+        }
+
+        return Crypt::decryptString($this->two_factor_secret);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function recoveryCodes(): array
+    {
+        if (! $this->two_factor_recovery_codes) {
+            return [];
+        }
+
+        /** @var list<string> $codes */
+        $codes = json_decode(Crypt::decryptString($this->two_factor_recovery_codes), true) ?: [];
+
+        return $codes;
+    }
+
+    /**
+     * @param  list<string>  $codes
+     */
+    public function storeRecoveryCodes(array $codes): void
+    {
+        $this->forceFill([
+            'two_factor_recovery_codes' => Crypt::encryptString(json_encode(array_values($codes))),
+        ])->save();
+    }
+
+    public function replaceTwoFactorSecret(string $plainSecret): void
+    {
+        $this->forceFill([
+            'two_factor_secret' => Crypt::encryptString($plainSecret),
+            'two_factor_confirmed_at' => null,
+        ])->save();
+    }
+
+    public function confirmTwoFactor(): void
+    {
+        $this->forceFill([
+            'two_factor_confirmed_at' => now(),
+        ])->save();
+    }
+
+    public function disableTwoFactor(): void
+    {
+        $this->forceFill([
+            'two_factor_secret' => null,
+            'two_factor_recovery_codes' => null,
+            'two_factor_confirmed_at' => null,
+        ])->save();
     }
 
     public function getActivitylogOptions(): LogOptions
@@ -160,6 +287,24 @@ class User extends Authenticatable
             ->logOnly(['name', 'email'])
             ->logOnlyDirty();
             // ->dontSubmitEmptyLogs();
+    }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new \App\Notifications\ResetPasswordNotification(
+            $token,
+            (bool) $this->must_set_password,
+        ));
+    }
+
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new \App\Notifications\VerifyEmailNotification);
+    }
+
+    public function details(): HasOne
+    {
+        return $this->hasOne(UserDetail::class);
     }
 
     public function rate(): HasOne
@@ -280,6 +425,18 @@ class User extends Authenticatable
     public function checklists(): HasMany
     {
         return $this->hasMany(EmployeeChecklist::class);
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(UserDocument::class)->latest();
+    }
+
+    public function latestContract(): HasOne
+    {
+        return $this->hasOne(UserDocument::class)
+            ->where('type', UserDocument::TYPE_CONTRACT)
+            ->latestOfMany();
     }
 
     public function workspaces(): BelongsToMany

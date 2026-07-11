@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
     FolderKanban,
     Plus,
-    Trash2,
+    Archive,
     LayoutGrid,
     List,
     ExternalLink,
@@ -12,9 +12,9 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Pagination from '@/components/shared/ModalTabPagination';
 import { formatSimpleDate } from '@/utils/dateUtils';
-import { useAuth } from '@/context/AuthContext';
 import { getInitials } from '@/utils/userUtils';
 import { usePageTitle } from '@/hooks/use-title';
+import { useWorkspacePermissions } from '@/utils/workspacePermissions';
 import type { Project } from '@/types';
 
 interface ProjectsTabProps {
@@ -41,14 +41,11 @@ export default function ProjectsTab({
     onViewBoard,
 }: ProjectsTabProps) {
     usePageTitle('Projects');
-    const { can, user } = useAuth();
     const [currentPage, setCurrentPage] = useState(1);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
     const itemsPerPage = viewMode === 'grid' ? 8 : 10;
 
-    const workspaceRole = data.members.find((m: any) => m.id === user?.id)?.pivot?.role;
-    const isWorkspaceAdminOrOwner = workspaceRole === 'owner' || workspaceRole === 'admin';
-    const canEditInWorkspace = can('projects-edit') && isWorkspaceAdminOrOwner;
+    const { canManage: canManageProjects } = useWorkspacePermissions(data);
 
     const filteredProjects = projects
         .filter((project: Project) =>
@@ -100,7 +97,7 @@ export default function ProjectsTab({
                         placeholder="Filter projects..."
                     />
 
-                    {isWorkspaceAdminOrOwner && (
+                    {canManageProjects && (
                         <Button
                             variant="primary"
                             icon={Plus}
@@ -124,11 +121,11 @@ export default function ProjectsTab({
                                     key={project.id}
                                     hover
                                     onClick={() => {
-                                        if (!canEditInWorkspace) return;
+                                        if (!canManageProjects) return;
                                         handleEditProject(project);
                                     }}
                                     className={`group flex flex-col h-full ${
-                                        canEditInWorkspace ? 'cursor-pointer' : 'cursor-default'
+                                        canManageProjects ? 'cursor-pointer' : 'cursor-default'
                                     }`}
                                 >
                                     <div className="flex items-start justify-between gap-3 mb-5">
@@ -183,30 +180,28 @@ export default function ProjectsTab({
                                         </div>
 
                                         <div className="flex items-center gap-1">
-                                            {can('projects-delete') && isWorkspaceAdminOrOwner && (
+                                            {canManageProjects && (
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleDeleteProject(project);
                                                     }}
                                                     className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                    aria-label="Delete project"
+                                                    aria-label="Archive project"
                                                 >
-                                                    <Trash2 size={15} />
+                                                    <Archive size={15} />
                                                 </button>
                                             )}
-                                            {can('projects-view') && (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onViewBoard(project.id);
-                                                    }}
-                                                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                                                    aria-label="Open board"
-                                                >
-                                                    <ExternalLink size={15} />
-                                                </button>
-                                            )}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onViewBoard(project.id);
+                                                }}
+                                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                                aria-label="Open board"
+                                            >
+                                                <ExternalLink size={15} />
+                                            </button>
                                         </div>
                                     </div>
                                 </Card>
@@ -226,11 +221,11 @@ export default function ProjectsTab({
                                 <div
                                     key={project.id}
                                     onClick={() => {
-                                        if (!canEditInWorkspace) return;
+                                        if (!canManageProjects) return;
                                         handleEditProject(project);
                                     }}
                                     className={`px-6 py-3.5 flex items-center border-b border-slate-50 last:border-b-0 hover:bg-slate-50/70 transition-colors ${
-                                        canEditInWorkspace ? 'cursor-pointer' : 'cursor-default'
+                                        canManageProjects ? 'cursor-pointer' : 'cursor-default'
                                     }`}
                                 >
                                     <div className="flex-[1.4] flex items-center gap-3 min-w-0">
@@ -284,18 +279,16 @@ export default function ProjectsTab({
                                     </div>
 
                                     <div className="w-20 flex justify-end gap-1">
-                                        {can('projects-view') && (
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    onViewBoard(project.id);
-                                                }}
-                                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                                            >
-                                                <ExternalLink size={14} />
-                                            </button>
-                                        )}
-                                        {can('projects-delete') && isWorkspaceAdminOrOwner && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onViewBoard(project.id);
+                                            }}
+                                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                        >
+                                            <ExternalLink size={14} />
+                                        </button>
+                                        {canManageProjects && (
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -303,7 +296,7 @@ export default function ProjectsTab({
                                                 }}
                                                 className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                                             >
-                                                <Trash2 size={14} />
+                                                <Archive size={14} />
                                             </button>
                                         )}
                                     </div>
@@ -322,7 +315,9 @@ export default function ProjectsTab({
                         <p className="text-slate-400 text-sm mt-2 max-w-[260px] text-center font-medium leading-relaxed">
                             {searchQuery
                                 ? `We couldn't find any projects matching "${searchQuery}"`
-                                : 'Create your first project to organize work in this workspace.'}
+                                : canManageProjects
+                                    ? 'Create your first project to organize work in this workspace.'
+                                    : 'No projects assigned to you in this workspace yet.'}
                         </p>
                     </Card>
                 )}

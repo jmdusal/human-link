@@ -15,8 +15,10 @@ class StoreTaskCommentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'content'   => 'required|string|max:5000',
-            'parent_id' => 'nullable|exists:task_comments,id'
+            'content' => 'required|string|max:5000',
+            'parent_id' => 'nullable|exists:task_comments,id',
+            'mentioned_user_ids' => 'nullable|array',
+            'mentioned_user_ids.*' => 'integer|exists:users,id',
         ];
     }
 }

@@ -1,16 +1,17 @@
 import type { DropResult } from '@hello-pangea/dnd';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { toast } from 'react-hot-toast';
-import { FolderKanban, Pencil, Plus, Trash2 } from 'lucide-react';
+import { CalendarClock, FolderKanban, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Searchbar from '@/components/shared/Searchbar';
 import Button from '@/components/ui/Button';
 import Select from '@/components/ui/Select';
 import { TaskService } from '@/services/TaskService';
-import { useAuth } from '@/context/AuthContext';
 import { usePageTitle } from '@/hooks/use-title';
 import type { Status, Task, Project, Tag } from '@/types';
 import { TaskViewModal } from '@/components/modals/tasks/TaskViewModal';
+import { getDoneStatusIds, isTaskOverdue } from '@/utils/workspaceMetrics';
+import { useWorkspacePermissions } from '@/utils/workspacePermissions';
 
 const PILL_LIMIT = 6;
 
@@ -46,20 +47,22 @@ export default function TaskBoardTab({
     onTaskUpdate,
 }: TaskBoardTabProps) {
     usePageTitle('Kanban Board');
-    const { user } = useAuth();
 
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [viewedTask, setViewedTask] = useState<Task | null>(null);
+    const [showOverdueOnly, setShowOverdueOnly] = useState(false);
     const pillsRef = useRef<HTMLDivElement>(null);
 
     const projects: Project[] = data.projects || [];
     const useProjectDropdown = projects.length > PILL_LIMIT;
+    const doneStatusIds = getDoneStatusIds(statuses);
 
-    const workspaceRole = data.members?.find((m: any) => m.id === user?.id)?.pivot?.role;
-    const isWorkspaceAdminOrOwner = workspaceRole === 'owner' || workspaceRole === 'admin';
-    const canCreateTask = isWorkspaceAdminOrOwner;
-    const canManageTask = isWorkspaceAdminOrOwner;
-    const canEditTask = Boolean(user);
+    const {
+        canCreateOrDeleteTasks,
+        canUpdateTasks: canEditTask,
+    } = useWorkspacePermissions(data);
+    const canCreateTask = canCreateOrDeleteTasks;
+    const canDeleteTask = canCreateOrDeleteTasks;
 
     const projectOptions = useMemo(
         () =>
@@ -102,9 +105,14 @@ export default function TaskBoardTab({
             }))
         );
 
-    const filteredTasks = allTasks.filter((task: Task) =>
-        task.title?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredTasks = allTasks.filter((task: Task) => {
+        const matchesSearch = task.title?.toLowerCase().includes(searchQuery.toLowerCase());
+        if (!matchesSearch) return false;
+        if (!showOverdueOnly) return true;
+        return isTaskOverdue(task, doneStatusIds);
+    });
+
+    const overdueCount = allTasks.filter((task: Task) => isTaskOverdue(task, doneStatusIds)).length;
 
     const currentProject = projects.find((project) => project.id === activeBoardProjectId);
 
@@ -195,6 +203,25 @@ export default function TaskBoardTab({
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => setShowOverdueOnly((prev) => !prev)}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${
+                                showOverdueOnly
+                                    ? 'bg-rose-600 text-white border-rose-600'
+                                    : 'bg-white text-slate-500 border-slate-200 hover:border-rose-200 hover:text-rose-600'
+                            }`}
+                        >
+                            <CalendarClock size={12} />
+                            Overdue
+                            {overdueCount > 0 && (
+                                <span className={`text-[9px] tabular-nums px-1 py-0.5 rounded ${
+                                    showOverdueOnly ? 'bg-white/20 text-white' : 'bg-rose-50 text-rose-500'
+                                }`}>
+                                    {overdueCount}
+                                </span>
+                            )}
+                        </button>
                         <div className="w-[180px]">
                             <Searchbar value={searchQuery} onChange={setSearchQuery} placeholder="Search..." />
                         </div>
@@ -274,35 +301,49 @@ export default function TaskBoardTab({
                                                                     onClick={() => handleViewTask(task)}
                                                                 >
                                                                     <div className="absolute top-2 right-2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                        {canManageTask && (
-                                                                            <>
-                                                                                <button
-                                                                                    onClick={(e) => {
-                                                                                        e.stopPropagation();
-                                                                                        handleEditTask(task);
-                                                                                    }}
-                                                                                    className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md"
-                                                                                    title="Edit Task"
-                                                                                >
-                                                                                    <Pencil size={12} strokeWidth={2.5} />
-                                                                                </button>
-                                                                                <button
-                                                                                    onClick={(e) => {
-                                                                                        e.stopPropagation();
-                                                                                        handleDeleteTask(task);
-                                                                                    }}
-                                                                                    className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md"
-                                                                                    title="Delete Task"
-                                                                                >
-                                                                                    <Trash2 size={12} strokeWidth={2.5} />
-                                                                                </button>
-                                                                            </>
+                                                                        {canEditTask && (
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleEditTask(task);
+                                                                                }}
+                                                                                className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md"
+                                                                                title="Edit Task"
+                                                                            >
+                                                                                <Pencil size={12} strokeWidth={2.5} />
+                                                                            </button>
+                                                                        )}
+                                                                        {canDeleteTask && (
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleDeleteTask(task);
+                                                                                }}
+                                                                                className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md"
+                                                                                title="Delete Task"
+                                                                            >
+                                                                                <Trash2 size={12} strokeWidth={2.5} />
+                                                                            </button>
                                                                         )}
                                                                     </div>
 
                                                                     <h5 className="text-[13px] font-semibold text-slate-800 leading-snug pr-8 group-hover:text-blue-600 transition-colors">
                                                                         {task.title}
                                                                     </h5>
+
+                                                                    {task.dueDate && (
+                                                                        <div className={`mt-2 inline-flex items-center gap-1 text-[10px] font-bold ${
+                                                                            isTaskOverdue(task, doneStatusIds)
+                                                                                ? 'text-rose-600'
+                                                                                : 'text-slate-400'
+                                                                        }`}>
+                                                                            <CalendarClock size={11} />
+                                                                            {new Date(task.dueDate).toLocaleDateString()}
+                                                                            {isTaskOverdue(task, doneStatusIds) && (
+                                                                                <span className="uppercase tracking-wide">Overdue</span>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
 
                                                                     <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-50 gap-2">
                                                                         {task.tags && task.tags.length > 0 ? (

@@ -19,9 +19,24 @@ interface ModalFormProps {
     showFooter?: boolean;
     /** Allow dropdowns/popovers to escape the modal body without clipping */
     overflowVisible?: boolean;
+    /** Optional actions rendered on the left side of the footer */
+    footerStart?: React.ReactNode;
 }
 
-export default function ModalForm({ isOpen, onClose, onSubmit, title, description, children, loading, isUpdate, size = '3xl', showFooter = true, overflowVisible = false }: ModalFormProps) {
+export default function ModalForm({
+    isOpen,
+    onClose,
+    onSubmit,
+    title,
+    description,
+    children,
+    loading,
+    isUpdate,
+    size = '3xl',
+    showFooter = true,
+    overflowVisible = false,
+    footerStart,
+}: ModalFormProps) {
     const sizeClasses: Record<ModalSize, string> = {
         'sm': 'max-w-sm', 'md': 'max-w-md', 'lg': 'max-w-lg', 'xl': 'max-w-xl',
         '2xl': 'max-w-2xl', '3xl': 'max-w-3xl', '4xl': 'max-w-4xl', '5xl': 'max-w-5xl',
@@ -85,24 +100,29 @@ export default function ModalForm({ isOpen, onClose, onSubmit, title, descriptio
                 </div>
 
                 {showFooter && (
-                    <div className={`px-10 py-6 border-t border-slate-100 bg-slate-50/50 shrink-0 flex justify-end items-center gap-3 rounded-b-3xl ${overflowVisible ? 'relative z-0' : ''}`}>
-                        <button
-                            onClick={onClose}
-                            type="button"
-                            className="px-5 py-2.5 text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors"
-                        >
-                            Cancel
-                        </button>
+                    <div className={`px-10 py-6 border-t border-slate-100 bg-slate-50/50 shrink-0 flex justify-between items-center gap-3 rounded-b-3xl ${overflowVisible ? 'relative z-0' : ''}`}>
+                        <div className="flex items-center gap-3 min-w-0">
+                            {footerStart}
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                            <button
+                                onClick={onClose}
+                                type="button"
+                                className="px-5 py-2.5 text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                                Cancel
+                            </button>
 
-                        <Button
-                            variant="primary"
-                            loading={loading}
-                            type="submit"
-                            form="modal-form"
-                            disabled={loading}
-                        >
-                            {loading ? (isUpdate ? 'Updating...' : 'Creating...') : (isUpdate ? 'Save Changes' : 'Create')}
-                        </Button>
+                            <Button
+                                variant="primary"
+                                loading={loading}
+                                type="submit"
+                                form="modal-form"
+                                disabled={loading}
+                            >
+                                {loading ? (isUpdate ? 'Updating...' : 'Creating...') : (isUpdate ? 'Save Changes' : 'Create')}
+                            </Button>
+                        </div>
                     </div>
                 )}
             </motion.div>

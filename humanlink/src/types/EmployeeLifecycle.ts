@@ -26,6 +26,8 @@ export interface EmployeeChecklist {
 export interface EmployeeLifecyclePayload {
     onboard: EmployeeChecklist | null;
     offboard: EmployeeChecklist | null;
+    documents?: import('@/types/UserDocument').UserDocument[];
+    softDocumentKeys?: string[];
 }
 
 export interface OffboardPayload {

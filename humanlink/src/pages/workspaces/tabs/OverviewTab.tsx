@@ -1,9 +1,18 @@
-import { usePageTitle } from '@/hooks/use-title';
+import { useEffect, useState } from 'react';
 import {
     FolderKanban, Kanban, Users, Activity,
-    CheckCircle2, AlertCircle,
+    CheckCircle2, AlertCircle, History,
 } from 'lucide-react';
 import Card from '@/components/ui/Card';
+import { usePageTitle } from '@/hooks/use-title';
+import { WorkspaceService, type WorkspaceActivityItem } from '@/services/WorkspaceService';
+import { getInitials } from '@/utils/userUtils';
+import {
+    findDoneStatus,
+    getDoneStatusIds,
+    isTaskDone,
+    resolveWorkspaceStatuses,
+} from '@/utils/workspaceMetrics';
 
 interface OverviewTabProps {
     workspace: any;
@@ -12,20 +21,39 @@ interface OverviewTabProps {
 
 export default function OverviewTab({ workspace, projects }: OverviewTabProps) {
     usePageTitle('Overview');
+    const [activity, setActivity] = useState<WorkspaceActivityItem[]>([]);
+    const [activityLoading, setActivityLoading] = useState(true);
 
     const members = workspace?.members || [];
-    const statuses = workspace?.taskStatuses || workspace?.task_statuses || [];
-    const doneStatus = statuses.find((s: any) =>
-        String(s.name || '').toLowerCase() === 'done'
-        || String(s.name || '').toLowerCase() === 'completed'
-    );
-    const doneStatusId = doneStatus?.id;
+    const statuses = resolveWorkspaceStatuses(workspace);
+    const doneStatus = findDoneStatus(statuses);
+    const doneStatusIds = getDoneStatusIds(statuses);
+
+    useEffect(() => {
+        if (!workspace?.id) return;
+
+        let cancelled = false;
+        setActivityLoading(true);
+
+        WorkspaceService.getActivity(workspace.id)
+            .then((items) => {
+                if (!cancelled) setActivity(items);
+            })
+            .catch(() => {
+                if (!cancelled) setActivity([]);
+            })
+            .finally(() => {
+                if (!cancelled) setActivityLoading(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [workspace?.id]);
 
     const totalTasks = projects.reduce((acc: number, p: any) => acc + (p.tasks?.length || 0), 0);
     const completedTasks = projects.reduce((acc: number, p: any) => {
-        const doneInProject = p.tasks?.filter((t: any) =>
-            t.statusId === doneStatusId || t.status_id === doneStatusId
-        ).length || 0;
+        const doneInProject = p.tasks?.filter((t: any) => isTaskDone(t, doneStatusIds)).length || 0;
         return acc + doneInProject;
     }, 0);
     const activeTasks = Math.max(totalTasks - completedTasks, 0);
@@ -143,6 +171,43 @@ export default function OverviewTab({ workspace, projects }: OverviewTabProps) {
                     </ul>
                 </Card>
             </div>
+
+            <Card variant="section">
+                <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <History size={18} className="text-blue-500" />
+                    Recent Activity
+                </h3>
+                <div className="space-y-5">
+                    {activityLoading ? (
+                        <p className="text-xs text-slate-400 text-center py-6">Loading activity...</p>
+                    ) : activity.length > 0 ? (
+                        activity.slice(0, 10).map((item) => (
+                            <div key={item.id} className="flex gap-4 relative group">
+                                <div className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 shrink-0 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all duration-300">
+                                    {getInitials(item.user?.name || 'SYS')}
+                                </div>
+                                <div className="flex flex-col min-w-0 justify-center">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[13px] font-bold text-slate-800 truncate">
+                                            {item.user?.name || 'System'}
+                                        </span>
+                                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-tighter">
+                                            {item.time || ''}
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 font-medium tracking-tight leading-snug mt-1">
+                                        {item.description}
+                                    </p>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-xs text-slate-400 text-center py-6">
+                            No recent comments or task updates yet.
+                        </p>
+                    )}
+                </div>
+            </Card>
         </div>
     );
 }

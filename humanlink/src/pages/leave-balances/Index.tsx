@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { createColumnHelper } from "@tanstack/react-table";
-import { Plus, Pencil, Trash2, PieChart, History as LucideHistory, Eye } from 'lucide-react';
+import { Plus, Trash2, Eye } from 'lucide-react';
 import { DataTable } from '@/components/shared/Datatable';
 import Button from '@/components/ui/Button';
 import LeaveBalanceForm from '@/pages/leave-balances/LeaveBalanceForm';
@@ -11,7 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import type { LeaveBalance, GroupedLeaveBalance } from '@/types';
 import { LeaveBalanceService } from '@/services/LeaveBalanceService';
 import { useLeaveBalances } from '@/hooks/use-leave-balances';
-import { TextCell, DateCell, UserCell } from '@/components/shared/TableCells';
+import { TextCell, UserCell } from '@/components/shared/TableCells';
 import LeaveBalancesOverviewModal from '@/components/modals/leave-balances/LeaveBalancesOverviewModal'
 import { AnimatePresence } from 'framer-motion';
 
@@ -20,12 +20,10 @@ const columnHelper = createColumnHelper<GroupedLeaveBalance>();
 export default function LeavePolicyIndex() {
     const { can } = useAuth();
     const { leavebalances, setLeaveBalances, loading,  } = useLeaveBalances(true);
-    // const [selectedBalance, setSelectedBalance] = useState<LeaveBalance | GroupedLeaveBalance | null>(null);
     const [selectedBalance, setSelectedBalance] = useState<GroupedLeaveBalance | null>(null);
     
     const [selectedLeaveBalance, setSelectedLeaveBalance] = useState<LeaveBalance | null>(null);
 
-    const [openDropdown, setOpenDropdown] = useState<number | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -64,7 +62,6 @@ export default function LeavePolicyIndex() {
     const handleView = (group: GroupedLeaveBalance) => {
         setSelectedBalance(group);
         setIsViewModalOpen(true);
-        setOpenDropdown(null);
     };
 
     // const handleEdit = (group: GroupedLeaveBalance) => {
@@ -91,7 +88,6 @@ export default function LeavePolicyIndex() {
     const handleDeleteClick = (group: GroupedLeaveBalance) => {
         setSelectedBalance(group);
         setIsDeleteModalOpen(true);
-        setOpenDropdown(null);
     };
     
     const handleConfirmDelete = async () => {
@@ -112,17 +108,31 @@ export default function LeavePolicyIndex() {
 
     const columns = useMemo(() => [
         columnHelper.accessor('userName', {
-            header: 'User Identity',
+            header: 'User',
             cell: (info) => (
-                <UserCell
-                    name={info.getValue()} 
-                    email={info.row.original.userEmail} 
-                />
+                <button
+                    type="button"
+                    onClick={() => handleView(info.row.original)}
+                    className="text-left w-full -m-1 p-1 rounded-lg hover:bg-slate-50/80 transition-colors cursor-pointer border-none bg-transparent"
+                >
+                    <UserCell
+                        name={info.getValue()}
+                        email={info.row.original.userEmail}
+                        subtitle={`${info.row.original.policies.length} ${info.row.original.policies.length === 1 ? 'policy' : 'policies'}`}
+                    />
+                </button>
             ),
         }),
-        
+        columnHelper.accessor('totalAllowed', {
+            header: 'Allowed',
+            cell: (info) => <TextCell title={info.getValue()} />,
+        }),
+        columnHelper.accessor('totalUsed', {
+            header: 'Used',
+            cell: (info) => <TextCell title={info.getValue()} />,
+        }),
         columnHelper.accessor('totalRemaining', {
-            header: 'Total Remaining',
+            header: 'Remaining',
             cell: (info) => <TextCell title={info.getValue()} />,
         }),
         columnHelper.display({
@@ -139,12 +149,6 @@ export default function LeavePolicyIndex() {
                                 onClick: () => handleView(info.row.original),
                                 show: can('leave-balances-edit')
                             },
-                            // {
-                            //     label: 'Edit',
-                            //     icon: Pencil,
-                            //     onClick: () => handleEdit(info.row.original),
-                            //     show: can('leave-balance-edit')
-                            // },
                             {
                                 label: 'Delete',
                                 icon: Trash2,
@@ -157,7 +161,7 @@ export default function LeavePolicyIndex() {
                 );
             },
         }),
-    ], [openDropdown, can]);
+    ], [can]);
 
     return (
         <div className="w-full">
@@ -177,9 +181,9 @@ export default function LeavePolicyIndex() {
             <DataTable
                 columns={columns}
                 data={groupedData}
-                // data={leavebalances}
                 loading={loading}
                 showSearch={true}
+                countLabel={`${groupedData.length} ${groupedData.length === 1 ? 'person' : 'people'}`}
             />
             
              <AnimatePresence>

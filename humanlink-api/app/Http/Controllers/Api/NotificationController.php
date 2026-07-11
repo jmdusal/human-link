@@ -27,6 +27,11 @@ class NotificationController extends Controller
                 'type' => $notification->data['type'] ?? null,
                 'leave_request_id' => $notification->data['leave_request_id'] ?? null,
                 'payslip_id' => $notification->data['payslip_id'] ?? null,
+                'workspace_id' => $notification->data['workspace_id'] ?? null,
+                'workspace_slug' => $notification->data['workspace_slug'] ?? null,
+                'invitation_token' => $notification->data['invitation_token'] ?? null,
+                'task_id' => $notification->data['task_id'] ?? null,
+                'project_id' => $notification->data['project_id'] ?? null,
                 'created_at' => $notification->created_at?->toIso8601String(),
             ]);
 

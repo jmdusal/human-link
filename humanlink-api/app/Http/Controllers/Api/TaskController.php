@@ -10,6 +10,7 @@ use App\Http\Requests\Task\StoreTaskRequest;
 use App\Http\Requests\Task\UpdateTaskPositionRequest;
 use App\Http\Requests\Task\UpdateTaskRequest;
 use App\Models\Task;
+use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 
 class TaskController extends Controller
@@ -22,6 +23,13 @@ class TaskController extends Controller
     {
         return response()->json([
             'data' => $this->taskService->list(),
+        ], 200);
+    }
+
+    public function listByWorkspace(Workspace $workspace): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->taskService->listByWorkspace($workspace),
         ], 200);
     }
 

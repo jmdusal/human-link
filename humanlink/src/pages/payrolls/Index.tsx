@@ -179,10 +179,16 @@ export default function PayrollIndex() {
             id: 'employee',
             header: 'Employee',
             cell: (info) => (
-                <UserCell
-                    name={info.getValue()}
-                    email={info.row.original.user?.email ?? ''}
-                />
+                <button
+                    type="button"
+                    onClick={() => handleView(info.row.original)}
+                    className="text-left w-full -m-1 p-1 rounded-lg hover:bg-slate-50/80 transition-colors cursor-pointer border-none bg-transparent"
+                >
+                    <UserCell
+                        name={info.getValue()}
+                        email={info.row.original.user?.email ?? ''}
+                    />
+                </button>
             ),
         }),
         columnHelper.accessor('daysWorked', {
@@ -190,7 +196,7 @@ export default function PayrollIndex() {
             cell: (info) => <TextCell title={info.getValue()} />,
         }),
         columnHelper.accessor('paidLeaveDays', {
-            header: 'Paid Leave',
+            header: 'Paid leave',
             cell: (info) => <TextCell title={info.getValue() ?? 0} />,
         }),
         columnHelper.accessor('hoursWorked', {
@@ -198,11 +204,11 @@ export default function PayrollIndex() {
             cell: (info) => <TextCell title={info.getValue()} />,
         }),
         columnHelper.accessor('dailyRate', {
-            header: 'Daily Rate',
+            header: 'Daily rate',
             cell: (info) => <TextCell title={`₱${formatCurrency(info.getValue())}`} />,
         }),
         columnHelper.accessor('basicPay', {
-            header: 'Basic Pay',
+            header: 'Basic',
             cell: (info) => <TextCell title={`₱${formatCurrency(info.getValue())}`} />,
         }),
         columnHelper.accessor('allowancePay', {
@@ -210,11 +216,11 @@ export default function PayrollIndex() {
             cell: (info) => <TextCell title={`₱${formatCurrency(info.getValue())}`} />,
         }),
         columnHelper.accessor('grossPay', {
-            header: 'Gross Pay',
+            header: 'Gross',
             cell: (info) => <TextCell title={`₱${formatCurrency(info.getValue())}`} />,
         }),
         columnHelper.accessor('netPay', {
-            header: 'Net Pay',
+            header: 'Net',
             cell: (info) => <TextCell title={`₱${formatCurrency(info.getValue() ?? 0)}`} />,
         }),
         columnHelper.display({
@@ -320,7 +326,7 @@ export default function PayrollIndex() {
             {payslips.length > 0 && (
                 <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <p className="text-sm text-slate-500 font-medium">
-                        {payslips.length} payslip{payslips.length === 1 ? '' : 's'} for {periodLabel(year, month)}
+                        {periodLabel(year, month)}
                     </p>
                     <p className="text-sm font-bold text-slate-800">
                         Gross: ₱{formatCurrency(monthTotals.grossPay)} · Net: ₱{formatCurrency(monthTotals.netPay)}
@@ -333,6 +339,7 @@ export default function PayrollIndex() {
                 data={payslips}
                 loading={loading}
                 showSearch={true}
+                countLabel={`${payslips.length} ${payslips.length === 1 ? 'payslip' : 'payslips'}`}
             />
 
             <AnimatePresence>

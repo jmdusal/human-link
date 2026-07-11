@@ -11,29 +11,19 @@ import { useAuth } from '@/context/AuthContext';
 import type { LeavePolicy } from '@/types';
 import { LeavePolicyService } from '@/services/LeavePolicyService';
 import { useLeavePolicies } from '@/hooks/use-leave-policies';
-import { TextCell, DateCell } from '@/components/shared/TableCells';
+import { TextCell, StatusBadge, DateCell } from '@/components/shared/TableCells';
 import { AnimatePresence } from 'framer-motion';
 
 const columnHelper = createColumnHelper<LeavePolicy>();
 
 export default function LeavePolicyIndex() {
-// export default function LeavePolicyIndex({ initialData, onRefresh }: LeavePolicyIndexProps) {
     const { can } = useAuth();
     const { leavepolicies, setLeavePolicies, loading,  } = useLeavePolicies(true);
 
     const [selectedLeavePolicy, setSelectedLeavePolicy] = useState<LeavePolicy | null>(null);
-    
-    // const [loading, setLoading] = useState(true);
-    const [openDropdown, setOpenDropdown] = useState<number | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    
-    // useEffect(() => {
-    //     api.get(API_ROUTES.LEAVE_POLICIES.LIST)
-    //        .then(res => setLeavePolicies(res.data.data))
-    //        .finally(() => setLoading(false));
-    // }, []);
     
     const handleAdd = () => {
         setSelectedLeavePolicy(null);
@@ -43,7 +33,6 @@ export default function LeavePolicyIndex() {
     const handleEdit = (leavepolicies: LeavePolicy) => {
         setSelectedLeavePolicy(leavepolicies);
         setIsFormOpen(true);
-        setOpenDropdown(null);
     };   
     
     const handleSuccess = (policyData: LeavePolicy) => {
@@ -61,7 +50,6 @@ export default function LeavePolicyIndex() {
     const handleDeleteClick = (leavepolicy: LeavePolicy) => {
         setSelectedLeavePolicy(leavepolicy);
         setIsDeleteModalOpen(true);
-        setOpenDropdown(null);
     };
     
     const handleConfirmDelete = async () => {
@@ -84,17 +72,41 @@ export default function LeavePolicyIndex() {
     
     const columns = useMemo(() => [
         columnHelper.accessor('name', {
-            header: 'Leave Type',
-            cell: (info) => <TextCell title={info.getValue()} />,
+            header: 'Type',
+            cell: (info) => (
+                <div className="flex flex-col min-w-0">
+                    <TextCell title={info.getValue()} />
+                    <span className="text-[11px] text-slate-400 font-medium truncate mt-0.5">
+                        {info.row.original.slug}
+                    </span>
+                </div>
+            ),
         }),
         columnHelper.accessor('defaultCredits', {
             header: 'Credits',
             cell: (info) => <TextCell title={info.getValue()} />,
         }),
-        
+        columnHelper.accessor('isPaid', {
+            header: 'Paid',
+            cell: (info) => (
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${
+                    info.getValue()
+                        ? 'bg-emerald-50/50 text-emerald-600 border-emerald-100/50'
+                        : 'bg-slate-50 text-slate-400 border-slate-100'
+                }`}>
+                    {info.getValue() ? 'Paid' : 'Unpaid'}
+                </span>
+            ),
+        }),
+        columnHelper.accessor('isActive', {
+            header: 'Active',
+            cell: (info) => (
+                <StatusBadge status={info.getValue() ? 'active' : 'inactive'} />
+            ),
+        }),
         columnHelper.accessor('createdAt', {
             header: 'Created',
-            cell: (info) => <DateCell date={info.getValue()} />,
+            cell: (info) => <DateCell date={info.getValue()} dateOnly />,
         }),
         columnHelper.display({
             id: 'actions',
@@ -122,7 +134,7 @@ export default function LeavePolicyIndex() {
                 );
             },
         }),
-    ], [openDropdown, can]);
+    ], [can]);
 
     return (
         <div className="w-full">
@@ -144,6 +156,7 @@ export default function LeavePolicyIndex() {
                 data={leavepolicies}
                 loading={loading}
                 showSearch={true}
+                countLabel={`${leavepolicies.length} ${leavepolicies.length === 1 ? 'type' : 'types'}`}
             />
 
             <AnimatePresence>

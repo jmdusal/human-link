@@ -20,6 +20,7 @@ class PermissionSeeder extends Seeder
             'leaves',
             'leave-balances',
             'leave-policies',
+            'contract-templates',
             'leave-requests',
             'activity-logs',
             'schedules',

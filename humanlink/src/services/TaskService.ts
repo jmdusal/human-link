@@ -4,6 +4,11 @@ import type { Task, TaskFormData, TaskPositionUpdate } from '@/types';
 
 export const TaskService = {
     
+    async getByWorkspace(workspaceId: number): Promise<Task[]> {
+        const response = await api.get(API_ROUTES.TASKS.BY_WORKSPACE(workspaceId));
+        return response.data.data;
+    },
+
     async saveTask(formData: TaskFormData, taskId?: number): Promise<Task> {
         const response = taskId
             ? await api.put(API_ROUTES.TASKS.UPDATE(taskId), formData)

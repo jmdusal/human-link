@@ -107,15 +107,14 @@ export default function TaskForm({ isOpen, onClose, onSuccess, selectedTask, pro
                     <p className="text-xs text-red-500 mt-1">{form.errors.description[0]}</p>
                 )}
                 <div className="grid grid-cols-2 gap-4">
-                    {/* <DateInput
+                    <DateInput
                         label="Due Date"
                         value={form.formData.dueDate}
                         onChange={(date) => {
                             const formatted = date ? date.toISOString().split('T')[0] : '';
                             form.handleChange('dueDate', formatted);
                         }}
-                        // helperText="Task kickoff"
-                    /> */}
+                    />
 
                     <Select
                         label="Priority"
@@ -128,17 +127,16 @@ export default function TaskForm({ isOpen, onClose, onSuccess, selectedTask, pro
                             })
                         }
                     />
-                    
-                    <Select
-                        label="Status"
-                        options={statusOptions}
-                        value={form.formData.statusId?.toString()}
-                        onChange={(val) => 
-                            form.handleChange('statusId', parseInt(val))
-                        }
-                    />
-
                 </div>
+
+                <Select
+                    label="Status"
+                    options={statusOptions}
+                    value={form.formData.statusId?.toString()}
+                    onChange={(val) => 
+                        form.handleChange('statusId', parseInt(val))
+                    }
+                />
                 
                 <MultiSelect
                     label="Tag"

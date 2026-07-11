@@ -27,8 +27,7 @@ class StoreProjectRequest extends FormRequest
             'project_members' => ['nullable', 'array'],
             'project_members.*.id' => ['required', 'exists:users,id'],
             'project_members.*.pivot.role' => ['nullable', 'string'],
-            // 'project_members' => 'nullable|array',
-            // 'project_members.*.id' => 'exists:users,id',
+            'template' => ['nullable', 'string', 'in:sprint,hr_ops,client_delivery'],
         ];
     }
 }

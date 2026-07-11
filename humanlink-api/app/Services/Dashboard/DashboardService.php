@@ -41,6 +41,7 @@ class DashboardService implements DashboardServiceInterface
             'leave_activity' => $this->weeklyLeaveActivityForUser((int) $actor->id),
             'recent_activity' => [],
             'role_distribution' => [],
+            'contract' => $actor->latestContract,
         ];
     }
 

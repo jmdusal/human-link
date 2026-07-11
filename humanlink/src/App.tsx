@@ -1,17 +1,20 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { navItems } from '@/routes/routes';
-import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import LoginPage from '@/pages/authentication/Login';
+import ForgotPasswordPage from '@/pages/authentication/ForgotPassword';
+import ResetPasswordPage from '@/pages/authentication/ResetPassword';
+import VerifyEmailPage from '@/pages/authentication/VerifyEmail';
 import NotFound from '@/components/ui/NotFound';
-// import { Lock } from 'lucide-react';
 import AppToaster from '@/components/shared/AppToaster';
 import TitleUpdater from '@/guards/TitleUpdater';
 import RootRedirect from '@/guards/RootRedirect';
 import PrivateRoute from '@/guards/PrivateRoute';
+import AuthBoot from '@/guards/AuthBoot';
+import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 
 
 export default function App() {
@@ -23,10 +26,14 @@ export default function App() {
                 <TitleUpdater />
                 <AppToaster />
                 
-                <Suspense fallback={<LoadingSpinner />}>
+                <AuthBoot>
+                <Suspense fallback={<LoadingSpinner fullPage />}>
                     <Routes>
                         <Route path="/" element={<RootRedirect />} />
                         <Route path="/login" element={<LoginPage />} />
+                        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                        <Route path="/reset-password" element={<ResetPasswordPage />} />
+                        <Route path="/verify-email" element={<VerifyEmailPage />} />
                         
                         <Route element={<DashboardLayout />}>
                             {(() => {
@@ -79,7 +86,6 @@ export default function App() {
                             })()}
                         </Route>
                         
-                        {/* this navItem will not load the dashboardlayout */}
                         {navItems
                             .filter((item) => item.hidden)
                             .map((item) => (
@@ -95,31 +101,10 @@ export default function App() {
                             ))
                         }
 
-                        {/* <Route
-                            path="/workspaces/:slug"
-                            element={
-                                <PrivateRoute permission="workspaces-view">
-                                    <Workspace />
-                                </PrivateRoute>
-                            }
-                        /> */}
-                        {/* <Route    element={<DashboardLayout />}>
-                            {navItems.map((item) => (
-                                <Route
-                                    key={item.path}
-                                    path={item.path}
-                                    element={
-                                        <PrivateRoute permission={item.permission}>
-                                            {item.component}
-                                        </PrivateRoute>
-                                    }
-                                />
-                            ))}
-                        </Route> */}
-
                         <Route path="*" element={<NotFound />} />
                     </Routes>
                 </Suspense>
+                </AuthBoot>
                 
             </AuthProvider>
             </ThemeProvider>

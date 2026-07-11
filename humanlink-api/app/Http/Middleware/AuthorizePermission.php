@@ -42,6 +42,8 @@ class AuthorizePermission
             'leaveUtilization' => 'view',
             'payrollRegister' => 'view',
             'lifecycle' => 'view',
+            'preview' => 'view',
+            'previewDraft' => 'view',
             'store' => 'create',
             'start' => 'create',
             'generate' => 'create',
@@ -59,6 +61,11 @@ class AuthorizePermission
             'cancel' => 'edit',
             'toggleLifecycleItem' => 'edit',
             'offboard' => 'edit',
+            'generateContract' => 'edit',
+            'resendInvite' => 'edit',
+            'forcePasswordReset' => 'edit',
+            'deactivate' => 'edit',
+            'activate' => 'edit',
             'destroy' => 'delete',
             'destroyAdjustment' => 'delete',
         ];
@@ -67,7 +74,7 @@ class AuthorizePermission
 
         if (count($parts) >= 2) {
             $module = $parts[0];
-            $action = $parts[1];
+            $action = $parts[count($parts) - 1];
 
             if (isset($permissionMap[$action])) {
                 $permission = "{$module}-{$permissionMap[$action]}";

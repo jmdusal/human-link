@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ChevronDown, Settings2 } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ChevronDown, Settings2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import Button from '@/components/ui/Button';
-import { useAuth } from '@/context/AuthContext';
 import type { WorkspaceTab } from '@/constants/tabs';
 import { WORKSPACE_MANAGE_TABS } from '@/constants/tabs';
+import { useWorkspacePermissions } from '@/utils/workspacePermissions';
 
 interface WorkspaceLayoutProps {
     data: any;
@@ -27,15 +27,10 @@ export default function WorkspaceLayout({
     hideHeader,
 }: WorkspaceLayoutProps) {
     const navigate = useNavigate();
-    const { user } = useAuth();
     const isBoard = activeTab === 'board';
     const [isManageOpen, setIsManageOpen] = useState(false);
     const manageRef = useRef<HTMLDivElement>(null);
-
-    const isWorkspaceAdminOrOwner = useMemo(() => {
-        const role = data?.members?.find((m: any) => m.id === user?.id)?.pivot?.role;
-        return role === 'owner' || role === 'admin';
-    }, [data?.members, user?.id]);
+    const { isAdminOrOwner: isWorkspaceAdminOrOwner } = useWorkspacePermissions(data);
 
     const activeManageTab = manageTabs.find((tab) => tab.id === activeTab);
     const isManageActive = Boolean(activeManageTab);
@@ -83,15 +78,6 @@ export default function WorkspaceLayout({
                 <header className="shrink-0 bg-white border-b border-slate-200">
                     <div className="flex items-center justify-between gap-4 px-6 py-3">
                         <div className="flex items-center gap-3 min-w-0">
-                            <Button
-                                variant="secondary"
-                                icon={ArrowLeft}
-                                onClick={() => navigate('/workspaces')}
-                                aria-label="Back to workspaces"
-                            >
-                                Back
-                            </Button>
-                            <div className="h-8 w-px bg-slate-200 shrink-0" />
                             <div className="flex flex-col min-w-0">
                                 <h2 className="text-base font-semibold text-slate-900 truncate leading-tight">
                                     {data.name}

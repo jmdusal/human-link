@@ -227,6 +227,7 @@ export default function LeaveRequestIndex() {
                 columns={columns}
                 data={leaveRequests}
                 loading={loading}
+                countLabel={`${leaveRequests.length} ${leaveRequests.length === 1 ? 'request' : 'requests'}`}
             />
 
             {isFormOpen && (

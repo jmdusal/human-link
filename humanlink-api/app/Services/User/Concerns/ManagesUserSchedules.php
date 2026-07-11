@@ -10,6 +10,10 @@ trait ManagesUserSchedules
 {
     protected function createUserSchedule(User $user, array $data): void
     {
+        if (! isset($data['weekly_data']) || ! is_array($data['weekly_data'])) {
+            return;
+        }
+
         $user->schedule()->create($this->schedulePayload($data));
     }
 

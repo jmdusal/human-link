@@ -1,137 +1,179 @@
-import { useState } from 'react';
-import { Settings, Plus } from 'lucide-react';
-import Searchbar from '@/components/shared/Searchbar';
+import { useEffect, useMemo, useState } from 'react';
+import { Archive, Settings, LogOut, Save, UserCog, Trash2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
-import Pagination from '@/components/shared/ModalTabPagination';
+import Input from '@/components/ui/Input';
+import Select from '@/components/ui/Select';
+import { useAuth } from '@/context/AuthContext';
 import { usePageTitle } from '@/hooks/use-title';
+import { acceptedMembers } from '@/utils/workspaceMetrics';
+import { useWorkspacePermissions } from '@/utils/workspacePermissions';
 
 interface SettingsTabProps {
     data: any;
-    searchQuery: string;
-    setSearchQuery: (query: string) => void;
+    onRename: (name: string) => Promise<void>;
+    onArchive: () => void;
+    onDelete: () => void;
+    onLeave: () => void;
+    onTransferOwnership: (userId: number) => Promise<void>;
+    saving?: boolean;
+    transferring?: boolean;
 }
 
-export default function SettingsTab({ data, searchQuery, setSearchQuery }: SettingsTabProps) {
-    usePageTitle("Settings")
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 8;
+export default function SettingsTab({
+    data,
+    onRename,
+    onArchive,
+    onDelete,
+    onLeave,
+    onTransferOwnership,
+    saving = false,
+    transferring = false,
+}: SettingsTabProps) {
+    usePageTitle('Settings');
+    const { user } = useAuth();
+    const [name, setName] = useState(data?.name || '');
+    const [transferUserId, setTransferUserId] = useState('');
+    const { isOwner, canManage: isAdminOrOwner, canLeave } = useWorkspacePermissions(data);
 
-    const filteredStages = (data.statuses || []).filter((status: any) =>
-        status.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    useEffect(() => {
+        setName(data?.name || '');
+    }, [data?.name]);
 
-    const totalPages = Math.ceil(filteredStages.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedStages = filteredStages.slice(startIndex, startIndex + itemsPerPage);
+    const nameChanged = name.trim() !== (data?.name || '') && name.trim().length > 0;
 
-    const handleSearch = (val: string) => {
-        setSearchQuery(val);
-        setCurrentPage(1);
-    };
+    const transferOptions = useMemo(() => {
+        return acceptedMembers(data.members || [])
+            .filter((m: any) => m.id !== user?.id)
+            .map((m: any) => ({
+                label: m.name || m.email,
+                value: String(m.id),
+            }));
+    }, [data.members, user?.id]);
 
     return (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 flex flex-col min-h-full">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-                <div>
-                    <h3 className="text-3xl font-bold text-slate-900 tracking-tight">Settings</h3>
-                    <p className="text-slate-400 text-sm mt-1 font-medium">
-                        Configure workflow columns for {data.name}.
-                    </p>
-                </div>
-                
-                <div className="flex items-center gap-4">
-                    <Searchbar 
-                        value={searchQuery} 
-                        onChange={handleSearch} 
-                        placeholder="Filter stages..." 
-                    />
-                    
-                    <Button 
-                        variant="primary" 
-                        icon={Plus}
-                        onClick={() => {/* Open New Stage Modal */}}
-                    >
-                        New Stage
-                    </Button>
-                </div>
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 flex flex-col min-h-full space-y-8 pb-10">
+            <div>
+                <h3 className="text-3xl font-bold text-slate-900 tracking-tight">Settings</h3>
+                <p className="text-slate-400 text-sm mt-1 font-medium">
+                    Manage workspace details and access for {data.name}.
+                </p>
             </div>
 
-            <div className="flex-1">
-                {paginatedStages.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                        {paginatedStages.map((status: any, index: number) => (
-                            <Card
-                                key={status.id || index}
-                                hover
-                                className="group relative flex flex-col cursor-pointer"
-                            >
-                                <div className="flex justify-between items-center mb-6">
-                                    <div
-                                        className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm border border-transparent group-hover:border-white"
-                                        style={{ backgroundColor: `${status.colorHex}15` }}
-                                    >
-                                        <div
-                                            className="w-3 h-3 rounded-full shadow-sm"
-                                            style={{ backgroundColor: status.colorHex}}
-                                        />
-                                    </div>
-
-                                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 rounded-full group-hover:bg-white transition-colors">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                                            Step {status.position + 1}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <h4 className="text-lg font-bold text-slate-900 mb-1 group-hover:translate-x-1 transition-transform duration-300">
-                                    {status.name}
-                                </h4>
-                                <p className="text-sm text-slate-400 font-medium leading-relaxed line-clamp-2">
-                                    Stage color is set to {status.colorHex}.
-                                </p>
-
-                                <div className="relative mt-8 pt-6 flex items-center justify-between border-t border-slate-50 group-hover:border-slate-100 transition-colors">
-                                    <div className="flex items-center gap-1.5 text-slate-400">
-                                        <Settings size={14} className="group-hover:text-blue-500 transition-colors" />
-                                        <span className="text-[11px] font-bold uppercase tracking-tight">Configure</span>
-                                    </div>
-                                    <span className="text-[11px] font-bold text-slate-300">
-                                        ID: {status.id}
-                                    </span>
-                                </div>
-                            </Card>
-                        ))}
+            {isAdminOrOwner && (
+                <Card variant="section">
+                    <div className="flex items-start gap-3 mb-6">
+                        <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center shrink-0">
+                            <Settings size={18} />
+                        </div>
+                        <div>
+                            <h4 className="text-base font-bold text-slate-900">General</h4>
+                            <p className="text-sm text-slate-400 font-medium mt-0.5">
+                                Rename this workspace. The URL slug updates from the name.
+                            </p>
+                        </div>
                     </div>
-                ) : (
-                    <div className="flex flex-col items-center justify-center py-32 rounded-[40px] bg-slate-50/30">
-                         <p className="text-slate-400 text-sm font-medium">No stages found.</p>
+
+                    <div className="flex flex-col sm:flex-row gap-3 items-end max-w-xl">
+                        <div className="flex-1 w-full">
+                            <Input
+                                label="Workspace name"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="Workspace name"
+                            />
+                        </div>
+                        <Button
+                            variant="primary"
+                            icon={Save}
+                            loading={saving}
+                            disabled={!nameChanged || saving}
+                            onClick={() => onRename(name.trim())}
+                        >
+                            Save
+                        </Button>
                     </div>
-                )}
-            </div>
+                </Card>
+            )}
 
-            <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                itemsPerPage={itemsPerPage}
-                totalItems={filteredStages.length}
-                onPageChange={setCurrentPage}
-            />
+            {isOwner && (
+                <Card variant="section">
+                    <div className="flex items-start gap-3 mb-6">
+                        <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center shrink-0">
+                            <UserCog size={18} />
+                        </div>
+                        <div>
+                            <h4 className="text-base font-bold text-slate-900">Transfer ownership</h4>
+                            <p className="text-sm text-slate-400 font-medium mt-0.5">
+                                Pass ownership to another accepted member. You become an admin.
+                            </p>
+                        </div>
+                    </div>
 
-            <div className="mt-20 border-t border-slate-100 pt-10">
-                <Card className="bg-red-50/20 border-dashed border-red-100 flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="flex flex-col sm:flex-row gap-3 items-end max-w-xl">
+                        <div className="flex-1 w-full">
+                            <Select
+                                label="New owner"
+                                options={transferOptions}
+                                value={transferUserId}
+                                onChange={setTransferUserId}
+                                placeholder="Select a member"
+                            />
+                        </div>
+                        <Button
+                            variant="secondary"
+                            icon={UserCog}
+                            loading={transferring}
+                            disabled={!transferUserId || transferring}
+                            onClick={() => onTransferOwnership(Number(transferUserId))}
+                        >
+                            Transfer
+                        </Button>
+                    </div>
+                </Card>
+            )}
+
+            {canLeave && (
+                <Card className="border border-amber-100 bg-amber-50/30 flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="text-center md:text-left">
-                        <h4 className="text-xl font-bold text-red-900">Archive Workspace</h4>
-                        <p className="text-red-400 text-sm mt-1 font-medium max-w-sm">
-                            Permanently remove this workspace and all associated projects. This cannot be undone.
+                        <h4 className="text-lg font-bold text-amber-900">Leave workspace</h4>
+                        <p className="text-amber-700/80 text-sm mt-1 font-medium max-w-md">
+                            You will lose access to projects and tasks in this workspace until invited again.
                         </p>
                     </div>
-                    <Button variant="danger">
-                        Delete Workspace
+                    <Button variant="outline" icon={LogOut} onClick={onLeave}>
+                        Leave workspace
                     </Button>
                 </Card>
-            </div>
+            )}
+
+            {isOwner && (
+                <Card className="bg-amber-50/20 border-dashed border-amber-100 flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="text-center md:text-left">
+                        <h4 className="text-xl font-bold text-amber-900">Archive workspace</h4>
+                        <p className="text-amber-700/80 text-sm mt-1 font-medium max-w-sm">
+                            Hide this workspace from active lists. Projects and tasks stay intact and can be restored later.
+                        </p>
+                    </div>
+                    <Button variant="outline" icon={Archive} onClick={onArchive}>
+                        Archive workspace
+                    </Button>
+                </Card>
+            )}
+
+            {isOwner && (
+                <Card className="bg-red-50/20 border-dashed border-red-100 flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="text-center md:text-left">
+                        <h4 className="text-xl font-bold text-red-900">Delete workspace</h4>
+                        <p className="text-red-400 text-sm mt-1 font-medium max-w-sm">
+                            Permanently delete this workspace and its projects, tasks, statuses, and tags. This cannot be undone.
+                        </p>
+                    </div>
+                    <Button variant="danger" icon={Trash2} onClick={onDelete}>
+                        Delete workspace
+                    </Button>
+                </Card>
+            )}
         </div>
     );
 }

@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, TaskComment> $replies
  * @property-read int|null $replies_count
  * @property-read \App\Models\User $user
+ * @property-read \App\Models\Task|null $task
  * @mixin \Eloquent
  */
 /**
@@ -52,6 +53,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, TaskComment> $replies
  * @property-read int|null $replies_count
  * @property-read \App\Models\User $user
+ * @property-read \App\Models\Task|null $task
  * @mixin \Eloquent
  */
 class TaskComment extends Model
@@ -66,6 +68,11 @@ class TaskComment extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function task(): BelongsTo
+    {
+        return $this->belongsTo(Task::class);
     }
 
     /**

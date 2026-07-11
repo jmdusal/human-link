@@ -20,7 +20,6 @@ class UpdateWorkspaceRequest extends FormRequest
             'slug' => ['sometimes', 'string', Rule::unique('workspaces', 'slug')->ignore($this->workspace)],
             'members' => ['sometimes', 'array'],
             'members.*.id' => ['required', 'exists:users,id'],
-            'owner_id' => ['sometimes', 'exists:users,id'],
         ];
     }
 }

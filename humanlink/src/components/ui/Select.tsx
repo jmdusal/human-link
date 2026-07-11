@@ -18,6 +18,8 @@ interface SelectProps {
     menuMaxHeightClass?: string;
     /** Allow long option labels to wrap instead of truncating */
     wrapLabels?: boolean;
+    /** Open menu above the trigger (useful in footers / near page bottom) */
+    menuPlacement?: 'top' | 'bottom';
 }
 
 export default function Select({
@@ -29,6 +31,7 @@ export default function Select({
     placeholder = "Select option",
     menuMaxHeightClass = 'max-h-48',
     wrapLabels = false,
+    menuPlacement = 'bottom',
 }: SelectProps) {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -44,6 +47,7 @@ export default function Select({
     }, []);
 
     const selectedOption = options.find(opt => opt.value === value);
+    const openUp = menuPlacement === 'top';
 
     return (
         <div className="space-y-1.5 text-left w-full relative" ref={containerRef}>
@@ -83,7 +87,16 @@ export default function Select({
 
             {/* Dropdown Menu */}
             {isOpen && (
-                <div className="absolute z-[60] w-full mt-1.5 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
+                <div
+                    className={`
+                        absolute z-[60] w-full bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden
+                        animate-in fade-in duration-200
+                        ${openUp
+                            ? 'bottom-full mb-1.5 slide-in-from-bottom-1'
+                            : 'top-full mt-1.5 slide-in-from-top-1'
+                        }
+                    `}
+                >
                     <div className={`p-1 overflow-y-auto custom-scrollbar ${menuMaxHeightClass}`}>
                         {options.map((option) => {
                             const isSelected = value === option.value;

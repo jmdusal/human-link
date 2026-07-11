@@ -11,7 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import type { Permission } from '@/types';
 import { PermissionService } from '@/services/PermissionService';
 import { usePermissions } from '@/hooks/use-permissions';
-import { TextCell, DateCell } from '@/components/shared/TableCells';
+import { TextCell } from '@/components/shared/TableCells';
 import { AnimatePresence } from 'framer-motion';
 
 const columnHelper = createColumnHelper<Permission>();
@@ -21,8 +21,6 @@ export default function PermissionIndex() {
     const { permissions, setPermissions, loading,  } = usePermissions(true);
     
     const [selectedPermission, setSelectedPermission] = useState<Permission | null>(null);
-    
-    const [openDropdown, setOpenDropdown] = useState<number | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -35,7 +33,6 @@ export default function PermissionIndex() {
     const handleEdit = (permissions: Permission) => {
         setSelectedPermission(permissions);
         setIsFormOpen(true);
-        setOpenDropdown(null);
     };
 
     const handleSuccess = (permissionData: Permission) => {
@@ -53,7 +50,6 @@ export default function PermissionIndex() {
     const handleDeleteClick = (permission: Permission) => {
         setSelectedPermission(permission);
         setIsDeleteModalOpen(true);
-        setOpenDropdown(null);
     };
     
     const handleConfirmDelete = async () => {
@@ -76,12 +72,8 @@ export default function PermissionIndex() {
     
     const columns = useMemo(() => [
         columnHelper.accessor('name', {
-            header: 'Permission Name',
+            header: 'Permission',
             cell: (info) => <TextCell title={info.getValue()} />,
-        }),
-        columnHelper.accessor('createdAt', {
-            header: 'Created',
-            cell: (info) => <DateCell date={info.getValue()} />,
         }),
         columnHelper.display({
             id: 'actions',
@@ -109,7 +101,7 @@ export default function PermissionIndex() {
                 );
             },
         }),
-    ], [openDropdown, can]);
+    ], [can]);
 
     return (
         <div className="w-full">
@@ -131,6 +123,7 @@ export default function PermissionIndex() {
                 data={permissions}
                 loading={loading}
                 showSearch={true}
+                countLabel={`${permissions.length} ${permissions.length === 1 ? 'permission' : 'permissions'}`}
             />
             
             <AnimatePresence>

@@ -22,7 +22,7 @@ trait ManagesUserRates
 
     protected function createUserRate(User $user, array $data): void
     {
-        if (! isset($data['monthly_rate'])) {
+        if (! $this->hasCompleteRateFields($data)) {
             return;
         }
 
@@ -31,14 +31,21 @@ trait ManagesUserRates
 
     protected function hasRateFields(array $data): bool
     {
-        return isset($data['monthly_rate'])
-            || isset($data['daily_rate'])
-            || isset($data['hourly_rate']);
+        return filled($data['monthly_rate'] ?? null)
+            || filled($data['daily_rate'] ?? null)
+            || filled($data['hourly_rate'] ?? null);
+    }
+
+    protected function hasCompleteRateFields(array $data): bool
+    {
+        return filled($data['monthly_rate'] ?? null)
+            && filled($data['daily_rate'] ?? null)
+            && filled($data['hourly_rate'] ?? null);
     }
 
     protected function ratePayload(array $data): array
     {
-        return array_intersect_key($data, array_flip([
+        $payload = array_intersect_key($data, array_flip([
             'monthly_rate',
             'daily_rate',
             'hourly_rate',
@@ -46,5 +53,19 @@ trait ManagesUserRates
             'effective_date',
             'is_active',
         ]));
+
+        if (! filled($payload['effective_date'] ?? null)) {
+            $payload['effective_date'] = now()->toDateString();
+        }
+
+        if (! array_key_exists('is_active', $payload)) {
+            $payload['is_active'] = true;
+        }
+
+        if (! filled($payload['allowance_monthly'] ?? null)) {
+            $payload['allowance_monthly'] = 0;
+        }
+
+        return $payload;
     }
 }

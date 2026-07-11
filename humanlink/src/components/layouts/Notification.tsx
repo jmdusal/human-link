@@ -56,6 +56,36 @@ export default function NotificationDropdown() {
                         || notification.data?.payslip_id
                         || notification.data?.payslipId
                         || null,
+                    workspaceId:
+                        notification.workspaceId
+                        || notification.workspace_id
+                        || notification.data?.workspace_id
+                        || notification.data?.workspaceId
+                        || null,
+                    workspaceSlug:
+                        notification.workspaceSlug
+                        || notification.workspace_slug
+                        || notification.data?.workspace_slug
+                        || notification.data?.workspaceSlug
+                        || null,
+                    invitationToken:
+                        notification.invitationToken
+                        || notification.invitation_token
+                        || notification.data?.invitation_token
+                        || notification.data?.invitationToken
+                        || null,
+                    taskId:
+                        notification.taskId
+                        || notification.task_id
+                        || notification.data?.task_id
+                        || notification.data?.taskId
+                        || null,
+                    projectId:
+                        notification.projectId
+                        || notification.project_id
+                        || notification.data?.project_id
+                        || notification.data?.projectId
+                        || null,
                 },
                 ...prev,
             ];
@@ -142,7 +172,15 @@ export default function NotificationDropdown() {
             || notification.type === 'leave_pending_reminder'
             || notification.type === 'payslip_ready'
             || notification.type === 'timer_forgotten'
-            || !!notification.payslipId;
+            || notification.type === 'workspace_invitation'
+            || notification.type === 'workspace_invitation_accepted'
+            || notification.type === 'workspace_role_changed'
+            || notification.type === 'task_assigned'
+            || notification.type === 'task_mention'
+            || !!notification.payslipId
+            || !!notification.workspaceSlug
+            || !!notification.invitationToken
+            || !!notification.taskId;
     };
 
     const handleNotificationClick = async (notification: AppNotification) => {
@@ -178,6 +216,31 @@ export default function NotificationDropdown() {
         if (notification.type === 'timer_forgotten') {
             setIsOpen(false);
             navigate('/attendances');
+            return;
+        }
+
+        if (notification.type === 'workspace_invitation' && notification.invitationToken) {
+            setIsOpen(false);
+            navigate(`/invitations/accept/${notification.invitationToken}`);
+            return;
+        }
+
+        if (
+            notification.type === 'workspace_invitation_accepted'
+            || notification.type === 'workspace_role_changed'
+        ) {
+            setIsOpen(false);
+            if (notification.workspaceSlug) {
+                navigate(`/workspaces/${notification.workspaceSlug}`);
+            }
+            return;
+        }
+
+        if (notification.type === 'task_assigned' || notification.type === 'task_mention') {
+            setIsOpen(false);
+            if (notification.workspaceSlug) {
+                navigate(`/workspaces/${notification.workspaceSlug}#board`);
+            }
         }
     };
 

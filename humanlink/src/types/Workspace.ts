@@ -19,14 +19,17 @@ export interface Workspace {
     ownerId: number;
     owner?: Partial<User>;
     members?: WorkspaceMember[];
+    membersCount?: number;
     statuses?: Status[];
     tags?: Tag[];
     projects?: Project[];
+    projectsCount?: number;
+    archivedAt?: string | null;
     createdAt: string;
 }
 
 export interface WorkspaceFormData {
     name: string;
-    slug: string;
-    members: User[] | WorkspaceMember[];
+    slug?: string;
+    members?: User[] | WorkspaceMember[];
 }

@@ -14,6 +14,7 @@ import {
     CalendarRange,
     ClipboardList,
     Umbrella,
+    FileText,
 } from 'lucide-react';
 
 const Overview = lazy(() => import('@/pages/Overview'));
@@ -24,6 +25,7 @@ const PermissionIndex = lazy(() => import('@/pages/permissions/Index'));
 const WorkspaceIndex = lazy(() => import('@/pages/workspaces/Index'));
 
 const LeavePolicyIndex = lazy(() => import('@/pages/leave-policies/Index'));
+const ContractTemplateIndex = lazy(() => import('@/pages/contract-templates/Index'));
 const LeaveBalanceIndex = lazy(() => import('@/pages/leave-balances/Index'));
 const LeaveRequestIndex = lazy(() => import('@/pages/leave-requests/Index'));
 const LeaveCalendarIndex = lazy(() => import('@/pages/leave-calendar/Index'));
@@ -99,6 +101,15 @@ export const navItems = [
         icon: <Users size={18} />,
         component: <UserIndex />,
         permission: 'users-view',
+    },
+    {
+        path: '/contract-templates',
+        label: 'Contracts',
+        title: 'Contract Templates',
+        category: 'People',
+        icon: <FileText size={18} />,
+        component: <ContractTemplateIndex />,
+        permission: 'contract-templates-view',
     },
 
     // --- Leave (flat items for employee/manager; hidden when Leaves group is available) ---

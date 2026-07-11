@@ -1,11 +1,13 @@
 
 
 export type { ActivityLog } from '@/types/ActivityLog';
-export type { User, UserFormData, UserLeaveBalanceSummary, UserType } from '@/types/User';
+export type { User, UserFormData, UserLeaveBalanceSummary, UserType, HrStatus } from '@/types/User';
+export type { UserDetail, EmploymentType } from '@/types/UserDetail';
+export type { UserDocument, UserDocumentType } from '@/types/UserDocument';
 export type { Role, RoleFormData } from '@/types/Role';
 export type { Permission, PermissionFormData } from '@/types/Permission';
 export type { Workspace, WorkspaceFormData } from '@/types/Workspace';
-export type { Project, ProjectFormData } from '@/types/Project';
+export type { Project, ProjectFormData, ProjectTemplate } from '@/types/Project';
 export type { Task, TaskFormData, TaskPriority, TaskPositionUpdate } from '@/types/Task';
 export type { TaskAttachment } from '@/types/TaskAttachment';
 export type { TaskComment } from '@/types/TaskComment';
@@ -13,6 +15,11 @@ export type { Status, StatusFormData } from '@/types/Status';
 export type { Tag, TagFormData } from '@/types/Tag';
 export type { LeaveBalance, LeaveBalanceFormData, GroupedLeaveBalance } from '@/types/LeaveBalance';
 export type { LeavePolicy, LeavePolicyFormData } from '@/types/LeavePolicy';
+export type {
+    ContractTemplate,
+    ContractTemplateFormData,
+    ContractEmploymentType,
+} from '@/types/ContractTemplate';
 export type {
     LeaveRequest,
     LeaveRequestFormData,

@@ -31,15 +31,27 @@ export const DateCell = ({
 
 // status
 export const StatusBadge = ({ status = 'active' }: { status?: string }) => {
-    const normalized = status.toLowerCase();
-    const isInactive = normalized === 'inactive' || normalized === 'rejected' || normalized === 'cancelled';
-    const isPending = normalized === 'pending';
-    const isApproved = normalized === 'approved' || normalized === 'active' || normalized === 'completed';
+    const normalized = status.toLowerCase().replace(/_/g, ' ');
+    const key = status.toLowerCase();
+
+    const isInactive = key === 'inactive' || key === 'rejected' || key === 'cancelled';
+    const isPending = key === 'pending' || key === 'incomplete' || key === 'ready';
+    const isApproved = key === 'approved' || key === 'active' || key === 'completed';
+    const isOffboarding = key === 'offboarding';
 
     let classes = 'bg-slate-50 text-slate-400 border-slate-100';
     let dot = 'bg-slate-300';
 
-    if (isPending) {
+    if (isOffboarding) {
+        classes = 'bg-rose-50/50 text-rose-600 border-rose-100/50';
+        dot = 'bg-rose-500';
+    } else if (key === 'incomplete') {
+        classes = 'bg-amber-50/50 text-amber-700 border-amber-100/50';
+        dot = 'bg-amber-500';
+    } else if (key === 'ready') {
+        classes = 'bg-sky-50/50 text-sky-700 border-sky-100/50';
+        dot = 'bg-sky-500';
+    } else if (isPending) {
         classes = 'bg-amber-50/50 text-amber-600 border-amber-100/50';
         dot = 'bg-amber-500';
     } else if (isApproved && !isInactive) {
@@ -54,7 +66,7 @@ export const StatusBadge = ({ status = 'active' }: { status?: string }) => {
         <div className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full border transition-all duration-300 ${classes}`}>
             <div className={`h-1.5 w-1.5 rounded-full shadow-sm ${dot}`} />
             <span className="text-[10px] font-bold uppercase tracking-wider">
-                {status}
+                {normalized}
             </span>
         </div>
     );
@@ -101,16 +113,29 @@ export const TagsCell = ({ tags, emptyText = "None assigned"}: {
 };
 
 // user avatar
-export const UserCell = ({ name, email }: { name: string; email?: string }) => {
+export const UserCell = ({
+    name,
+    email,
+    subtitle,
+}: {
+    name: string;
+    email?: string;
+    subtitle?: string | null;
+}) => {
     return (
         <div className="flex items-center gap-3 py-1">
             <div className="h-9 w-9 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 font-bold text-[11px] border border-blue-100/50 shadow-sm shrink-0 tracking-tighter">
                 {getInitials(name)}
             </div>
-            
+
             <div className="flex flex-col min-w-0">
                 <span className="text-[14px] font-bold text-slate-700 leading-none mb-1 truncate">{name}</span>
-                <span className="text-[11px] text-slate-400 font-medium truncate">{email}</span>
+                {email && (
+                    <span className="text-[11px] text-slate-400 font-medium truncate">{email}</span>
+                )}
+                {subtitle && (
+                    <span className="text-[11px] text-slate-400 font-medium truncate mt-0.5">{subtitle}</span>
+                )}
             </div>
         </div>
     );

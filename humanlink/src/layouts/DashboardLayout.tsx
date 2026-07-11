@@ -1,26 +1,45 @@
-import { Suspense } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Suspense, useState } from 'react';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import Sidebar from '@/components/layouts/Sidebar';
 import TopHeader from '@/components/layouts/TopHeader';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
+import { useAuth } from '@/context/AuthContext';
 
 const DashboardLayout = () => {
-    return (
-        <div className="flex h-screen bg-[#F0F2F5] overflow-hidden">
-            <Sidebar />
+    const { user, loading } = useAuth();
+    const location = useLocation();
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                <TopHeader />
-                
-                <main className="flex-1 overflow-y-auto p-4 md:p-8">
-                    <div className="max-w-[1600px] mx-auto">
-                        <Suspense fallback={<LoadingSpinner />}>
+    if (loading) {
+        return <LoadingSpinner fullPage />;
+    }
+
+    if (!user) {
+        return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+    }
+
+    return (
+        <Suspense fallback={<LoadingSpinner fullPage />}>
+            <div className="flex h-screen bg-[#F0F2F5] overflow-hidden">
+                <Sidebar
+                    isCollapsed={isSidebarCollapsed}
+                    onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
+                />
+
+                <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+                    <TopHeader
+                        isSidebarCollapsed={isSidebarCollapsed}
+                        onToggleSidebar={() => setIsSidebarCollapsed((prev) => !prev)}
+                    />
+
+                    <main className="flex-1 overflow-y-auto p-4 md:p-8">
+                        <div className="max-w-[1600px] mx-auto">
                             <Outlet />
-                        </Suspense>
-                    </div>
-                </main>
+                        </div>
+                    </main>
+                </div>
             </div>
-        </div>
+        </Suspense>
     );
 };
 

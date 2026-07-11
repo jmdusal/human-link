@@ -19,7 +19,7 @@ class MeController extends Controller
         $user = Auth::user();
 
         return response()->json([
-            'data' => $user->load(['roles', 'rate', 'schedule', 'currentBalances.leavePolicy']),
+            'data' => $user->load(['roles', 'details', 'rate', 'schedule', 'currentBalances.leavePolicy', 'latestContract']),
         ]);
     }
 
@@ -38,7 +38,7 @@ class MeController extends Controller
 
             $user->update($payload);
 
-            return $user->fresh()->load(['roles', 'rate', 'schedule', 'currentBalances.leavePolicy']);
+            return $user->fresh()->load(['roles', 'details', 'rate', 'schedule', 'currentBalances.leavePolicy', 'latestContract']);
         });
 
         return response()->json([

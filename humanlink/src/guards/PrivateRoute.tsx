@@ -14,8 +14,10 @@ export default function PrivateRoute({ children, permission }: PrivateRouteProps
     const navigate = useNavigate();
     const location = useLocation();
 
-    if (loading) return <LoadingSpinner />;
-    
+    if (loading) {
+        return <LoadingSpinner fullPage />;
+    }
+
     if (!user) {
         return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
     }
@@ -43,4 +45,4 @@ export default function PrivateRoute({ children, permission }: PrivateRouteProps
     }
 
     return <>{children}</>;
-};
+}

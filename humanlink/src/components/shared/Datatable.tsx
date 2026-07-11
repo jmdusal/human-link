@@ -9,16 +9,24 @@ import {
 } from "@tanstack/react-table";
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Searchbar  from '@/components/shared/Searchbar';
+import Searchbar from '@/components/shared/Searchbar';
+import Select from '@/components/ui/Select';
 
+const PAGE_SIZE_OPTIONS = [
+    { value: '10', label: '10' },
+    { value: '20', label: '20' },
+    { value: '30', label: '30' },
+] as const;
 interface DataTableProps<TData> {
     columns: ColumnDef<TData, any>[];
     data: TData[];
     loading?: boolean;
     showSearch?: boolean;
+    /** Optional count label shown in the footer (e.g. "17 people") */
+    countLabel?: string;
 }
 
-export function DataTable<TData>({ columns, data, loading, showSearch = true }: DataTableProps<TData>) {
+export function DataTable<TData>({ columns, data, loading, showSearch = true, countLabel }: DataTableProps<TData>) {
     const [globalFilter, setGlobalFilter] = useState('');
 
     const table = useReactTable({
@@ -55,8 +63,8 @@ export function DataTable<TData>({ columns, data, loading, showSearch = true }: 
                 />
             )}
 
-            <div className="bg-white rounded-2xl border border-slate-200/60 overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
-                <div className="overflow-x-auto">
+            <div className="bg-white rounded-2xl border border-slate-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                <div className="overflow-x-auto rounded-t-2xl">
                     <table className="w-full text-left border-separate border-spacing-0">
                         <thead>
                             {table.getHeaderGroups().map(headerGroup => (
@@ -116,35 +124,48 @@ export function DataTable<TData>({ columns, data, loading, showSearch = true }: 
                 </div>
 
                 {/* PAGINATION */}
-                <div className="px-6 py-4 bg-white border-t border-slate-100 flex items-center justify-between">
-                    <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                        Page <span className="text-slate-900">{table.getState().pagination.pageIndex + 1}</span> of <span className="text-slate-900">{table.getPageCount()}</span>
+                <div className="relative z-20 px-6 py-4 bg-white border-t border-slate-100 rounded-b-2xl flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2 min-w-0 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        {countLabel && (
+                            <>
+                                <span className="text-slate-500 font-medium normal-case tracking-normal text-sm truncate">
+                                    {countLabel}
+                                </span>
+                                <span className="text-slate-300">·</span>
+                            </>
+                        )}
+                        <span className="shrink-0">
+                            Page <span className="text-slate-900">{table.getState().pagination.pageIndex + 1}</span> of <span className="text-slate-900">{table.getPageCount() || 1}</span>
+                        </span>
                     </div>
-                                    
-                    <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-3">
+
+                    <div className="flex items-center gap-4 shrink-0">
+                        <div className="flex items-center gap-2">
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rows</span>
-                            <select
-                                value={table.getState().pagination.pageSize}
-                                onChange={e => table.setPageSize(Number(e.target.value))}
-                                className="bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-bold px-2 py-1.5 outline-none text-slate-600 focus:border-blue-500/50 transition-all cursor-pointer"
-                            >
-                                {[10, 20, 30].map(size => (
-                                    <option key={size} value={size}>{size}</option>
-                                ))}
-                            </select>
+                            <div className="w-[88px]">
+                                <Select
+                                    options={PAGE_SIZE_OPTIONS}
+                                    value={String(table.getState().pagination.pageSize)}
+                                    onChange={(value) => table.setPageSize(Number(value))}
+                                    placeholder="Rows"
+                                    menuMaxHeightClass="max-h-40"
+                                    menuPlacement="top"
+                                />
+                            </div>
                         </div>
-                        
+
                         <div className="flex gap-2">
-                            <button 
-                                onClick={() => table.previousPage()} 
+                            <button
+                                type="button"
+                                onClick={() => table.previousPage()}
                                 disabled={!table.getCanPreviousPage()}
                                 className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-20 transition-all active:scale-90"
                             >
                                 <ChevronLeft size={14} className="text-slate-600" />
                             </button>
-                            <button 
-                                onClick={() => table.nextPage()} 
+                            <button
+                                type="button"
+                                onClick={() => table.nextPage()}
                                 disabled={!table.getCanNextPage()}
                                 className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-20 transition-all active:scale-90"
                             >

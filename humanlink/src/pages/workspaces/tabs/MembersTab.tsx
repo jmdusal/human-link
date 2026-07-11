@@ -1,19 +1,24 @@
 import { useState } from 'react';
-import { User as UserIcon, LayoutGrid, List, UserPlus } from 'lucide-react';
+import { User as UserIcon, LayoutGrid, List, UserPlus, Mail, X } from 'lucide-react';
 import Searchbar from '@/components/shared/Searchbar';
 import MultiSelect from '@/components/ui/MultiSelect';
+import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
-import { useAuth } from '@/context/AuthContext';
 import { getInitials } from '@/utils/userUtils';
 import Pagination from '@/components/shared/ModalTabPagination';
 import { usePageTitle } from '@/hooks/use-title';
+import { useWorkspacePermissions } from '@/utils/workspacePermissions';
 
 interface MembersTabProps {
     data: any;
     userOptions: any[];
     searchQuery: string;
     setSearchQuery: (query: string) => void;
-    onUpdateMembers: (newMembers: any[]) => void;
+    onInviteMembers: (userIds: number[]) => Promise<void>;
+    onRemoveMember: (userId: number) => Promise<void>;
+    onChangeMemberRole: (userId: number, role: 'admin' | 'member') => Promise<void>;
+    onResendInvitation?: (userId: number) => Promise<void>;
+    onCancelInvitation?: (userId: number) => Promise<void>;
 }
 
 function roleBadgeClass(role?: string) {
@@ -35,38 +40,96 @@ function membershipStatusLabel(member: any) {
     return member.status || 'Active';
 }
 
-export default function MembersTab({ data, userOptions, searchQuery, setSearchQuery, onUpdateMembers }: MembersTabProps) {
+export default function MembersTab({
+    data,
+    userOptions,
+    searchQuery,
+    setSearchQuery,
+    onInviteMembers,
+    onRemoveMember,
+    onChangeMemberRole,
+    onResendInvitation,
+    onCancelInvitation,
+}: MembersTabProps) {
     usePageTitle('Workspace Members');
-    const { user } = useAuth();
     const [currentPage, setCurrentPage] = useState(1);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+    const [actionUserId, setActionUserId] = useState<number | null>(null);
     const itemsPerPage = viewMode === 'grid' ? 8 : 10;
 
-    const workspaceRole = data.members.find(
-        (m: any) => m.id === user?.id && (m.pivot?.status ?? 'accepted') === 'accepted'
-    )?.pivot?.role;
-    const isWorkspaceAdminOrOwner = workspaceRole === 'owner' || workspaceRole === 'admin';
+    const { canManage: isWorkspaceAdminOrOwner } = useWorkspacePermissions(data);
+    const currentOwnerId = data.owner_id || data.ownerId;
+    const memberCount = data.members?.length || 0;
 
-    const handleToggleRole = (userId: number) => {
-        const ownerId = data.ownerId;
+    const handleToggleRole = async (userId: number) => {
+        if (!isWorkspaceAdminOrOwner) return;
+
+        const ownerId = data.ownerId || data.owner_id;
         if (userId === ownerId) return;
 
-        const updatedMembers = data.members.map((member: any) => {
-            if (member.id === userId) {
-                const currentRole = member.pivot?.role || 'member';
-                const nextRole = currentRole === 'member' ? 'admin' : 'member';
-                return {
-                    ...member,
-                    pivot: {
-                        ...(member.pivot || {}),
-                        role: nextRole,
-                    },
-                };
-            }
-            return member;
-        });
+        const member = data.members.find((m: any) => m.id === userId);
+        const currentRole = member?.pivot?.role || 'member';
+        const nextRole = currentRole === 'member' ? 'admin' : 'member';
 
-        onUpdateMembers(updatedMembers);
+        setActionUserId(userId);
+        try {
+            await onChangeMemberRole(userId, nextRole);
+        } finally {
+            setActionUserId(null);
+        }
+    };
+
+    const handleMembersChange = async (selectedItems: any[]) => {
+        const currentIds = new Set((data.members || []).map((m: any) => m.id));
+        const nextIds = new Set(selectedItems.map((item) => item.id));
+
+        const toInvite = selectedItems
+            .filter((item) => !currentIds.has(item.id))
+            .map((item) => item.id);
+
+        const toRemove = (data.members || [])
+            .filter((member: any) => !nextIds.has(member.id) && member.id !== currentOwnerId)
+            .map((member: any) => member.id);
+
+        if (toInvite.length) {
+            await onInviteMembers(toInvite);
+        }
+
+        for (const userId of toRemove) {
+            await onRemoveMember(userId);
+        }
+
+        for (const item of selectedItems) {
+            if (item.id === currentOwnerId) continue;
+            const existing = (data.members || []).find((member: any) => member.id === item.id);
+            if (!existing) continue;
+
+            const nextRole = item.pivot?.role === 'admin' ? 'admin' : 'member';
+            const currentRole = existing.pivot?.role === 'admin' ? 'admin' : 'member';
+            if (nextRole !== currentRole) {
+                await onChangeMemberRole(item.id, nextRole);
+            }
+        }
+    };
+
+    const handleResend = async (userId: number) => {
+        if (!onResendInvitation) return;
+        setActionUserId(userId);
+        try {
+            await onResendInvitation(userId);
+        } finally {
+            setActionUserId(null);
+        }
+    };
+
+    const handleCancel = async (userId: number) => {
+        if (!onCancelInvitation) return;
+        setActionUserId(userId);
+        try {
+            await onCancelInvitation(userId);
+        } finally {
+            setActionUserId(null);
+        }
     };
 
     const filteredMembers = (data.members || []).filter((member: any) =>
@@ -78,12 +141,36 @@ export default function MembersTab({ data, userOptions, searchQuery, setSearchQu
     const startIndex = (currentPage - 1) * itemsPerPage;
     const paginatedMembers = filteredMembers.slice(startIndex, startIndex + itemsPerPage);
 
-    const currentOwnerId = data.owner_id || data.ownerId;
-    const memberCount = data.members?.length || 0;
-
     const handleSearch = (val: string) => {
         setSearchQuery(val);
         setCurrentPage(1);
+    };
+
+    const renderInviteActions = (member: any) => {
+        const isPending = member.pivot?.status === 'pending';
+        if (!isWorkspaceAdminOrOwner || !isPending) return null;
+
+        return (
+            <div className="flex items-center gap-1.5">
+                <Button
+                    variant="ghost"
+                    icon={Mail}
+                    title="Resend invitation"
+                    disabled={actionUserId === member.id}
+                    loading={actionUserId === member.id}
+                    onClick={() => handleResend(member.id)}
+                    className="!p-1.5 text-slate-400 hover:text-blue-600"
+                />
+                <Button
+                    variant="ghost"
+                    icon={X}
+                    title="Cancel invitation"
+                    disabled={actionUserId === member.id}
+                    onClick={() => handleCancel(member.id)}
+                    className="!p-1.5 text-slate-400 hover:text-rose-600"
+                />
+            </div>
+        );
     };
 
     return (
@@ -149,16 +236,7 @@ export default function MembersTab({ data, userOptions, searchQuery, setSearchQu
                         showRole={true}
                         showInitials={true}
                         onChange={(selectedItems) => {
-                            const fullMemberData = selectedItems.map((item) => {
-                                const fullUser = userOptions.find((u) => u.id === item.id);
-                                return {
-                                    ...item,
-                                    email: item.email || fullUser?.email,
-                                    status: item.status || fullUser?.status || 'active',
-                                    pivot: item.pivot || { role: 'member', status: 'pending' },
-                                };
-                            });
-                            onUpdateMembers(fullMemberData);
+                            void handleMembersChange(selectedItems);
                         }}
                     />
                 </Card>
@@ -171,6 +249,7 @@ export default function MembersTab({ data, userOptions, searchQuery, setSearchQu
                             {paginatedMembers.map((member: any) => {
                                 const role = member.pivot?.role || 'member';
                                 const isOwner = member.id === currentOwnerId || role === 'owner';
+                                const canToggleRole = isWorkspaceAdminOrOwner && !isOwner;
 
                                 return (
                                     <Card
@@ -185,10 +264,10 @@ export default function MembersTab({ data, userOptions, searchQuery, setSearchQu
 
                                             <button
                                                 type="button"
-                                                disabled={isOwner}
+                                                disabled={!canToggleRole}
                                                 onClick={() => handleToggleRole(member.id)}
                                                 className={`text-[10px] px-2.5 py-1 rounded-md font-bold uppercase tracking-wide border transition-colors shrink-0 ${roleBadgeClass(role)} ${
-                                                    isOwner ? 'cursor-default' : 'hover:opacity-90'
+                                                    canToggleRole ? 'hover:opacity-90' : 'cursor-default'
                                                 }`}
                                             >
                                                 {role}
@@ -202,15 +281,13 @@ export default function MembersTab({ data, userOptions, searchQuery, setSearchQu
                                             {member.email || 'No email'}
                                         </p>
 
-                                        <div className="mt-auto pt-5 flex items-center justify-between border-t border-slate-100">
-                                            <span className="text-[11px] font-medium text-slate-400">
-                                                {isOwner ? 'Full access' : member.pivot?.status === 'pending' ? 'Awaiting acceptance' : 'Workspace access'}
-                                            </span>
+                                        <div className="mt-auto pt-5 flex items-center justify-between border-t border-slate-100 gap-2">
                                             <span
                                                 className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md border ${membershipStatusBadgeClass(member.pivot?.status)}`}
                                             >
                                                 {membershipStatusLabel(member)}
                                             </span>
+                                            {renderInviteActions(member)}
                                         </div>
                                     </Card>
                                 );
@@ -222,11 +299,13 @@ export default function MembersTab({ data, userOptions, searchQuery, setSearchQu
                                 <div className="flex-[1.4]">Member</div>
                                 <div className="flex-1 text-center">Role</div>
                                 <div className="flex-1 text-center">Status</div>
+                                {isWorkspaceAdminOrOwner && <div className="w-24 text-right">Invite</div>}
                             </div>
 
                             {paginatedMembers.map((member: any) => {
                                 const role = member.pivot?.role || 'member';
                                 const isOwner = member.id === currentOwnerId || role === 'owner';
+                                const canToggleRole = isWorkspaceAdminOrOwner && !isOwner;
 
                                 return (
                                     <div
@@ -246,10 +325,10 @@ export default function MembersTab({ data, userOptions, searchQuery, setSearchQu
                                         <div className="flex-1 flex justify-center">
                                             <button
                                                 type="button"
-                                                disabled={isOwner}
+                                                disabled={!canToggleRole}
                                                 onClick={() => handleToggleRole(member.id)}
                                                 className={`text-[10px] px-2.5 py-1 rounded-md font-bold uppercase tracking-wide border transition-colors ${roleBadgeClass(role)} ${
-                                                    isOwner ? 'cursor-default' : 'hover:opacity-90'
+                                                    canToggleRole ? 'hover:opacity-90' : 'cursor-default'
                                                 }`}
                                             >
                                                 {role}
@@ -263,6 +342,12 @@ export default function MembersTab({ data, userOptions, searchQuery, setSearchQu
                                                 {membershipStatusLabel(member)}
                                             </span>
                                         </div>
+
+                                        {isWorkspaceAdminOrOwner && (
+                                            <div className="w-24 flex justify-end">
+                                                {renderInviteActions(member)}
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}

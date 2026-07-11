@@ -35,4 +35,5 @@ export interface DashboardSummary {
     leaveActivity: LeaveActivityPoint[];
     roleDistribution: RoleDistributionItem[];
     recentActivity: DashboardActivityItem[];
+    contract?: import('@/types/UserDocument').UserDocument | null;
 }

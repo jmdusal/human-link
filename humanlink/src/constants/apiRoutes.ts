@@ -1,7 +1,15 @@
 export const API_ROUTES = {
     AUTH: {
         LOGIN: '/login',
+        TWO_FACTOR_LOGIN: '/login/two-factor',
         LOGOUT: '/logout',
+        FORGOT_PASSWORD: '/forgot-password',
+        RESET_PASSWORD: '/reset-password',
+        VERIFY_EMAIL: (id: number | string, hash: string) => `/email/verify/${id}/${hash}`,
+        SEND_VERIFICATION: '/email/verification-notification',
+        TWO_FACTOR_ENABLE: '/me/two-factor',
+        TWO_FACTOR_CONFIRM: '/me/two-factor/confirm',
+        TWO_FACTOR_DISABLE: '/me/two-factor',
     },
     ACTIVITY_LOGS: {
         LIST: '/activity-logs'
@@ -12,12 +20,20 @@ export const API_ROUTES = {
         STORE: '/users',
         UPDATE: (id: number) => `/users/${id}`,
         DELETE: (id: number) => `/users/${id}`,
+        RESEND_INVITE: (id: number) => `/users/${id}/resend-invite`,
+        FORCE_PASSWORD_RESET: (id: number) => `/users/${id}/force-password-reset`,
+        DEACTIVATE: (id: number) => `/users/${id}/deactivate`,
+        ACTIVATE: (id: number) => `/users/${id}/activate`,
         WORKSPACE_USERS: (workspaceId: number) => `/users/workspace/${workspaceId}`,
         PROJECT_USERS: (projectId: number) => `/users/project/${projectId}`,
         LIFECYCLE: (id: number) => `/users/${id}/lifecycle`,
         LIFECYCLE_TOGGLE: (userId: number, itemId: number) =>
             `/users/${userId}/lifecycle/items/${itemId}/toggle`,
         OFFBOARD: (id: number) => `/users/${id}/offboard`,
+        DOCUMENTS: (id: number) => `/users/${id}/documents`,
+        DOCUMENT_DELETE: (userId: number, documentId: number) =>
+            `/users/${userId}/documents/${documentId}`,
+        GENERATE_CONTRACT: (id: number) => `/users/${id}/documents/generate-contract`,
     },
     ROLES: {
         LIST: '/roles',
@@ -36,8 +52,24 @@ export const API_ROUTES = {
         STORE: '/workspaces',
         UPDATE: (id: number) => `/workspaces/${id}`,
         DELETE: (id: number) => `/workspaces/${id}`,
+        ARCHIVE: (id: number) => `/workspaces/${id}/archive`,
+        RESTORE: (id: number) => `/workspaces/${id}/restore`,
+        ACTIVITY: (id: number) => `/workspaces/${id}/activity`,
+        TASKS: (id: number) => `/workspaces/${id}/tasks`,
         GET_BY_SLUG: (slug: string) => `/workspaces/${slug}`,
         ACCEPT_INVITATION: (token: string) => `/workspaces/invitations/${token}/accept`,
+        DECLINE_INVITATION: (token: string) => `/workspaces/invitations/${token}/decline`,
+        INVITE_MEMBER: (workspaceId: number) => `/workspaces/${workspaceId}/members`,
+        REMOVE_MEMBER: (workspaceId: number, userId: number) =>
+            `/workspaces/${workspaceId}/members/${userId}`,
+        CHANGE_MEMBER_ROLE: (workspaceId: number, userId: number) =>
+            `/workspaces/${workspaceId}/members/${userId}`,
+        RESEND_INVITATION: (workspaceId: number, userId: number) =>
+            `/workspaces/${workspaceId}/members/${userId}/resend-invitation`,
+        CANCEL_INVITATION: (workspaceId: number, userId: number) =>
+            `/workspaces/${workspaceId}/members/${userId}/invitation`,
+        LEAVE: (id: number) => `/workspaces/${id}/leave`,
+        TRANSFER_OWNERSHIP: (id: number) => `/workspaces/${id}/transfer-ownership`,
     },
     STATUSES: {
         LIST: '/statuses',
@@ -55,12 +87,16 @@ export const API_ROUTES = {
     },
     PROJECTS: {
         LIST: '/projects',
+        BY_WORKSPACE: (workspaceId: number) => `/projects/${workspaceId}`,
         STORE: '/projects',
         UPDATE: (id: number) => `/projects/${id}`,
         DELETE: (id: number) => `/projects/${id}`,
+        ARCHIVE: (id: number) => `/projects/${id}/archive`,
+        RESTORE: (id: number) => `/projects/${id}/restore`,
     },
     TASKS: {
         LIST: '/tasks',
+        BY_WORKSPACE: (workspaceId: number) => `/workspaces/${workspaceId}/tasks`,
         STORE: '/tasks',
         UPDATE: (id: number) => `/tasks/${id}`,
         DELETE: (id: number) => `/tasks/${id}`,
@@ -90,6 +126,14 @@ export const API_ROUTES = {
         STORE: '/leave-policies',
         UPDATE: (id: number) => `/leave-policies/${id}`,
         DELETE: (id: number) => `/leave-policies/${id}`,
+    },
+    CONTRACT_TEMPLATES: {
+        LIST: '/contract-templates',
+        STORE: '/contract-templates',
+        UPDATE: (id: number) => `/contract-templates/${id}`,
+        DELETE: (id: number) => `/contract-templates/${id}`,
+        PREVIEW: (id: number) => `/contract-templates/${id}/preview`,
+        PREVIEW_DRAFT: '/contract-templates/preview',
     },
     LEAVE_REQUESTS: {
         LIST: '/leave-requests',

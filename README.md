@@ -31,6 +31,13 @@ hr: company wide HR, leave admin, users; no roles, permissions, or activity logs
 
 Roles are only super-admin and user. Day to day access comes from user type.
 
+Workspace roles (owner / admin / member) gate everything inside a workspace:
+
+- super-admin: can list, open, and fully manage any workspace even without membership
+- owner: full control, including archive/restore, transfer ownership, and hard delete
+- admin: manage members, projects, statuses, tags, and tasks (create/delete); rename workspace; can leave
+- member: update and move tasks only; can leave; only sees assigned projects
+
 ## Main flows
 
 Auth: cookie login; UI loads roles and permissions from /api/user
@@ -45,11 +52,94 @@ Payroll: monthly payslips, deductions, adjustments, PDF
 
 Reports: attendance summary, leave utilization, payroll register, scoped by type
 
-Workspaces: teams, members, projects, tasks
+Workspaces: teams, members, projects, board, analytics, statuses, tags, settings
 
-Users: people, rates, schedules, leave balances, role and user type
+Users: people, rates, schedules, leave balances, role and user type, HR pipeline, invite/reset, deactivate vs offboard
 
 Dashboard: overview for the signed in persona
+
+## Users features (applied)
+
+People list (`/users`):
+
+- Views: list, grid, hire-date timeline
+- Search + HR status filter on one row
+- Columns include HR status and account `is_active` (Active badge)
+- Create/edit: account, employment, government IDs, compensation, work schedule; optional invite email on create
+- Profile and lifecycle modals (checklists, documents, contract generate, offboard)
+
+HR status pipeline (`hrStatus` on user JSON):
+
+| Status | Meaning |
+|--------|---------|
+| incomplete | Missing rate, schedule, or leave balances |
+| ready | Setup done; invite / password / email verification still pending |
+| active | Setup complete and account live |
+| inactive | Soft-deactivated (access off, not terminated) |
+| offboarding | Terminated or offboard checklist in progress |
+
+Account access vs exit:
+
+- **Deactivate** — `POST /users/{id}/deactivate`: revoke access and tokens; no termination date
+- **Activate** — `POST /users/{id}/activate`: restore soft-deactivated users (blocked if offboarded)
+- **Offboard** — `POST /users/{id}/offboard` (Lifecycle): termination date, revoke access, optional final payslip / leave payout
+
+Invite and password:
+
+- Create with `send_invite` sends reset-password invite email (`must_set_password`)
+- **Resend invite** — `POST /users/{id}/resend-invite` when invite setup is still pending
+- **Force password reset** — `POST /users/{id}/force-password-reset` for active accounts
+
+Permissions: `users-view`, `users-create`, `users-edit`, `users-delete` (HR user type)
+
+## Workspace features (applied)
+
+Settings (workspace admin, not a stage list):
+
+- Rename workspace (slug updates from name)
+- Transfer ownership (owner only; previous owner becomes admin)
+- Archive / restore (owner only)
+- Hard delete (owner only)
+- Leave workspace (admin and member; owners must transfer first)
+
+Members and invitations:
+
+- Invite existing users; pending pivot with token + email
+- Accept / decline invitation
+- Resend / cancel pending invites
+- Role change (admin ↔ member)
+- Invitation TTL (7 days); expired tokens rejected; daily `workspaces:expire-invitations` cleanup
+
+Overview and analytics:
+
+- Metrics use workspace `statuses` and task `assignees` (not legacy `task_statuses` / `assigned_to`)
+- Done detection covers Done, Completed, Closed, Delivered, Approved, Finished
+
+In-app notifications (database + broadcast, same pattern as leave):
+
+- Workspace invitation
+- Invitation accepted (owners/admins)
+- Role changed
+- Task assigned
+
+ACL (workspace role guards — applied):
+
+| Role | Can do |
+|------|--------|
+| super-admin | List/open/manage every workspace without being a member (API + UI bypass) |
+| owner | Everything admin can, plus archive/restore, transfer ownership, and hard-delete workspace |
+| admin | Invite/remove members, change roles, manage projects/statuses/tags, create/update/delete tasks, rename workspace; can leave (cannot archive/delete/transfer) |
+| member | View workspace; only projects they are assigned to; update/move tasks only (no create/delete task; no Manage tabs); can leave |
+
+Enforced on API and UI:
+
+- Owner/admin: Manage menu (members, statuses, tags, settings), project CRUD/archive, status/tag CRUD, task create/delete
+- Member: only projects they are assigned to; task update + board drag/move only; create/delete blocked in UI and return 403 from API
+- Ownership cannot be changed via workspace update; only `POST /workspaces/{id}/transfer-ownership` (owner)
+- Shared helpers: `ManagesWorkspaceAccess` (API), `useWorkspacePermissions` (UI)
+- Projects tab manage actions use workspace role (not Spatie `projects-*` alone)
+- Super-admin bypasses membership checks (sees all workspaces on index; full manage inside)
+- Opening a workspace in the UI also allows super-admin even when not listed in members
 
 ## Run with Docker
 

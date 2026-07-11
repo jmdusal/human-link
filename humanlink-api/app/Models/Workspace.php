@@ -37,6 +37,9 @@ use Str;
  * @property-read int|null $tags_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $acceptedMembers
  * @property-read int|null $accepted_members_count
+ * @property \Illuminate\Support\Carbon|null $archived_at
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Workspace active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Workspace whereArchivedAt($value)
  * @mixin \Eloquent
  */
 /**
@@ -68,6 +71,9 @@ use Str;
  * @property-read int|null $tags_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $acceptedMembers
  * @property-read int|null $accepted_members_count
+ * @property \Illuminate\Support\Carbon|null $archived_at
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Workspace active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Workspace whereArchivedAt($value)
  * @mixin \Eloquent
  */
 class Workspace extends Model
@@ -76,7 +82,25 @@ class Workspace extends Model
         'name',
         'slug',
         'owner_id',
+        'archived_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'archived_at' => 'datetime',
+        ];
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->whereNull('archived_at');
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
+    }
 
     public function owner(): BelongsTo
     {
@@ -104,7 +128,7 @@ class Workspace extends Model
     {
         return $this->belongsToMany(User::class, 'workspace_users')
             ->select(['users.id', 'users.name', 'users.email', 'users.status'])
-            ->withPivot(['role', 'status', 'invitation_token', 'invited_at', 'accepted_at'])
+            ->withPivot(['role', 'status', 'invited_at', 'accepted_at'])
             ->withTimestamps();
     }
 

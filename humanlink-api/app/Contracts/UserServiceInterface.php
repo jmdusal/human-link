@@ -19,6 +19,14 @@ interface UserServiceInterface
 
     public function delete(User $user): void;
 
+    public function resendInvite(User $user): User;
+
+    public function forcePasswordReset(User $user): User;
+
+    public function deactivate(User $user): User;
+
+    public function activate(User $user): User;
+
     public function listByWorkspace(Workspace $workspace): Collection;
 
     public function listByProject(Project $project): Collection;

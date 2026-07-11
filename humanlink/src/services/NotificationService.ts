@@ -10,6 +10,11 @@ export interface AppNotification {
     type?: string | null;
     leaveRequestId?: number | null;
     payslipId?: number | null;
+    workspaceId?: number | null;
+    workspaceSlug?: string | null;
+    invitationToken?: string | null;
+    taskId?: number | null;
+    projectId?: number | null;
     createdAt?: string;
 }
 
@@ -19,6 +24,11 @@ export const NotificationService = {
         return response.data.data.map((item: any) => ({
             ...item,
             payslipId: item.payslipId ?? item.payslip_id ?? null,
+            workspaceId: item.workspaceId ?? item.workspace_id ?? null,
+            workspaceSlug: item.workspaceSlug ?? item.workspace_slug ?? null,
+            invitationToken: item.invitationToken ?? item.invitation_token ?? null,
+            taskId: item.taskId ?? item.task_id ?? null,
+            projectId: item.projectId ?? item.project_id ?? null,
         }));
     },
 

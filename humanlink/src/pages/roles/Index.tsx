@@ -11,7 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import type { Role } from '@/types';
 import { RoleService } from '@/services/RoleService';
 import { useRoles } from '@/hooks/use-roles';
-import { TextCell, DateCell, TagsCell } from '@/components/shared/TableCells';
+import { TextCell, TagsCell } from '@/components/shared/TableCells';
 import { AnimatePresence } from 'framer-motion';
 
 const columnHelper = createColumnHelper<Role>();
@@ -20,8 +20,6 @@ export default function RoleIndex() {
     const { can } = useAuth();
     const { roles, setRoles, loading } = useRoles(true);
     const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-    
-    const [openDropdown, setOpenDropdown] = useState<number | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -34,7 +32,6 @@ export default function RoleIndex() {
     const handleEdit = (role: Role) => {
         setSelectedRole(role);
         setIsFormOpen(true);
-        setOpenDropdown(null);
     };
     
     const handleSuccess = (roleData: Role) => {
@@ -53,7 +50,6 @@ export default function RoleIndex() {
     const handleDeleteClick = (role: Role) => {
         setSelectedRole(role);
         setIsDeleteModalOpen(true);
-        setOpenDropdown(null);
     };
     
     const handleConfirmDelete = async () => {
@@ -76,16 +72,12 @@ export default function RoleIndex() {
     
     const columns = useMemo(() => [
         columnHelper.accessor('name', {
-            header: 'Role Name',
+            header: 'Role',
             cell: (info) => <TextCell title={info.getValue()} />,
         }),
         columnHelper.accessor('permissions' as any, {
             header: 'Permissions',
             cell: (info) => <TagsCell tags={info.getValue()} emptyText="No permissions assigned" />
-        }),
-        columnHelper.accessor('createdAt', {
-            header: 'Created',
-            cell: (info) => <DateCell date={info.getValue()} />,   
         }),
         columnHelper.display({
             id: 'actions',
@@ -113,7 +105,7 @@ export default function RoleIndex() {
                 );
             },
         }),
-    ], [openDropdown, can]);
+    ], [can]);
 
     return (
         <div className="w-full">
@@ -135,6 +127,7 @@ export default function RoleIndex() {
                 data={roles}
                 loading={loading}
                 showSearch={true}
+                countLabel={`${roles.length} ${roles.length === 1 ? 'role' : 'roles'}`}
             />
             
             <AnimatePresence>

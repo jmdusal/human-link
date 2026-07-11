@@ -97,10 +97,25 @@ export const TaskDiscussion: React.FC<TaskDiscussionProps> = ({ task, authUser }
         });
     };
 
+    const extractMentionedUserIds = (content: string): number[] => {
+        return projectMembers
+            .filter((member) => {
+                const pattern = new RegExp(`(?:^|\\s)@${member.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s|$)`, 'i');
+                return pattern.test(content);
+            })
+            .map((member) => member.id);
+    };
+
     const handleMainTaskComment = async (parentId: number | null = null) => {
         if (!replyText.trim()) return;
         try {
-            const newComment = await TaskCommentService.postTaskComment(task.id, replyText, parentId);
+            const mentionedUserIds = extractMentionedUserIds(replyText);
+            const newComment = await TaskCommentService.postTaskComment(
+                task.id,
+                replyText,
+                parentId,
+                mentionedUserIds,
+            );
             if (parentId) {
                 setComments((prev) => prev.map((c) =>
                     c.id === parentId
