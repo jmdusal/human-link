@@ -211,13 +211,6 @@ const Login = () => {
                         </form>
                     )}
                 </div>
-
-                <div className="mt-8 flex items-center justify-center gap-4 text-slate-400">
-                    <div className="flex items-center gap-1.5">
-                        <Shield className="w-3.5 h-3.5" />
-                        <span className="text-[11px] font-medium tracking-tight uppercase">Invite-only access</span>
-                    </div>
-                </div>
             </motion.div>
         </div>
     );
