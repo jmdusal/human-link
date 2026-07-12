@@ -130,6 +130,18 @@ export const API_ROUTES = {
         UPDATE: (id: number) => `/leave-policies/${id}`,
         DELETE: (id: number) => `/leave-policies/${id}`,
     },
+    DEPARTMENTS: {
+        LIST: '/departments',
+        STORE: '/departments',
+        UPDATE: (id: number) => `/departments/${id}`,
+        DELETE: (id: number) => `/departments/${id}`,
+    },
+    POSITIONS: {
+        LIST: '/positions',
+        STORE: '/positions',
+        UPDATE: (id: number) => `/positions/${id}`,
+        DELETE: (id: number) => `/positions/${id}`,
+    },
     CONTRACT_TEMPLATES: {
         LIST: '/contract-templates',
         STORE: '/contract-templates',

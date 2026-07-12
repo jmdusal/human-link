@@ -5,6 +5,8 @@ export interface UserDetail {
     philhealthNumber?: string | null;
     pagibigNumber?: string | null;
     tin?: string | null;
+    departmentId?: number | null;
+    positionId?: number | null;
     jobTitle?: string | null;
     department?: string | null;
     employmentType?: EmploymentType | null;

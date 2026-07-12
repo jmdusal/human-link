@@ -4,7 +4,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\AuthenticationController;
+use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\LeavePolicyController;
+use App\Http\Controllers\Api\PositionController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\UserTypeController;
@@ -213,6 +215,20 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::post('/', 'store')->name('store');
         Route::put('/{leavePolicy}', 'update')->name('update');
         Route::delete('/{leavePolicy}', 'destroy')->name('destroy');
+    });
+
+    Route::controller(DepartmentController::class)->prefix('departments')->name('departments.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::put('/{department}', 'update')->name('update');
+        Route::delete('/{department}', 'destroy')->name('destroy');
+    });
+
+    Route::controller(PositionController::class)->prefix('positions')->name('positions.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::put('/{position}', 'update')->name('update');
+        Route::delete('/{position}', 'destroy')->name('destroy');
     });
 
     Route::controller(ContractTemplateController::class)->prefix('contract-templates')->name('contract-templates.')->group(function () {

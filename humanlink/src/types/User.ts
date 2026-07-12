@@ -61,6 +61,8 @@ export interface UserFormData {
     status: string;
     userTypeId: string;
     hiredAt: string;
+    departmentId: string;
+    positionId: string;
     jobTitle: string;
     department: string;
     employmentType: EmploymentType | '';

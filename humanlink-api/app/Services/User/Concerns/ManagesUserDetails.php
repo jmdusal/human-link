@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\User\Concerns;
 
+use App\Models\Department;
+use App\Models\Position;
 use App\Models\User;
 
 trait ManagesUserDetails
@@ -41,7 +43,46 @@ trait ManagesUserDetails
      */
     protected function detailPayload(array $data): array
     {
-        return array_intersect_key($data, array_flip($this->detailKeys()));
+        $payload = array_intersect_key($data, array_flip($this->detailKeys()));
+
+        return $this->syncJobProfileFromRelations($payload);
+    }
+
+    /**
+     * Keep denormalized job_title/department in sync for contracts and display.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    protected function syncJobProfileFromRelations(array $payload): array
+    {
+        if (array_key_exists('position_id', $payload) && $payload['position_id']) {
+            $position = Position::query()
+                ->with('department:id,name')
+                ->find($payload['position_id']);
+
+            if ($position) {
+                $payload['job_title'] = $position->name;
+                $payload['department_id'] = $position->department_id;
+                $payload['department'] = $position->department?->name;
+            }
+
+            return $payload;
+        }
+
+        if (array_key_exists('department_id', $payload) && $payload['department_id']) {
+            $department = Department::query()->find($payload['department_id']);
+
+            if ($department) {
+                $payload['department'] = $department->name;
+            }
+        }
+
+        if (array_key_exists('position_id', $payload) && $payload['position_id'] === null) {
+            $payload['job_title'] = $payload['job_title'] ?? null;
+        }
+
+        return $payload;
     }
 
     /**
@@ -54,6 +95,8 @@ trait ManagesUserDetails
             'philhealth_number',
             'pagibig_number',
             'tin',
+            'department_id',
+            'position_id',
             'job_title',
             'department',
             'employment_type',

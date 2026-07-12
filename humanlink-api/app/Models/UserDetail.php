@@ -42,6 +42,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserDetail whereTin($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserDetail whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserDetail whereUserId($value)
+ * @property int|null $department_id
+ * @property int|null $position_id
+ * @property-read \App\Models\Department|null $departmentRelation
+ * @property-read \App\Models\Position|null $position
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserDetail whereDepartmentId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserDetail wherePositionId($value)
  * @mixin \Eloquent
  */
 /**
@@ -79,6 +85,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserDetail whereTin($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserDetail whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserDetail whereUserId($value)
+ * @property int|null $department_id
+ * @property int|null $position_id
+ * @property-read \App\Models\Department|null $departmentRelation
+ * @property-read \App\Models\Position|null $position
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserDetail whereDepartmentId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|UserDetail wherePositionId($value)
  * @mixin \Eloquent
  */
 class UserDetail extends Model
@@ -95,6 +107,8 @@ class UserDetail extends Model
         'philhealth_number',
         'pagibig_number',
         'tin',
+        'department_id',
+        'position_id',
         'job_title',
         'department',
         'employment_type',
@@ -107,5 +121,15 @@ class UserDetail extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function departmentRelation(): BelongsTo
+    {
+        return $this->belongsTo(Department::class, 'department_id');
+    }
+
+    public function position(): BelongsTo
+    {
+        return $this->belongsTo(Position::class);
     }
 }

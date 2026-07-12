@@ -17,6 +17,8 @@ export type { Status, StatusFormData } from '@/types/Status';
 export type { Tag, TagFormData } from '@/types/Tag';
 export type { LeaveBalance, LeaveBalanceFormData, GroupedLeaveBalance } from '@/types/LeaveBalance';
 export type { LeavePolicy, LeavePolicyFormData } from '@/types/LeavePolicy';
+export type { Department, DepartmentFormData } from '@/types/Department';
+export type { Position, PositionFormData } from '@/types/Position';
 export type {
     ContractTemplate,
     ContractTemplateFormData,

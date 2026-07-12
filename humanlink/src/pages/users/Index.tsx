@@ -375,29 +375,40 @@ export default function UserIndex() {
         }),
     ], [can]);
 
-    const filterToolbar = (
-        <div className="flex flex-wrap items-center gap-3">
-            <div className="max-w-sm w-full sm:w-64">
+    const filterToolbarExtra = (
+        <div className="w-full sm:w-[200px]">
+            <Select
+                options={HR_STATUS_FILTERS}
+                value={hrStatusFilter}
+                onChange={(value) => {
+                    setHrStatusFilter(value as HrStatusFilter);
+                    setCurrentPage(1);
+                }}
+                placeholder="HR status"
+            />
+        </div>
+    );
+
+    const handleSearchChange = (value: string) => {
+        setGlobalFilter(value);
+        setCurrentPage(1);
+    };
+
+    const viewToolbar = (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5 dark:border-slate-800">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
                 <Searchbar
                     value={globalFilter}
-                    onChange={(value) => {
-                        setGlobalFilter(value);
-                        setCurrentPage(1);
-                    }}
+                    onChange={handleSearchChange}
                     placeholder="Search users..."
                 />
+                {filterToolbarExtra}
             </div>
-            <div className="w-full sm:w-[200px]">
-                <Select
-                    options={HR_STATUS_FILTERS}
-                    value={hrStatusFilter}
-                    onChange={(value) => {
-                        setHrStatusFilter(value as HrStatusFilter);
-                        setCurrentPage(1);
-                    }}
-                    placeholder="HR status"
-                />
-            </div>
+            {globalFilter && (
+                <p className="shrink-0 text-xs text-slate-400">
+                    {filteredUsers.length} result{filteredUsers.length === 1 ? '' : 's'}
+                </p>
+            )}
         </div>
     );
 
@@ -439,25 +450,25 @@ export default function UserIndex() {
                 </div>
             </div>
 
-            {!loading && (
-                <div className="mb-6">
-                    {filterToolbar}
-                </div>
-            )}
-
             {viewMode === 'list' && (
                 <DataTable
                     columns={columns}
                     data={filteredUsers}
                     loading={loading}
-                    showSearch={false}
+                    showSearch={true}
+                    searchPlaceholder="Search users..."
+                    searchValue={globalFilter}
+                    onSearchChange={handleSearchChange}
+                    toolbarExtra={filterToolbarExtra}
                     countLabel={`${filteredUsers.length} ${filteredUsers.length === 1 ? 'person' : 'people'}`}
                     onRowClick={handleView}
                 />
             )}
 
             {viewMode === 'grid' && (
-                <div className="space-y-6">
+                <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/20">
+                    {!loading && viewToolbar}
+                    <div className="space-y-6 p-5">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 isolate">
                         {loading ? (
                             [...Array(8)].map((_, i) => (
@@ -541,12 +552,14 @@ export default function UserIndex() {
                             />
                         </div>
                     )}
+                    </div>
                 </div>
             )}
 
             {viewMode === 'timeline' && (
-                <div className="space-y-6">
-                    <div className="relative space-y-12 py-10 overflow-x-auto min-h-[500px] animate-in fade-in duration-700 bg-slate-50/30 rounded-[32px] border border-slate-100/50">
+                <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/20">
+                    {!loading && viewToolbar}
+                    <div className="relative space-y-12 py-10 overflow-x-auto min-h-[500px] animate-in fade-in duration-700 bg-slate-50/30">
                         {loading ? (
                             <div className="px-10 text-sm text-slate-400">Loading users…</div>
                         ) : timelineUsers.length === 0 ? (

@@ -1,4 +1,4 @@
-import { useMemo, useState, type MouseEvent } from 'react';
+import { useMemo, useState, type MouseEvent, type ReactNode } from 'react';
 import {
     useReactTable,
     getCoreRowModel,
@@ -26,6 +26,12 @@ interface DataTableProps<TData> {
     data: TData[];
     loading?: boolean;
     showSearch?: boolean;
+    searchPlaceholder?: string;
+    /** Controlled search — parent owns filtering when provided with onSearchChange */
+    searchValue?: string;
+    onSearchChange?: (value: string) => void;
+    /** Extra controls rendered beside the search (e.g. status filter) */
+    toolbarExtra?: ReactNode;
     /** Optional count label shown in the footer (e.g. "17 people") */
     countLabel?: string;
     /** Optional row click handler (skipped for the actions column) */
@@ -100,29 +106,39 @@ export function DataTable<TData>({
     data,
     loading,
     showSearch = true,
+    searchPlaceholder = 'Search records...',
+    searchValue,
+    onSearchChange,
+    toolbarExtra,
     countLabel,
     onRowClick,
 }: DataTableProps<TData>) {
-    const [globalFilter, setGlobalFilter] = useState('');
+    const isSearchControlled = typeof onSearchChange === 'function';
+    const [internalFilter, setInternalFilter] = useState('');
     const [sorting, setSorting] = useState<SortingState>([]);
+    const globalFilter = isSearchControlled ? (searchValue ?? '') : internalFilter;
+    const setGlobalFilter = isSearchControlled ? onSearchChange : setInternalFilter;
 
     const table = useReactTable({
         data,
         columns,
-        state: { globalFilter, sorting },
-        onGlobalFilterChange: setGlobalFilter,
+        state: { globalFilter: isSearchControlled ? '' : globalFilter, sorting },
+        onGlobalFilterChange: isSearchControlled ? undefined : setGlobalFilter,
         onSortingChange: setSorting,
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
+        getFilteredRowModel: isSearchControlled ? undefined : getFilteredRowModel(),
         getSortedRowModel: getSortedRowModel(),
         initialState: { pagination: { pageSize: 10 } },
     });
 
     const pageCount = table.getPageCount() || 1;
     const pageIndex = table.getState().pagination.pageIndex;
-    const filteredCount = table.getFilteredRowModel().rows.length;
+    const filteredCount = isSearchControlled
+        ? data.length
+        : table.getFilteredRowModel().rows.length;
     const pageItems = useMemo(() => buildPageItems(pageIndex, pageCount), [pageIndex, pageCount]);
+    const showToolbar = showSearch || Boolean(toolbarExtra);
 
     const handleRowClick = (row: TData, cell: Cell<TData, unknown>, event: MouseEvent) => {
         if (!onRowClick) return;
@@ -156,14 +172,19 @@ export function DataTable<TData>({
 
     return (
         <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/20">
-            {showSearch && (
-                <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-3.5 dark:border-slate-800">
-                    <Searchbar
-                        value={globalFilter}
-                        onChange={setGlobalFilter}
-                        placeholder="Search records..."
-                    />
-                    {globalFilter && (
+            {showToolbar && (
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5 dark:border-slate-800">
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+                        {showSearch && (
+                            <Searchbar
+                                value={globalFilter}
+                                onChange={setGlobalFilter}
+                                placeholder={searchPlaceholder}
+                            />
+                        )}
+                        {toolbarExtra}
+                    </div>
+                    {showSearch && globalFilter && (
                         <p className="shrink-0 text-xs text-slate-400">
                             {filteredCount} result{filteredCount === 1 ? '' : 's'}
                         </p>

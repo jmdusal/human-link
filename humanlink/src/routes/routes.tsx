@@ -17,6 +17,8 @@ import {
     FileText,
     Building2,
     IdCard,
+    Briefcase,
+    Layers,
 } from 'lucide-react';
 
 const Overview = lazy(() => import('@/pages/Overview'));
@@ -28,6 +30,8 @@ const PermissionIndex = lazy(() => import('@/pages/permissions/Index'));
 const WorkspaceIndex = lazy(() => import('@/pages/workspaces/Index'));
 
 const LeavePolicyIndex = lazy(() => import('@/pages/leave-policies/Index'));
+const DepartmentIndex = lazy(() => import('@/pages/departments/Index'));
+const JobIndex = lazy(() => import('@/pages/jobs/Index'));
 const ContractTemplateIndex = lazy(() => import('@/pages/contract-templates/Index'));
 const LeaveBalanceIndex = lazy(() => import('@/pages/leave-balances/Index'));
 const LeaveRequestIndex = lazy(() => import('@/pages/leave-requests/Index'));
@@ -105,6 +109,24 @@ export const navItems = [
         icon: <Users size={18} />,
         component: <UserIndex />,
         permission: 'users-view',
+    },
+    {
+        path: '/departments',
+        label: 'Departments',
+        title: 'Departments',
+        category: 'People',
+        icon: <Layers size={18} />,
+        component: <DepartmentIndex />,
+        permission: 'departments-view',
+    },
+    {
+        path: '/jobs',
+        label: 'Jobs',
+        title: 'Jobs',
+        category: 'People',
+        icon: <Briefcase size={18} />,
+        component: <JobIndex />,
+        permission: 'positions-view',
     },
     {
         path: '/contract-templates',

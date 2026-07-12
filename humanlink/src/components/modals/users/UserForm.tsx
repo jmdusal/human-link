@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import ModalForm from '@/components/modals/ModalForm';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
@@ -16,6 +16,8 @@ import {
 import { UserService } from '@/services/UserService';
 import { useRoles } from '@/hooks/use-roles';
 import { useUserTypes } from '@/hooks/use-user-types';
+import { useDepartments } from '@/hooks/use-departments';
+import { usePositions } from '@/hooks/use-positions';
 import { useForm } from '@/hooks/use-form';
 import ModalTabs from '@/components/ui/ModalTabs';
 import {
@@ -38,7 +40,9 @@ export default function UserForm({ isOpen, onClose, onSuccess, selectedUser }: U
     const [activeTab, setActiveTab] = useState('account');
     const { roleOptions } = useRoles(isOpen);
     const { userTypeOptions } = useUserTypes(isOpen);
+    const { departments } = useDepartments(isOpen);
     const form = useForm<UserFormData>(INITIAL_USER_FORM_STATE);
+    const { positions: allPositions } = usePositions(isOpen);
     const isEditing = !!selectedUser;
 
     const TABS = [
@@ -98,6 +102,61 @@ export default function UserForm({ isOpen, onClose, onSuccess, selectedUser }: U
     };
 
     const resetRates = () => handleMonthlyChange(form.formData.monthlyRate);
+
+    const departmentOptions = useMemo(
+        () =>
+            departments
+                .filter((department) =>
+                    department.isActive || String(department.id) === form.formData.departmentId
+                )
+                .map((department) => ({
+                    value: String(department.id),
+                    label: department.name,
+                })),
+        [departments, form.formData.departmentId]
+    );
+
+    const jobOptions = useMemo(() => {
+        if (!form.formData.departmentId) {
+            return [];
+        }
+
+        return allPositions
+            .filter((position) =>
+                String(position.departmentId) === form.formData.departmentId
+                && (position.isActive || String(position.id) === form.formData.positionId)
+            )
+            .map((position) => ({
+                value: String(position.id),
+                label: position.name,
+            }));
+    }, [allPositions, form.formData.departmentId, form.formData.positionId]);
+
+    const handleDepartmentChange = (departmentId: string) => {
+        const selected = departments.find((department) => String(department.id) === departmentId);
+
+        form.setFormData((prev) => ({
+            ...prev,
+            departmentId,
+            department: selected?.name ?? '',
+            positionId: '',
+            jobTitle: '',
+        }));
+    };
+
+    const handleJobChange = (positionId: string) => {
+        const selected = allPositions.find((position) => String(position.id) === positionId);
+
+        form.setFormData((prev) => ({
+            ...prev,
+            positionId,
+            jobTitle: selected?.name ?? '',
+            departmentId: selected
+                ? String(selected.departmentId)
+                : prev.departmentId,
+            department: selected?.department?.name ?? prev.department,
+        }));
+    };
 
     useEffect(() => {
         if (!isOpen) return;
@@ -252,23 +311,33 @@ export default function UserForm({ isOpen, onClose, onSuccess, selectedUser }: U
                             <div>
                                 <h3 className="text-sm font-semibold text-slate-800">Job profile</h3>
                                 <p className="text-xs text-slate-500 mt-0.5">
-                                    Title, department, hire date, and employment type for day-to-day HR.
+                                    Pick a department, then a job title for day-to-day HR.
                                 </p>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Input
-                                    label="Job title"
-                                    placeholder="e.g. Software Engineer"
-                                    value={form.formData.jobTitle}
-                                    onChange={(e) => form.handleChange('jobTitle', e.target.value)}
-                                    error={form.errors.jobTitle?.[0]}
-                                />
-                                <Input
+                                <Select
                                     label="Department"
-                                    placeholder="e.g. Engineering"
-                                    value={form.formData.department}
-                                    onChange={(e) => form.handleChange('department', e.target.value)}
-                                    error={form.errors.department?.[0]}
+                                    options={departmentOptions}
+                                    value={form.formData.departmentId}
+                                    onChange={handleDepartmentChange}
+                                    placeholder={
+                                        departmentOptions.length
+                                            ? 'Select department'
+                                            : 'No departments yet'
+                                    }
+                                />
+                                <Select
+                                    label="Job title"
+                                    options={jobOptions}
+                                    value={form.formData.positionId}
+                                    onChange={handleJobChange}
+                                    placeholder={
+                                        !form.formData.departmentId
+                                            ? 'Select a department first'
+                                            : jobOptions.length
+                                                ? 'Select job'
+                                                : 'No jobs for this department'
+                                    }
                                 />
                                 <DateInput
                                     label="Hire date"

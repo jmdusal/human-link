@@ -60,6 +60,8 @@ class StoreUserRequest extends FormRequest
             'philhealth_number' => ['nullable', 'string', 'max:50'],
             'pagibig_number' => ['nullable', 'string', 'max:50'],
             'tin' => ['nullable', 'string', 'max:50'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+            'position_id' => ['nullable', 'integer', 'exists:positions,id'],
             'job_title' => ['nullable', 'string', 'max:255'],
             'department' => ['nullable', 'string', 'max:255'],
             'employment_type' => ['nullable', Rule::in(['regular', 'probationary', 'contractor'])],

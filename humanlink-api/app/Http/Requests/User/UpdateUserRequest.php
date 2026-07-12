@@ -61,6 +61,8 @@ class UpdateUserRequest extends FormRequest
             'philhealth_number' => ['sometimes', 'nullable', 'string', 'max:50'],
             'pagibig_number' => ['sometimes', 'nullable', 'string', 'max:50'],
             'tin' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'department_id' => ['sometimes', 'nullable', 'integer', 'exists:departments,id'],
+            'position_id' => ['sometimes', 'nullable', 'integer', 'exists:positions,id'],
             'job_title' => ['sometimes', 'nullable', 'string', 'max:255'],
             'department' => ['sometimes', 'nullable', 'string', 'max:255'],
             'employment_type' => ['sometimes', 'nullable', Rule::in(['regular', 'probationary', 'contractor'])],
