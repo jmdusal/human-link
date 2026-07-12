@@ -376,16 +376,16 @@ class User extends Authenticatable implements MustVerifyEmail
             return [(int) $this->id];
         }
 
-        $query = \Illuminate\Support\Facades\DB::table('workspace_users')
-            ->join('users', 'users.id', '=', 'workspace_users.user_id')
-            ->whereIn('workspace_users.workspace_id', $workspaceIds);
+        $query = \Illuminate\Support\Facades\DB::table('workspace_members')
+            ->join('users', 'users.id', '=', 'workspace_members.user_id')
+            ->whereIn('workspace_members.workspace_id', $workspaceIds);
 
         if ($this->company_id !== null) {
             $query->where('users.company_id', $this->company_id);
         }
 
         return $query
-            ->pluck('workspace_users.user_id')
+            ->pluck('workspace_members.user_id')
             ->map(fn ($id): int => (int) $id)
             ->unique()
             ->values()
@@ -489,7 +489,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function workspaces(): BelongsToMany
     {
-        return $this->belongsToMany(Workspace::class, 'workspace_users')
+        return $this->belongsToMany(Workspace::class, 'workspace_members')
             ->withPivot('role')
             ->withTimestamps();
     }

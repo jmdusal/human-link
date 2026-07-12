@@ -8,7 +8,7 @@ use App\Mail\WorkspaceInvitation;
 use App\Mail\WorkspaceInvitationAccepted;
 use App\Models\User;
 use App\Models\Workspace;
-use App\Models\WorkspaceUser;
+use App\Models\WorkspaceMember;
 use App\Notifications\WorkspaceInvitationAcceptedNotification;
 use App\Notifications\WorkspaceInvitationNotification;
 use App\Notifications\WorkspaceRoleChangedNotification;
@@ -26,7 +26,7 @@ trait ManagesWorkspaceMembers
     {
         $workspace->members()->attach(Auth::id(), [
             'role' => 'owner',
-            'status' => WorkspaceUser::STATUS_ACCEPTED,
+            'status' => WorkspaceMember::STATUS_ACCEPTED,
             'accepted_at' => now(),
         ]);
     }
@@ -59,7 +59,7 @@ trait ManagesWorkspaceMembers
 
             $workspace->members()->attach($user->id, [
                 'role' => 'member',
-                'status' => WorkspaceUser::STATUS_PENDING,
+                'status' => WorkspaceMember::STATUS_PENDING,
                 'invitation_token' => $token,
                 'invited_at' => now(),
             ]);
@@ -71,7 +71,7 @@ trait ManagesWorkspaceMembers
 
     protected function syncMembersOnUpdate(Workspace $workspace, array $members): void
     {
-        $existingPivots = WorkspaceUser::query()
+        $existingPivots = WorkspaceMember::query()
             ->where('workspace_id', $workspace->id)
             ->get()
             ->keyBy('user_id');
@@ -96,7 +96,7 @@ trait ManagesWorkspaceMembers
             if ($id === (int) $workspace->owner_id) {
                 $syncData[$id] = [
                     'role' => 'owner',
-                    'status' => WorkspaceUser::STATUS_ACCEPTED,
+                    'status' => WorkspaceMember::STATUS_ACCEPTED,
                     'invitation_token' => null,
                     'invited_at' => $existing?->invited_at,
                     'accepted_at' => $existing?->accepted_at ?? now(),
@@ -107,10 +107,10 @@ trait ManagesWorkspaceMembers
 
             $role = $member['pivot']['role'] ?? $existing?->role ?? 'member';
 
-            if ($existing && $existing->status === WorkspaceUser::STATUS_ACCEPTED) {
+            if ($existing && $existing->status === WorkspaceMember::STATUS_ACCEPTED) {
                 $syncData[$id] = [
                     'role' => $role === 'owner' ? 'member' : $role,
-                    'status' => WorkspaceUser::STATUS_ACCEPTED,
+                    'status' => WorkspaceMember::STATUS_ACCEPTED,
                     'invitation_token' => null,
                     'invited_at' => $existing->invited_at,
                     'accepted_at' => $existing->accepted_at,
@@ -123,7 +123,7 @@ trait ManagesWorkspaceMembers
 
             $syncData[$id] = [
                 'role' => $role === 'owner' ? 'member' : $role,
-                'status' => WorkspaceUser::STATUS_PENDING,
+                'status' => WorkspaceMember::STATUS_PENDING,
                 'invitation_token' => $token,
                 'invited_at' => $existing?->invited_at ?? now(),
                 'accepted_at' => null,
@@ -135,7 +135,7 @@ trait ManagesWorkspaceMembers
 
             $syncData[$workspace->owner_id] = [
                 'role' => 'owner',
-                'status' => WorkspaceUser::STATUS_ACCEPTED,
+                'status' => WorkspaceMember::STATUS_ACCEPTED,
                 'invitation_token' => null,
                 'invited_at' => $ownerPivot?->invited_at,
                 'accepted_at' => $ownerPivot?->accepted_at ?? now(),
@@ -146,7 +146,7 @@ trait ManagesWorkspaceMembers
 
         $newInviteeIds = collect($syncData)
             ->filter(fn (array $pivot, int $userId) => ! $existingPivots->has($userId)
-                && ($pivot['status'] ?? null) === WorkspaceUser::STATUS_PENDING)
+                && ($pivot['status'] ?? null) === WorkspaceMember::STATUS_PENDING)
             ->keys()
             ->all();
 
@@ -166,7 +166,7 @@ trait ManagesWorkspaceMembers
 
     public function acceptInvitation(string $token): Workspace
     {
-        $membership = WorkspaceUser::query()
+        $membership = WorkspaceMember::query()
             ->where('invitation_token', $token)
             ->first();
 
@@ -182,12 +182,12 @@ trait ManagesWorkspaceMembers
 
         $workspace = $membership->workspace()->with(['members', 'statuses', 'tags', 'projects'])->firstOrFail();
 
-        if ($membership->status === WorkspaceUser::STATUS_ACCEPTED) {
+        if ($membership->status === WorkspaceMember::STATUS_ACCEPTED) {
             return $workspace;
         }
 
         $membership->update([
-            'status' => WorkspaceUser::STATUS_ACCEPTED,
+            'status' => WorkspaceMember::STATUS_ACCEPTED,
             'invitation_token' => null,
             'accepted_at' => now(),
         ]);
@@ -207,9 +207,9 @@ trait ManagesWorkspaceMembers
 
     public function declineInvitation(string $token): void
     {
-        $membership = WorkspaceUser::query()
+        $membership = WorkspaceMember::query()
             ->where('invitation_token', $token)
-            ->where('status', WorkspaceUser::STATUS_PENDING)
+            ->where('status', WorkspaceMember::STATUS_PENDING)
             ->first();
 
         if (! $membership) {
@@ -229,12 +229,12 @@ trait ManagesWorkspaceMembers
     {
         $this->assertCanManageWorkspace($workspace);
 
-        $membership = WorkspaceUser::query()
+        $membership = WorkspaceMember::query()
             ->where('workspace_id', $workspace->id)
             ->where('user_id', $user->id)
             ->first();
 
-        if (! $membership || $membership->status !== WorkspaceUser::STATUS_PENDING) {
+        if (! $membership || $membership->status !== WorkspaceMember::STATUS_PENDING) {
             throw new NotFoundHttpException('No pending invitation found for this user.');
         }
 
@@ -259,10 +259,10 @@ trait ManagesWorkspaceMembers
             throw new AccessDeniedHttpException('Cannot cancel the workspace owner membership.');
         }
 
-        $membership = WorkspaceUser::query()
+        $membership = WorkspaceMember::query()
             ->where('workspace_id', $workspace->id)
             ->where('user_id', $user->id)
-            ->where('status', WorkspaceUser::STATUS_PENDING)
+            ->where('status', WorkspaceMember::STATUS_PENDING)
             ->first();
 
         if (! $membership) {
@@ -282,7 +282,7 @@ trait ManagesWorkspaceMembers
             throw new AccessDeniedHttpException('Owners cannot leave the workspace. Transfer ownership or delete it instead.');
         }
 
-        $membership = WorkspaceUser::query()
+        $membership = WorkspaceMember::query()
             ->where('workspace_id', $workspace->id)
             ->where('user_id', $userId)
             ->first();
@@ -313,12 +313,12 @@ trait ManagesWorkspaceMembers
             throw new AccessDeniedHttpException('Workspace members must belong to the same company.');
         }
 
-        $existing = WorkspaceUser::query()
+        $existing = WorkspaceMember::query()
             ->where('workspace_id', $workspace->id)
             ->where('user_id', $userId)
             ->first();
 
-        if ($existing?->status === WorkspaceUser::STATUS_ACCEPTED) {
+        if ($existing?->status === WorkspaceMember::STATUS_ACCEPTED) {
             throw new AccessDeniedHttpException('User is already a member of this workspace.');
         }
 
@@ -327,7 +327,7 @@ trait ManagesWorkspaceMembers
         if ($existing) {
             $existing->update([
                 'role' => $role,
-                'status' => WorkspaceUser::STATUS_PENDING,
+                'status' => WorkspaceMember::STATUS_PENDING,
                 'invitation_token' => $token,
                 'invited_at' => now(),
                 'accepted_at' => null,
@@ -335,7 +335,7 @@ trait ManagesWorkspaceMembers
         } else {
             $workspace->members()->attach($userId, [
                 'role' => $role,
-                'status' => WorkspaceUser::STATUS_PENDING,
+                'status' => WorkspaceMember::STATUS_PENDING,
                 'invitation_token' => $token,
                 'invited_at' => now(),
             ]);
@@ -355,7 +355,7 @@ trait ManagesWorkspaceMembers
             throw new AccessDeniedHttpException('Cannot remove the workspace owner.');
         }
 
-        $membership = WorkspaceUser::query()
+        $membership = WorkspaceMember::query()
             ->where('workspace_id', $workspace->id)
             ->where('user_id', $user->id)
             ->first();
@@ -381,7 +381,7 @@ trait ManagesWorkspaceMembers
             throw new AccessDeniedHttpException('Role must be admin or member.');
         }
 
-        $membership = WorkspaceUser::query()
+        $membership = WorkspaceMember::query()
             ->where('workspace_id', $workspace->id)
             ->where('user_id', $user->id)
             ->first();
@@ -412,10 +412,10 @@ trait ManagesWorkspaceMembers
             throw new AccessDeniedHttpException('User is already the workspace owner.');
         }
 
-        $membership = WorkspaceUser::query()
+        $membership = WorkspaceMember::query()
             ->where('workspace_id', $workspace->id)
             ->where('user_id', $newOwner->id)
-            ->where('status', WorkspaceUser::STATUS_ACCEPTED)
+            ->where('status', WorkspaceMember::STATUS_ACCEPTED)
             ->first();
 
         if (! $membership) {
@@ -427,7 +427,7 @@ trait ManagesWorkspaceMembers
         return DB::transaction(function () use ($workspace, $newOwner, $membership, $previousOwnerId): Workspace {
             $membership->update(['role' => 'owner']);
 
-            WorkspaceUser::query()
+            WorkspaceMember::query()
                 ->where('workspace_id', $workspace->id)
                 ->where('user_id', $previousOwnerId)
                 ->update(['role' => 'admin']);
@@ -451,7 +451,7 @@ trait ManagesWorkspaceMembers
         });
     }
 
-    protected function assertInvitationIsValid(WorkspaceUser $membership): void
+    protected function assertInvitationIsValid(WorkspaceMember $membership): void
     {
         if (! $membership->isInvitationExpired()) {
             return;
@@ -487,10 +487,10 @@ trait ManagesWorkspaceMembers
 
         $recipients = $workspace->members
             ->filter(function (User $user) use ($member): bool {
-                $status = $user->pivot->status ?? WorkspaceUser::STATUS_ACCEPTED;
+                $status = $user->pivot->status ?? WorkspaceMember::STATUS_ACCEPTED;
                 $role = $user->pivot->role ?? null;
 
-                return $status === WorkspaceUser::STATUS_ACCEPTED
+                return $status === WorkspaceMember::STATUS_ACCEPTED
                     && in_array($role, ['owner', 'admin'], true)
                     && (int) $user->id !== (int) $member->id;
             })

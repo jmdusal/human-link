@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Models\WorkspaceUser;
+use App\Models\WorkspaceMember;
 use Illuminate\Console\Command;
 
 class ExpireWorkspaceInvitationsCommand extends Command
@@ -15,10 +15,10 @@ class ExpireWorkspaceInvitationsCommand extends Command
 
     public function handle(): int
     {
-        $cutoff = now()->subDays(WorkspaceUser::INVITATION_TTL_DAYS);
+        $cutoff = now()->subDays(WorkspaceMember::INVITATION_TTL_DAYS);
 
-        $expired = WorkspaceUser::query()
-            ->where('status', WorkspaceUser::STATUS_PENDING)
+        $expired = WorkspaceMember::query()
+            ->where('status', WorkspaceMember::STATUS_PENDING)
             ->where(function ($query) use ($cutoff): void {
                 $query->where('invited_at', '<=', $cutoff)
                     ->orWhere(function ($inner) use ($cutoff): void {

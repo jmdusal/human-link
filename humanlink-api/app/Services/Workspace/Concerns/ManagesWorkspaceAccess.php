@@ -6,7 +6,7 @@ namespace App\Services\Workspace\Concerns;
 
 use App\Models\User;
 use App\Models\Workspace;
-use App\Models\WorkspaceUser;
+use App\Models\WorkspaceMember;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -30,7 +30,7 @@ trait ManagesWorkspaceAccess
 
         $member = $workspace->members->first(
             fn (User $member) => $member->id === $user->id
-                && ($member->pivot->status ?? WorkspaceUser::STATUS_ACCEPTED) === WorkspaceUser::STATUS_ACCEPTED
+                && ($member->pivot->status ?? WorkspaceMember::STATUS_ACCEPTED) === WorkspaceMember::STATUS_ACCEPTED
         ) ?? $workspace->acceptedMembers()->where('users.id', $user->id)->first();
 
         return $member?->pivot?->role;
@@ -57,7 +57,7 @@ trait ManagesWorkspaceAccess
 
         $isAcceptedMember = $workspace->members->contains(
             fn (User $member) => $member->id === $user->id
-                && ($member->pivot->status ?? WorkspaceUser::STATUS_ACCEPTED) === WorkspaceUser::STATUS_ACCEPTED
+                && ($member->pivot->status ?? WorkspaceMember::STATUS_ACCEPTED) === WorkspaceMember::STATUS_ACCEPTED
         ) || $workspace->acceptedMembers()->where('users.id', $user->id)->exists();
 
         if (! $isAcceptedMember) {

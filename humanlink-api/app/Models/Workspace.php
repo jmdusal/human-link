@@ -137,7 +137,7 @@ class Workspace extends Model
 
     public function members(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'workspace_users')
+        return $this->belongsToMany(User::class, 'workspace_members')
             ->select(['users.id', 'users.name', 'users.email', 'users.status'])
             ->withPivot(['role', 'status', 'invited_at', 'accepted_at'])
             ->withTimestamps();
@@ -145,7 +145,7 @@ class Workspace extends Model
 
     public function acceptedMembers(): BelongsToMany
     {
-        return $this->members()->wherePivot('status', WorkspaceUser::STATUS_ACCEPTED);
+        return $this->members()->wherePivot('status', WorkspaceMember::STATUS_ACCEPTED);
     }
 
     public function tags(): HasMany

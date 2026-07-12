@@ -12,10 +12,10 @@ class CompanySeeder extends Seeder
     public function run(): void
     {
         Company::query()->updateOrCreate(
-            ['slug' => 'humanlink'],
+            ['slug' => 'local-company'],
             [
-                'name' => 'HumanLink',
-                'legal_name' => 'HumanLink',
+                'name' => 'Local Company',
+                'legal_name' => 'Local Company',
                 'timezone' => 'Asia/Manila',
             ]
         );

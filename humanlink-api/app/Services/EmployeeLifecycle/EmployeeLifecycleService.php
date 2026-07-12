@@ -11,7 +11,7 @@ use App\Models\EmployeeChecklistItem;
 use App\Models\LeaveBalance;
 use App\Models\User;
 use App\Models\UserDocument;
-use App\Models\WorkspaceUser;
+use App\Models\WorkspaceMember;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -144,9 +144,9 @@ class EmployeeLifecycleService implements EmployeeLifecycleServiceInterface
             $doneKeys[] = 'assign_leave_balances';
         }
 
-        $hasWorkspaceAccess = WorkspaceUser::query()
+        $hasWorkspaceAccess = WorkspaceMember::query()
             ->where('user_id', $user->id)
-            ->where('status', WorkspaceUser::STATUS_ACCEPTED)
+            ->where('status', WorkspaceMember::STATUS_ACCEPTED)
             ->exists();
 
         if ($hasWorkspaceAccess) {
@@ -200,7 +200,7 @@ class EmployeeLifecycleService implements EmployeeLifecycleServiceInterface
                 $user->tokens()->delete();
             }
 
-            WorkspaceUser::query()->where('user_id', $user->id)->delete();
+            WorkspaceMember::query()->where('user_id', $user->id)->delete();
 
             $this->markChecklistItemsDone($checklist, ['access_revoke', 'deactivate_account']);
 

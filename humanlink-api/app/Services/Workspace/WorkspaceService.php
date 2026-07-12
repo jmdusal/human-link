@@ -8,7 +8,7 @@ use App\Contracts\WorkspaceServiceInterface;
 use App\Models\TaskActivity;
 use App\Models\TaskComment;
 use App\Models\Workspace;
-use App\Models\WorkspaceUser;
+use App\Models\WorkspaceMember;
 use App\Services\Workspace\Concerns\ManagesWorkspaceAccess;
 use App\Services\Workspace\Concerns\ManagesWorkspaceMembers;
 use App\Support\CompanyContext;
@@ -62,7 +62,7 @@ class WorkspaceService implements WorkspaceServiceInterface
             $query->whereHas(
                 'members',
                 fn ($q) => $q->where('users.id', Auth::id())
-                    ->where('workspace_users.status', WorkspaceUser::STATUS_ACCEPTED)
+                    ->where('workspace_members.status', WorkspaceMember::STATUS_ACCEPTED)
             );
         }
 

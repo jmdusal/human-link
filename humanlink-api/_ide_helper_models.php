@@ -852,21 +852,21 @@ namespace App\Models{
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\User $user
  * @property-read \App\Models\Workspace $workspace
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser whereAcceptedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser whereInvitationToken($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser whereInvitedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser whereRole($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser whereUserId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceUser whereWorkspaceId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember whereAcceptedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember whereInvitationToken($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember whereInvitedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember whereRole($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember whereUserId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember whereWorkspaceId($value)
  * @mixin \Eloquent
  */
-	class WorkspaceUser extends \Eloquent {}
+	class WorkspaceMember extends \Eloquent {}
 }
 

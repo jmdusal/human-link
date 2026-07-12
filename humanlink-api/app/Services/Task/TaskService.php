@@ -8,7 +8,7 @@ use App\Contracts\TaskServiceInterface;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\Workspace;
-use App\Models\WorkspaceUser;
+use App\Models\WorkspaceMember;
 use App\Services\Task\Concerns\LogsTaskActivity;
 use App\Services\Task\Concerns\ManagesTaskAssignees;
 use App\Services\Task\Concerns\ManagesTaskTags;
@@ -160,7 +160,7 @@ class TaskService implements TaskServiceInterface
         return Workspace::query()
             ->whereHas('members', function ($query): void {
                 $query->where('users.id', Auth::id())
-                    ->where('workspace_users.status', WorkspaceUser::STATUS_ACCEPTED);
+                    ->where('workspace_members.status', WorkspaceMember::STATUS_ACCEPTED);
             })
             ->pluck('id')
             ->all();

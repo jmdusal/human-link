@@ -1,0 +1,98 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+/**
+ * @property int $id
+ * @property int $workspace_id
+ * @property int $user_id
+ * @property string $role
+ * @property string $status
+ * @property string|null $invitation_token
+ * @property \Illuminate\Support\Carbon|null $invited_at
+ * @property \Illuminate\Support\Carbon|null $accepted_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\User $user
+ * @property-read \App\Models\Workspace $workspace
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember whereAcceptedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember whereInvitationToken($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember whereInvitedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember whereRole($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember whereUserId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkspaceMember whereWorkspaceId($value)
+ * @mixin \Eloquent
+ */
+class WorkspaceMember extends Model
+{
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUS_ACCEPTED = 'accepted';
+
+    public const INVITATION_TTL_DAYS = 7;
+
+    protected $fillable = [
+        'workspace_id',
+        'user_id',
+        'role',
+        'status',
+        'invitation_token',
+        'invited_at',
+        'accepted_at',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'invited_at' => 'datetime',
+            'accepted_at' => 'datetime',
+        ];
+    }
+
+    public function workspace(): BelongsTo
+    {
+        return $this->belongsTo(Workspace::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function isPending(): bool
+    {
+        return $this->status === self::STATUS_PENDING;
+    }
+
+    public function isAccepted(): bool
+    {
+        return $this->status === self::STATUS_ACCEPTED;
+    }
+
+    public function isInvitationExpired(): bool
+    {
+        if (! $this->isPending()) {
+            return false;
+        }
+
+        $invitedAt = $this->invited_at ?? $this->created_at;
+
+        if (! $invitedAt) {
+            return false;
+        }
+
+        return $invitedAt->lte(now()->subDays(self::INVITATION_TTL_DAYS));
+    }
+}
