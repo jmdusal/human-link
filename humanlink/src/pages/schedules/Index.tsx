@@ -15,7 +15,7 @@ import { ScheduleService } from '@/services/ScheduleService';
 export default function ScheduleIndex() {
     const { can, hasRole, user } = useAuth();
     const canManageSchedules = hasRole('super-admin')
-        || user?.userType === 'hr'
+        || user?.accessScope === 'company'
         || can('users-edit')
         || can('schedules-create')
         || can('schedules-edit');
@@ -116,7 +116,7 @@ export default function ScheduleIndex() {
                             : 'View your weekly shifts and rest days.'}
                     </p>
                 </div>
-                {canManageSchedules && (can('schedules-create') || can('users-edit') || hasRole('super-admin') || user?.userType === 'hr') && (
+                {canManageSchedules && (can('schedules-create') || can('users-edit') || hasRole('super-admin') || user?.accessScope === 'company') && (
                     <Button variant="primary" icon={Plus} onClick={handleCreate}>
                         New Schedule
                     </Button>
@@ -168,7 +168,7 @@ export default function ScheduleIndex() {
                 scrollToDay={scrollToDay}
                 canEdit={canManageSchedules}
                 onEditSchedule={handleEditSchedule}
-                onDeleteSchedule={can('schedules-delete') || hasRole('super-admin') || user?.userType === 'hr' || can('users-edit')
+                onDeleteSchedule={can('schedules-delete') || hasRole('super-admin') || user?.accessScope === 'company' || can('users-edit')
                     ? handleDeleteClick
                     : undefined}
             />

@@ -7,8 +7,10 @@ namespace App\Services\User;
 use App\Contracts\UserServiceInterface;
 use App\Contracts\EmployeeLifecycleServiceInterface;
 use App\Contracts\UserDocumentServiceInterface;
+use App\Enums\AccessScope;
 use App\Models\Project;
 use App\Models\User;
+use App\Models\UserType;
 use App\Models\Workspace;
 use App\Notifications\NewActivityNotification;
 use App\Notifications\ResetPasswordNotification;
@@ -17,7 +19,6 @@ use App\Services\User\Concerns\ManagesUserLeaveBalances;
 use App\Services\User\Concerns\ManagesUserRates;
 use App\Services\User\Concerns\ManagesUserSchedules;
 use App\Support\CompanyContext;
-use App\Support\UserTypePermissions;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
@@ -40,7 +41,7 @@ class UserService implements UserServiceInterface
     public function list(): Collection
     {
         $query = User::query()
-            ->with(['roles', 'details', 'rate', 'schedule', 'leaveBalances', 'checklists', 'documents'])
+            ->with(['roles', 'details', 'rate', 'schedule', 'leaveBalances', 'checklists', 'documents', 'assignedUserType:id,name,slug,access_scope'])
             ->whereDoesntHave('roles', function ($query): void {
                 $query->where('name', 'super-admin');
             });
@@ -62,12 +63,14 @@ class UserService implements UserServiceInterface
                 ? (int) $data['company_id']
                 : $this->companyContext->requireId();
 
+            $this->applyUserTypeAssignment($payload, (int) $payload['company_id'], $data, defaultEmployee: true);
+
             if (empty($payload['hired_at'])) {
                 $payload['hired_at'] = now()->toDateString();
             }
 
             if ($sendInvite) {
-                // Always generate server-side; empty form passwords become null via ConvertEmptyStringsToNull.
+                // empty form passwords become null via ConvertEmptyStringsToNull.
                 $payload['password'] = Str::password(32);
                 $payload['must_set_password'] = true;
             } else {
@@ -105,12 +108,13 @@ class UserService implements UserServiceInterface
 
             if ($sendInvite) {
                 $token = Password::broker()->createToken($user);
-                $user->notify(new ResetPasswordNotification($token, isInvite: true));
+                // Strip eager-loaded relations so queue restore doesn't depend on them.
+                $user->withoutRelations()->notify(new ResetPasswordNotification($token, isInvite: true));
             } elseif (! $user->hasVerifiedEmail()) {
                 $user->sendEmailVerificationNotification();
             }
 
-            return $user->load(['roles', 'details', 'rate', 'schedule', 'leaveBalances.leavePolicy', 'checklists', 'documents']);
+            return $user->load(['roles', 'details', 'rate', 'schedule', 'leaveBalances.leavePolicy', 'checklists', 'documents', 'assignedUserType:id,name,slug,access_scope']);
         });
     }
 
@@ -121,6 +125,10 @@ class UserService implements UserServiceInterface
             $previousEmploymentType = $user->details?->employment_type;
 
             $payload = $this->userPayload($data);
+            $companyId = (int) ($user->company_id ?? $this->companyContext->requireId());
+            if (array_key_exists('user_type_id', $data) || array_key_exists('user_type', $data)) {
+                $this->applyUserTypeAssignment($payload, $companyId, $data);
+            }
 
             if (array_key_exists('status', $payload)) {
                 $payload['is_active'] = $payload['status'] === 'active';
@@ -158,7 +166,7 @@ class UserService implements UserServiceInterface
                 );
             }
 
-            return $user->load(['roles', 'details', 'rate', 'schedule', 'leaveBalances', 'checklists', 'documents']);
+            return $user->load(['roles', 'details', 'rate', 'schedule', 'leaveBalances', 'checklists', 'documents', 'assignedUserType:id,name,slug,access_scope']);
         });
     }
 
@@ -180,7 +188,7 @@ class UserService implements UserServiceInterface
         $user->forceFill(['must_set_password' => true])->save();
 
         $token = Password::broker()->createToken($user);
-        $user->notify(new ResetPasswordNotification($token, isInvite: true));
+        $user->withoutRelations()->notify(new ResetPasswordNotification($token, isInvite: true));
 
         $user->refresh();
 
@@ -194,7 +202,7 @@ class UserService implements UserServiceInterface
         $user->forceFill(['must_set_password' => true])->save();
 
         $token = Password::broker()->createToken($user);
-        $user->notify(new ResetPasswordNotification($token, isInvite: false));
+        $user->withoutRelations()->notify(new ResetPasswordNotification($token, isInvite: false));
 
         $user->refresh();
 
@@ -269,14 +277,15 @@ class UserService implements UserServiceInterface
     public function listManagers(): Collection
     {
         $query = User::query()
-            ->where('user_type', 'manager')
+            ->whereAccessScope(AccessScope::Workspace)
             ->where('status', 'active');
 
         $this->companyContext->constrain($query);
 
         return $query
+            ->with('assignedUserType:id,name,slug,access_scope')
             ->orderBy('name')
-            ->get(['id', 'name', 'email', 'user_type']);
+            ->get(['id', 'name', 'email', 'user_type', 'user_type_id']);
     }
 
     protected function userPayload(array $data): array
@@ -290,9 +299,52 @@ class UserService implements UserServiceInterface
             'is_active',
             'status',
             'user_type',
+            'user_type_id',
             'hired_at',
             'terminated_at',
         ]));
+    }
+
+    /**
+     * Resolve user_type_id + denormalized user_type slug from request input.
+     *
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $data
+     */
+    protected function applyUserTypeAssignment(
+        array &$payload,
+        int $companyId,
+        array $data,
+        bool $defaultEmployee = false
+    ): void {
+        $typeId = $data['user_type_id'] ?? $payload['user_type_id'] ?? null;
+        $slug = $data['user_type'] ?? $payload['user_type'] ?? null;
+
+        if ($typeId === null && $slug === null) {
+            if (! $defaultEmployee) {
+                return;
+            }
+
+            $slug = 'employee';
+        }
+
+        $userType = UserType::query()
+            ->where('company_id', $companyId)
+            ->when(
+                $typeId !== null,
+                fn ($query) => $query->whereKey((int) $typeId),
+                fn ($query) => $query->where('slug', (string) $slug),
+            )
+            ->first();
+
+        if (! $userType) {
+            throw ValidationException::withMessages([
+                'user_type_id' => ['Selected user type is invalid for this company.'],
+            ]);
+        }
+
+        $payload['user_type_id'] = $userType->id;
+        $payload['user_type'] = $userType->slug;
     }
 
     protected function guardAccountIsActionable(User $user, string $action): void
@@ -314,6 +366,12 @@ class UserService implements UserServiceInterface
             return;
         }
 
-        $user->syncPermissions(UserTypePermissions::for($user->user_type));
+        $user->loadMissing('assignedUserType.permissions:id,name');
+
+        $permissionNames = $user->assignedUserType?->permissions
+            ?->pluck('name')
+            ->all() ?? [];
+
+        $user->syncPermissions($permissionNames);
     }
 }

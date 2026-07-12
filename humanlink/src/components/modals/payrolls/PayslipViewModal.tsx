@@ -45,8 +45,8 @@ export default function PayslipViewModal({
     payslip: initialPayslip,
     onPayslipUpdated,
 }: PayslipViewModalProps) {
-    const { can, hasRole, user } = useAuth();
-    const canAdjust = hasRole('super-admin') || user?.userType === 'hr' || can('payrolls-edit') || can('payrolls-create');
+    const { hasRole, user } = useAuth();
+    const canAdjust = hasRole('super-admin') || user?.accessScope === 'company';
 
     const [payslip, setPayslip] = useState<Payslip | null>(initialPayslip);
     const [downloading, setDownloading] = useState(false);
@@ -194,7 +194,9 @@ export default function PayslipViewModal({
                 <div id="payslip-print" className="p-6 space-y-6">
                     <div className="flex items-start justify-between gap-4">
                         <div>
-                            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Human Link</p>
+                            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                {user?.company?.name || 'Company'}
+                            </p>
                             <h3 className="text-xl font-bold text-slate-900 mt-1">Employee Payslip</h3>
                             <p className="text-sm text-slate-500 mt-1">{monthLabel(payslip.year, payslip.month)}</p>
                         </div>

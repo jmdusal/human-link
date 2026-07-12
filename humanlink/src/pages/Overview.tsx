@@ -26,7 +26,7 @@ interface StatProps {
 export default function Overview() {
     const navigate = useNavigate();
     const { can, user, hasRole, loading: authLoading } = useAuth();
-    const isAdminView = can('users-view') || hasRole('super-admin') || user?.userType === 'hr';
+    const isAdminView = can('users-view') || hasRole('super-admin') || user?.accessScope === 'company';
     const canViewWorkspaces = can('workspaces-view');
 
     const { workspaces, loading: wLoading } = useWorkspaces(!authLoading && canViewWorkspaces);
@@ -391,7 +391,7 @@ export default function Overview() {
                                 <div className="flex justify-between items-center mb-6">
                                     <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
                                         <History size={16} className="text-blue-500" />
-                                        System Activity
+                                        Audit Log
                                     </h3>
                                     <button
                                         type="button"

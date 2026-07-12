@@ -3,7 +3,7 @@ import { navItems } from '@/routes/routes';
 import { useAuth } from '@/context/AuthContext';
 import { NavItem } from '@/components/layouts/NavItem';
 import { NavParent } from '@/components/layouts/NavParent';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 
 type NavEntry = (typeof navItems)[number] & {
     category?: string;
@@ -32,16 +32,29 @@ interface SidebarProps {
 export default function Sidebar({
     isCollapsed = false,
 }: SidebarProps) {
-    const { can } = useAuth();
+    const { can, hasRole, user } = useAuth();
+    const isHrNav = hasRole('super-admin') || user?.accessScope === 'company';
 
     const groupedItems = useMemo(() => {
-        const allowed = (navItems as NavEntry[]).filter((item) => {
-            const hasPermission = !item.permission || can(item.permission);
-            const isNotHidden = !item.hidden && !item.hideFromNav;
-            const notHiddenByCapability = !item.hideIfCan || !can(item.hideIfCan);
+        const allowed = (navItems as NavEntry[])
+            .filter((item) => {
+                const hasPermission = !item.permission || can(item.permission);
+                const isNotHidden = !item.hidden && !item.hideFromNav;
+                const notHiddenByCapability = !item.hideIfCan || !can(item.hideIfCan);
+                // Company-wide reports belong in HR view only
+                const isHrOnlyReport = item.path === '/reports' && !isHrNav;
 
-            return hasPermission && isNotHidden && notHiddenByCapability;
-        });
+                return hasPermission && isNotHidden && notHiddenByCapability && !isHrOnlyReport;
+            })
+            .map((item) => {
+                if (!isHrNav && item.path === '/payrolls') {
+                    return { ...item, label: 'My Payslips', title: 'My Payslips' };
+                }
+                if (!isHrNav && item.path === '/attendances') {
+                    return { ...item, label: 'My Attendance', title: 'My Attendance' };
+                }
+                return item;
+            });
 
         const groups = new Map<string, NavEntry[]>();
 
@@ -59,7 +72,7 @@ export default function Sidebar({
                 category,
                 items: groups.get(category)!,
             }));
-    }, [can]);
+    }, [can, isHrNav]);
 
     const showCategoryLabel = (category: string, index: number) => {
         if (isCollapsed) return false;
@@ -68,18 +81,23 @@ export default function Sidebar({
     };
 
     return (
-        <aside className={`relative ${isCollapsed ? 'w-20' : 'w-64'} bg-[#F0F2F5] border-r border-slate-300/50 flex flex-col p-4 transition-all duration-300 ease-in-out h-screen sticky top-0`}>
-            <div className="flex items-center gap-3 px-2 mb-8">
-                <div className="h-8 w-8 bg-blue-600 rounded-lg shadow-lg flex items-center justify-center text-white font-bold shrink-0">
+        <aside
+            className={`sticky top-0 flex h-screen flex-col border-r border-slate-200/80 bg-white transition-all duration-300 ease-out dark:border-slate-800 dark:bg-slate-900 ${
+                isCollapsed ? 'w-[72px]' : 'w-60'
+            }`}
+        >
+            <div className={`flex h-14 shrink-0 items-center gap-2.5 border-b border-slate-100 dark:border-slate-800 ${isCollapsed ? 'justify-center px-2' : 'px-4'}`}>
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-[11px] font-bold tracking-tight text-white shadow-sm shadow-blue-600/20">
                     HL
                 </div>
-                <AnimatePresence>
+                <AnimatePresence initial={false}>
                     {!isCollapsed && (
                         <motion.span
-                            initial={{ opacity: 0, x: -10 }}
+                            initial={{ opacity: 0, x: -6 }}
                             animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -10 }}
-                            className="text-xl font-bold tracking-tight whitespace-nowrap"
+                            exit={{ opacity: 0, x: -6 }}
+                            transition={{ duration: 0.18, ease: 'easeOut' }}
+                            className="truncate text-[15px] font-semibold tracking-tight text-slate-800 dark:text-slate-100"
                         >
                             HumanLink
                         </motion.span>
@@ -87,11 +105,11 @@ export default function Sidebar({
                 </AnimatePresence>
             </div>
 
-            <nav className="flex-1 overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar space-y-4">
+            <nav className={`custom-scrollbar flex-1 space-y-5 overflow-x-hidden overflow-y-auto py-4 ${isCollapsed ? 'px-2' : 'px-3'}`}>
                 {groupedItems.map(({ category, items }, groupIndex) => (
-                    <div key={category} className="space-y-1">
+                    <div key={category} className="space-y-0.5">
                         {showCategoryLabel(category, groupIndex) && (
-                            <p className="px-4 pt-1 pb-1 text-[10px] font-bold text-black/40 uppercase tracking-widest">
+                            <p className="px-3 pb-1.5 pt-0.5 text-[11px] font-medium tracking-wide text-slate-400">
                                 {category}
                             </p>
                         )}
@@ -99,7 +117,7 @@ export default function Sidebar({
                         {items.map((item) => {
                             if (item.children && item.children.length > 0) {
                                 const visibleChildren = item.children.filter(
-                                    (child) => !child.permission || can(child.permission)
+                                    (child) => !child.permission || can(child.permission),
                                 );
 
                                 if (visibleChildren.length === 0) {

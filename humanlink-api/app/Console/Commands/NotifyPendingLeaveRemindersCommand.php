@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Enums\AccessScope;
 use App\Models\LeaveRequest;
 use App\Models\User;
 use App\Notifications\LeavePendingReminderNotification;
@@ -39,12 +40,12 @@ class NotifyPendingLeaveRemindersCommand extends Command
                     fn ($query) => $query->where('company_id', $requester->company_id),
                 )
                 ->where(function ($query) use ($workspaceMemberIds): void {
-                    $query->where('user_type', 'hr')
+                    $query->whereAccessScope(AccessScope::Company)
                         ->orWhereHas('roles', function ($roles): void {
                             $roles->where('name', 'super-admin');
                         })
                         ->orWhere(function ($managers) use ($workspaceMemberIds): void {
-                            $managers->where('user_type', 'manager')
+                            $managers->whereAccessScope(AccessScope::Workspace)
                                 ->whereIn('id', $workspaceMemberIds);
                         });
                 })

@@ -92,6 +92,8 @@ use Spatie\Activitylog\Models\Activity as SpatieActivity;
  */
 class Activity extends SpatieActivity
 {
+    protected $table = 'audit_logs';
+
     protected static function booted(): void
     {
         static::creating(function (self $activity): void {

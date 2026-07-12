@@ -159,10 +159,6 @@ export default function WorkspaceIndex() {
                 <TextCell title={info.row.original.projectsCount ?? info.row.original.projects?.length ?? 0} />
             ),
         }),
-        columnHelper.accessor('createdAt', {
-            header: 'Created',
-            cell: (info) => <DateCell date={info.getValue()} dateOnly />,
-        }),
         columnHelper.display({
             id: 'actions',
             size: 50,

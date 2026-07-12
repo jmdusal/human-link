@@ -66,8 +66,8 @@ export default function LeaveRequestReviewModal({
     if (!isOpen) return null;
 
     const canReview = (
-        user?.userType === 'manager'
-        || user?.userType === 'hr'
+        user?.accessScope === 'workspace'
+        || user?.accessScope === 'company'
         || hasRole('super-admin')
         || can('users-edit')
     ) && can('leave-requests-edit');

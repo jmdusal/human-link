@@ -10,7 +10,7 @@ class LeavePolicySeeder extends Seeder
 {
     public function run(): void
     {
-        $companyId = Company::query()->where('slug', 'humanlink')->value('id');
+        $companyId = Company::query()->where('slug', 'local-company')->value('id');
 
         if (! $companyId) {
             return;

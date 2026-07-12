@@ -322,9 +322,11 @@ class PayrollService implements PayrollServiceInterface
     public function downloadPdf(Payslip $payslip): Response
     {
         $payslip = $this->show($payslip);
+        $payslip->loadMissing('user.company:id,name');
 
         $pdf = Pdf::loadView('payslips.pdf', [
             'payslip' => $payslip,
+            'companyName' => $payslip->user?->company?->name,
         ]);
 
         $label = $payslip->isThirteenthMonth()
@@ -572,6 +574,6 @@ class PayrollService implements PayrollServiceInterface
             return false;
         }
 
-        return $user->isElevatedStaff() || $user->can('users-edit');
+        return $user->hasRole('super-admin') || $user->hasCompanyAccessScope();
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Company;
 
 use App\Contracts\CompanyServiceInterface;
+use App\Contracts\UserTypeServiceInterface;
 use App\Models\Company;
 use App\Models\ContractTemplate;
 use App\Models\LeavePolicy;
@@ -18,7 +19,8 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 class CompanyService implements CompanyServiceInterface
 {
     public function __construct(
-        private CompanyContext $companyContext
+        private CompanyContext $companyContext,
+        private UserTypeServiceInterface $userTypeService
     ) {}
 
     public function list(): Collection
@@ -125,7 +127,8 @@ class CompanyService implements CompanyServiceInterface
 
         $company = Company::query()->findOrFail($companyId);
 
-        $user->forceFill(['company_id' => $company->id])->save();
+        // Company context switch is operational, not an auditable user change.
+        $user->forceFill(['company_id' => $company->id])->saveQuietly();
 
         return $company->fresh();
     }
@@ -179,5 +182,7 @@ class CompanyService implements CompanyServiceInterface
                 ]
             );
         }
+
+        $this->userTypeService->provisionDefaults($company);
     }
 }

@@ -16,7 +16,7 @@
     </style>
 </head>
 <body>
-    <h1>Human Link Payslip</h1>
+    <h1>{{ $companyName ?: 'Company' }} Payslip</h1>
     <p class="muted">
         @if($payslip->month === 13)
             13th Month Pay — {{ $payslip->year }}

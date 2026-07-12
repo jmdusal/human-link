@@ -73,34 +73,39 @@ export default function ProjectsTab({
                     </p>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center bg-slate-100/50 p-1 rounded-xl border border-slate-200/60">
+                <div className="flex w-full flex-wrap items-center gap-3 md:w-auto md:flex-nowrap">
+                    <div className="flex shrink-0 items-center rounded-xl border border-slate-200/60 bg-slate-100/50 p-1">
                         <button
+                            type="button"
                             onClick={() => setViewMode('grid')}
-                            className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`rounded-lg p-2 transition-all ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                             aria-label="Grid view"
                         >
                             <LayoutGrid size={18} />
                         </button>
                         <button
+                            type="button"
                             onClick={() => setViewMode('list')}
-                            className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`rounded-lg p-2 transition-all ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                             aria-label="List view"
                         >
                             <List size={18} />
                         </button>
                     </div>
 
-                    <Searchbar
-                        value={searchQuery}
-                        onChange={handleSearch}
-                        placeholder="Filter projects..."
-                    />
+                    <div className="min-w-0 flex-1 md:w-64 md:flex-none">
+                        <Searchbar
+                            value={searchQuery}
+                            onChange={handleSearch}
+                            placeholder="Filter projects..."
+                        />
+                    </div>
 
                     {canManageProjects && (
                         <Button
                             variant="primary"
                             icon={Plus}
+                            className="shrink-0 whitespace-nowrap"
                             onClick={() => {
                                 setSelectedProject(null);
                                 setIsProjectFormOpen(true);

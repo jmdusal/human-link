@@ -41,25 +41,25 @@ export default function MyAttendanceList({ data, loading, liveElapsedMs, onDispu
     });
 
     return (
-        <Card className="border-slate-200 !p-0 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100">
+        <Card className="flex h-full min-h-[420px] flex-col overflow-hidden border-slate-200 !p-0 xl:min-h-0">
+            <div className="shrink-0 border-b border-slate-100 px-6 py-4">
                 <h3 className="text-sm font-bold text-slate-800">Attendance records</h3>
-                <p className="text-xs text-slate-400 mt-0.5">Days you were present this month.</p>
+                <p className="mt-0.5 text-xs text-slate-400">Days you were present this month.</p>
             </div>
 
             {loading ? (
-                <div className="px-6 py-10 text-center text-sm text-slate-400 font-medium">
+                <div className="flex flex-1 items-center justify-center px-6 py-10 text-center text-sm font-medium text-slate-400">
                     Loading records...
                 </div>
             ) : rows.length === 0 ? (
-                <div className="px-6 py-10 text-center text-sm text-slate-400 font-medium">
+                <div className="flex flex-1 items-center justify-center px-6 py-10 text-center text-sm font-medium text-slate-400">
                     No attendance records yet.
                 </div>
             ) : (
-                <div className="overflow-x-auto">
+                <div className="min-h-0 flex-1 overflow-auto">
                     <table className="w-full text-left">
-                        <thead>
-                            <tr className="border-b border-slate-100 bg-slate-50/70">
+                        <thead className="sticky top-0 z-10">
+                            <tr className="border-b border-slate-100 bg-slate-50/95 backdrop-blur-sm">
                                 <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Date</th>
                                 <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Started</th>
                                 <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Ended</th>
@@ -67,7 +67,7 @@ export default function MyAttendanceList({ data, loading, liveElapsedMs, onDispu
                                 <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Flags</th>
                                 <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
                                 {onDispute && (
-                                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-right">
+                                    <th className="px-6 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-slate-400">
                                         Actions
                                     </th>
                                 )}
@@ -93,41 +93,41 @@ export default function MyAttendanceList({ data, loading, liveElapsedMs, onDispu
                                                 {formatSimpleDate(dateKey)}
                                             </div>
                                             {isToday && (
-                                                <div className="text-[10px] font-bold uppercase tracking-wider text-blue-500 mt-0.5">
+                                                <div className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-500">
                                                     Today
                                                 </div>
                                             )}
                                         </td>
-                                        <td className="px-6 py-3.5 text-sm font-medium text-slate-600 tabular-nums">
+                                        <td className="px-6 py-3.5 text-sm font-medium tabular-nums text-slate-600">
                                             {formatTime(item.startedAt)}
                                         </td>
-                                        <td className="px-6 py-3.5 text-sm font-medium text-slate-600 tabular-nums">
+                                        <td className="px-6 py-3.5 text-sm font-medium tabular-nums text-slate-600">
                                             {formatTime(item.endedAt)}
                                         </td>
-                                        <td className="px-6 py-3.5 text-sm font-bold text-slate-700 tabular-nums">
+                                        <td className="px-6 py-3.5 text-sm font-bold tabular-nums text-slate-700">
                                             {formatDuration(totalMs)}
                                         </td>
                                         <td className="px-6 py-3.5">
                                             <div className="flex flex-wrap gap-1">
                                                 {(item.lateMs ?? 0) > 0 && (
-                                                    <span className="inline-flex text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-rose-50 text-rose-600">
+                                                    <span className="inline-flex rounded bg-rose-50 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-rose-600">
                                                         Late
                                                     </span>
                                                 )}
                                                 {(item.overtimeMs ?? 0) > 0 && (
-                                                    <span className="inline-flex text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600">
+                                                    <span className="inline-flex rounded bg-indigo-50 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-indigo-600">
                                                         OT
                                                     </span>
                                                 )}
                                                 {(item.undertimeMs ?? 0) > 0 && item.status === 'completed' && (
-                                                    <span className="inline-flex text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-50 text-amber-600">
+                                                    <span className="inline-flex rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-600">
                                                         UT
                                                     </span>
                                                 )}
                                             </div>
                                         </td>
                                         <td className="px-6 py-3.5">
-                                            <span className={`inline-flex text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-lg ${statusStyles(item.status)}`}>
+                                            <span className={`inline-flex rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-wider ${statusStyles(item.status)}`}>
                                                 {item.status}
                                             </span>
                                         </td>

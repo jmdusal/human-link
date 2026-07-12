@@ -78,6 +78,7 @@ class RoleSeeder extends Seeder
     protected function syncAllUserTypePermissions(): void
     {
         \App\Models\User::query()
+            ->with('assignedUserType.permissions:id,name')
             ->whereDoesntHave('roles', function ($query): void {
                 $query->where('name', 'super-admin');
             })
@@ -86,7 +87,12 @@ class RoleSeeder extends Seeder
                     $user->assignRole('user');
                 }
 
-                $user->syncPermissions(UserTypePermissions::for($user->user_type));
+                $permissionNames = $user->assignedUserType?->permissions
+                    ?->pluck('name')
+                    ->all()
+                    ?? UserTypePermissions::for($user->user_type);
+
+                $user->syncPermissions($permissionNames);
             });
     }
 }

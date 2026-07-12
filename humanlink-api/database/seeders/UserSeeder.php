@@ -3,10 +3,11 @@
 namespace Database\Seeders;
 
 use App\Models\Company;
-use App\Support\UserTypePermissions;
-use Illuminate\Database\Seeder;
 use App\Models\LeavePolicy;
 use App\Models\User;
+use App\Models\UserType;
+use App\Support\UserTypePermissions;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
@@ -19,6 +20,10 @@ class UserSeeder extends Seeder
             return;
         }
 
+        $typeIds = UserType::query()
+            ->where('company_id', $companyId)
+            ->pluck('id', 'slug');
+
         $admin = User::updateOrCreate(
             ['email' => 'admin@admin.com'],
             [
@@ -30,6 +35,7 @@ class UserSeeder extends Seeder
                 'is_active' => true,
                 'status' => 'active',
                 'user_type' => null,
+                'user_type_id' => null,
             ]
         );
         $admin->syncRoles(['super-admin']);
@@ -46,6 +52,7 @@ class UserSeeder extends Seeder
                 'is_active' => true,
                 'status' => 'active',
                 'user_type' => 'hr',
+                'user_type_id' => $typeIds['hr'] ?? null,
             ]
         );
         $hr->syncRoles(['user']);
@@ -63,6 +70,7 @@ class UserSeeder extends Seeder
                 'is_active' => true,
                 'status' => 'active',
                 'user_type' => 'manager',
+                'user_type_id' => $typeIds['manager'] ?? null,
             ]
         );
         $manager->syncRoles(['user']);
@@ -80,6 +88,7 @@ class UserSeeder extends Seeder
                 'is_active' => true,
                 'status' => 'active',
                 'user_type' => 'employee',
+                'user_type_id' => $typeIds['employee'] ?? null,
             ]
         );
         $employee->syncRoles(['user']);

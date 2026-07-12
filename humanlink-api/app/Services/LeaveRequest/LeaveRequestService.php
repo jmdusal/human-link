@@ -6,6 +6,7 @@ namespace App\Services\LeaveRequest;
 
 use App\Contracts\LeaveRequestServiceInterface;
 use App\Contracts\PayrollServiceInterface;
+use App\Enums\AccessScope;
 use App\Models\LeaveBalance;
 use App\Models\LeavePolicy;
 use App\Models\LeaveRequest;
@@ -160,15 +161,6 @@ class LeaveRequestService implements LeaveRequestServiceInterface
 
         if ($userId !== (int) $actor->id && ! $actor->canAccessUserId($userId)) {
             abort(403, 'You can only create leave requests for users in your company.');
-        }
-
-        if (
-            (int) $actor->id === $userId
-            && ! $actor->isEmployeeType()
-            && ! $actor->isManagerType()
-            && ! $actor->isHrType()
-        ) {
-            abort(403, 'Only employees, managers, and HR can submit leave requests.');
         }
 
         $user = User::query()->findOrFail($userId);
@@ -405,12 +397,12 @@ class LeaveRequestService implements LeaveRequestServiceInterface
                 fn ($query) => $query->where('company_id', $requester->company_id),
             )
             ->where(function ($query) use ($workspaceMemberIds): void {
-                $query->where('user_type', 'hr')
+                $query->whereAccessScope(AccessScope::Company)
                     ->orWhereHas('roles', function ($roles): void {
                         $roles->where('name', 'super-admin');
                     })
                     ->orWhere(function ($managers) use ($workspaceMemberIds): void {
-                        $managers->where('user_type', 'manager')
+                        $managers->whereAccessScope(AccessScope::Workspace)
                             ->whereIn('id', $workspaceMemberIds);
                     });
             })

@@ -14,7 +14,7 @@ export const LoadingSpinner = ({ fullPage = false }: LoadingSpinnerProps) => {
 
     if (fullPage) {
         return (
-            <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-[#F0F2F5]">
+            <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-white dark:bg-slate-950">
                 {spinner}
             </div>
         );

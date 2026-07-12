@@ -2,9 +2,12 @@
 
 namespace App\Models;
 
+use App\Enums\AccessScope;
 use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -122,6 +125,11 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read \App\Models\UserDocument|null $latestContract
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User forCompany(int $companyId)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereCompanyId($value)
+ * @property int|null $user_type_id
+ * @property-read \App\Models\UserType|null $assignedUserType
+ * @property-read string $access_scope
+ * @method static Builder<static>|User whereAccessScope(\App\Enums\AccessScope|string $scope)
+ * @method static Builder<static>|User whereUserTypeId($value)
  * @mixin \Eloquent
  */
 class User extends Authenticatable implements MustVerifyEmail
@@ -139,6 +147,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at',
         'status',
         'user_type',
+        'user_type_id',
         'hired_at',
         'terminated_at',
         'timer_started_at',
@@ -159,6 +168,7 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $appends = [
         'has_two_factor_enabled',
         'hr_status',
+        'access_scope',
     ];
 
     protected function casts(): array
@@ -292,7 +302,6 @@ class User extends Authenticatable implements MustVerifyEmail
         return LogOptions::defaults()
             ->logOnly(['name', 'email'])
             ->logOnlyDirty();
-            // ->dontSubmitEmptyLogs();
     }
 
     public function sendPasswordResetNotification($token): void
@@ -343,24 +352,73 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(LeaveRequest::class);
     }
 
+    public function assignedUserType(): BelongsTo
+    {
+        return $this->belongsTo(UserType::class, 'user_type_id');
+    }
+
+    public function getAccessScopeAttribute(): string
+    {
+        $this->loadMissing('assignedUserType:id,access_scope');
+
+        return $this->assignedUserType?->access_scope?->value
+            ?? match ($this->user_type) {
+                'hr' => AccessScope::Company->value,
+                'manager' => AccessScope::Workspace->value,
+                default => AccessScope::Self->value,
+            };
+    }
+
+    public function accessScope(): AccessScope
+    {
+        return AccessScope::from($this->access_scope);
+    }
+
+    public function hasCompanyAccessScope(): bool
+    {
+        return $this->accessScope() === AccessScope::Company;
+    }
+
+    public function hasWorkspaceAccessScope(): bool
+    {
+        return $this->accessScope() === AccessScope::Workspace;
+    }
+
+    public function hasSelfAccessScope(): bool
+    {
+        return $this->accessScope() === AccessScope::Self;
+    }
+
     public function isManagerType(): bool
     {
-        return $this->user_type === 'manager';
+        return $this->hasWorkspaceAccessScope();
     }
 
     public function isEmployeeType(): bool
     {
-        return $this->user_type === 'employee';
+        return $this->hasSelfAccessScope();
     }
 
     public function isHrType(): bool
     {
-        return $this->user_type === 'hr';
+        return $this->hasCompanyAccessScope();
     }
 
     public function isElevatedStaff(): bool
     {
-        return $this->hasRole('super-admin') || $this->isHrType();
+        return $this->hasRole('super-admin') || $this->hasCompanyAccessScope();
+    }
+
+    /**
+     * Filter users whose assigned type uses the given data-access scope (single join, no N+1).
+     */
+    public function scopeWhereAccessScope(Builder $query, AccessScope|string $scope): Builder
+    {
+        $value = $scope instanceof AccessScope ? $scope->value : $scope;
+
+        return $query->whereHas('assignedUserType', function (Builder $typeQuery) use ($value): void {
+            $typeQuery->where('access_scope', $value);
+        });
     }
 
     /**
@@ -409,14 +467,14 @@ class User extends Authenticatable implements MustVerifyEmail
             return true;
         }
 
-        if ($this->isHrType()) {
+        if ($this->hasCompanyAccessScope()) {
             return static::query()
                 ->whereKey($userId)
                 ->where('company_id', $this->company_id)
                 ->exists();
         }
 
-        if ($this->isManagerType()) {
+        if ($this->hasWorkspaceAccessScope()) {
             return in_array($userId, $this->sharedWorkspaceMemberIds(), true);
         }
 
@@ -440,7 +498,7 @@ class User extends Authenticatable implements MustVerifyEmail
                 ->all();
         }
 
-        if ($this->isHrType()) {
+        if ($this->hasCompanyAccessScope()) {
             return static::query()
                 ->where('company_id', $this->company_id)
                 ->pluck('id')
@@ -448,7 +506,7 @@ class User extends Authenticatable implements MustVerifyEmail
                 ->all();
         }
 
-        if ($this->isManagerType()) {
+        if ($this->hasWorkspaceAccessScope()) {
             return $this->sharedWorkspaceMemberIds();
         }
 

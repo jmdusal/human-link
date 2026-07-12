@@ -12,6 +12,7 @@ class PermissionSeeder extends Seeder
     {
         $models = [
             'users',
+            'user-types',
             'roles',
             'permissions',
             'workspaces',

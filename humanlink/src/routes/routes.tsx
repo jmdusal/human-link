@@ -16,12 +16,14 @@ import {
     Umbrella,
     FileText,
     Building2,
+    IdCard,
 } from 'lucide-react';
 
 const Overview = lazy(() => import('@/pages/Overview'));
 const ActivityLogIndex = lazy(() => import('@/pages/activity-logs/Index'));
 const UserIndex = lazy(() => import('@/pages/users/Index'));
 const RoleIndex = lazy(() => import('@/pages/roles/Index'));
+const UserTypeIndex = lazy(() => import('@/pages/user-types/Index'));
 const PermissionIndex = lazy(() => import('@/pages/permissions/Index'));
 const WorkspaceIndex = lazy(() => import('@/pages/workspaces/Index'));
 
@@ -195,6 +197,15 @@ export const navItems = [
 
     // --- Access (super-admin) ---
     {
+        path: '/user-types',
+        label: 'User Types',
+        title: 'User Type Management',
+        category: 'Access',
+        icon: <IdCard size={18} />,
+        component: <UserTypeIndex />,
+        permission: 'user-types-view',
+    },
+    {
         path: '/roles',
         label: 'Roles',
         title: 'Role Management',
@@ -225,8 +236,8 @@ export const navItems = [
     },
     {
         path: '/activity-logs',
-        label: 'Activity Logs',
-        title: 'Activity Logs',
+        label: 'Audit Logs',
+        title: 'Audit Logs',
         category: 'System',
         icon: <History size={18} />,
         component: <ActivityLogIndex />,

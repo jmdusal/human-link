@@ -20,6 +20,8 @@ interface SelectProps {
     wrapLabels?: boolean;
     /** Open menu above the trigger (useful in footers / near page bottom) */
     menuPlacement?: 'top' | 'bottom';
+    /** Compact trigger for toolbars / table footers */
+    size?: 'default' | 'sm';
 }
 
 export default function Select({
@@ -32,6 +34,7 @@ export default function Select({
     menuMaxHeightClass = 'max-h-48',
     wrapLabels = false,
     menuPlacement = 'bottom',
+    size = 'default',
 }: SelectProps) {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -68,19 +71,21 @@ export default function Select({
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
                 className={`
-                    w-full flex items-center justify-between gap-3 px-3 py-2.5 bg-white border rounded-md text-sm
+                    w-full flex items-center justify-between bg-white border rounded-md
                     transition-all duration-150 outline-none shadow-sm
+                    dark:bg-slate-900
+                    ${size === 'sm' ? 'gap-1.5 px-2.5 py-1.5 text-xs' : 'gap-3 px-3 py-2.5 text-sm'}
                     ${isOpen
                         ? 'border-blue-500 ring-1 ring-blue-500/20'
-                        : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                        : 'border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-600'
                     }
                 `}
             >
-                <span className={`text-left ${wrapLabels ? 'break-all' : 'truncate'} ${selectedOption ? 'text-slate-900 font-medium' : 'text-slate-400'}`}>
+                <span className={`text-left ${wrapLabels ? 'break-all' : 'truncate'} ${selectedOption ? 'text-slate-900 font-medium dark:text-slate-100' : 'text-slate-400'}`}>
                     {selectedOption?.label || placeholder}
                 </span>
                 <ChevronDown
-                    size={16}
+                    size={size === 'sm' ? 14 : 16}
                     className={`text-slate-400 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
                 />
             </button>
@@ -91,6 +96,7 @@ export default function Select({
                     className={`
                         absolute z-[60] w-full bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden
                         animate-in fade-in duration-200
+                        dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/40
                         ${openUp
                             ? 'bottom-full mb-1.5 slide-in-from-bottom-1'
                             : 'top-full mt-1.5 slide-in-from-top-1'

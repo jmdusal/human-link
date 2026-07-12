@@ -18,7 +18,7 @@ function localDateKey(year: number, monthIndex: number, day: number): string {
 
 export default function AttendanceIndex() {
     const { can, hasRole, user } = useAuth();
-    const isAdminView = hasRole('super-admin') || user?.userType === 'hr' || can('users-edit');
+    const isAdminView = hasRole('super-admin') || user?.accessScope === 'company' || can('users-edit');
 
     const [currentDate, setCurrentDate] = useState(new Date());
     const [disputeAttendance, setDisputeAttendance] = useState<Attendance | null>(null);
@@ -90,33 +90,36 @@ export default function AttendanceIndex() {
 
     if (!isAdminView) {
         return (
-            <div className="w-full max-w-3xl mx-auto space-y-6">
+            <div className="w-full space-y-6">
                 <div>
                     <h1 className="text-2xl font-black text-slate-800 tracking-tight">My Attendance</h1>
                     <p className="text-sm text-slate-500 mt-1">Track and control your work time for today.</p>
                 </div>
-                <MyAttendanceTimer
-                    timer={timer}
-                    displayMs={displayMs}
-                    remainingMs={remainingMs}
-                    canEnd={canEnd}
-                    canStop={canStop}
-                    canContinue={canContinue}
-                    isCompletedToday={isCompletedToday}
-                    loading={timerLoading}
-                    actionLoading={actionLoading}
-                    onStart={start}
-                    onPause={pause}
-                    onResume={resume}
-                    onEnd={end}
-                    onContinue={continueTime}
-                />
-                <MyAttendanceList
-                    data={attendances}
-                    loading={listLoading}
-                    liveElapsedMs={displayMs}
-                    onDispute={openDispute}
-                />
+
+                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:items-stretch xl:h-[min(640px,calc(100vh-12rem))]">
+                    <MyAttendanceTimer
+                        timer={timer}
+                        displayMs={displayMs}
+                        remainingMs={remainingMs}
+                        canEnd={canEnd}
+                        canStop={canStop}
+                        canContinue={canContinue}
+                        isCompletedToday={isCompletedToday}
+                        loading={timerLoading}
+                        actionLoading={actionLoading}
+                        onStart={start}
+                        onPause={pause}
+                        onResume={resume}
+                        onEnd={end}
+                        onContinue={continueTime}
+                    />
+                    <MyAttendanceList
+                        data={attendances}
+                        loading={listLoading}
+                        liveElapsedMs={displayMs}
+                        onDispute={openDispute}
+                    />
+                </div>
 
                 <AnimatePresence>
                     {isDisputeOpen && (

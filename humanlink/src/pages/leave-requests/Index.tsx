@@ -25,12 +25,12 @@ export default function LeaveRequestIndex() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
 
-    const isManagerView = user?.userType === 'manager'
-        || user?.userType === 'hr'
+    const isManagerView = user?.accessScope === 'workspace'
+        || user?.accessScope === 'company'
         || hasRole('super-admin')
         || can('users-edit');
 
-    const canRequestLeave = Boolean(user?.userType) && can('leave-requests-create');
+    const canRequestLeave = can('leave-requests-create');
 
     const handleAdd = () => {
         setSelectedLeaveRequest(null);

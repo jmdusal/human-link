@@ -6,6 +6,7 @@ export type { User, UserFormData, UserLeaveBalanceSummary, UserType, HrStatus } 
 export type { UserDetail, EmploymentType } from '@/types/UserDetail';
 export type { UserDocument, UserDocumentType } from '@/types/UserDocument';
 export type { Role, RoleFormData } from '@/types/Role';
+export type { AccessScope, UserTypeRecord, UserTypeFormData } from '@/types/UserTypeRecord';
 export type { Permission, PermissionFormData } from '@/types/Permission';
 export type { Workspace, WorkspaceFormData } from '@/types/Workspace';
 export type { Project, ProjectFormData, ProjectTemplate } from '@/types/Project';

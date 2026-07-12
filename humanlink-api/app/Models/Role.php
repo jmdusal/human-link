@@ -67,6 +67,5 @@ class Role extends SpatieRole
         return LogOptions::defaults()
             ->logOnly(['name', 'guard_name'])
             ->logOnlyDirty();
-            // ->dontSubmitEmptyLogs();
     }
 }

@@ -74,9 +74,7 @@ class Permission extends SpatiePermission
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            // ->logAll()
             ->logOnly(['name', 'guard_name'])
             ->logOnlyDirty();
-            // ->dontSubmitEmptyLogs();
     }
 }

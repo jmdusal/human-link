@@ -16,7 +16,9 @@ export interface User {
     email: string;
     roles: string[];
     permissions: string[];
-    userType?: 'employee' | 'hr' | 'manager' | null;
+    userType?: string | null;
+    userTypeId?: number | null;
+    accessScope?: 'self' | 'workspace' | 'company' | null;
     company_id?: number;
     company?: Company | null;
 }

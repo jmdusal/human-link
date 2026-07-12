@@ -11,12 +11,6 @@ export const DAYS_NAME = [
     'Saturday'
 ];
 
-export const USER_TYPE_OPTIONS = [
-    { value: 'employee', label: 'Employee' },
-    { value: 'hr', label: 'HR' },
-    { value: 'manager', label: 'Manager' },
-];
-
 export const EMPLOYMENT_TYPE_OPTIONS = [
     { value: 'regular', label: 'Regular' },
     { value: 'probationary', label: 'Probationary' },
@@ -41,7 +35,7 @@ export const INITIAL_USER_FORM_STATE: UserFormData = {
     sendInvite: true,
     role: 'user',
     status: 'active',
-    userType: 'employee',
+    userTypeId: '',
     hiredAt: getToday(),
     jobTitle: '',
     department: '',
@@ -66,7 +60,7 @@ export const INITIAL_USER_FORM_STATE: UserFormData = {
 
 export const formatUserFormData = (user: User): UserFormData => {
     const today = getToday();
-    const { rate, schedule, roles, name, email, status, userType, details, hiredAt } = user;
+    const { rate, schedule, roles, name, email, status, userTypeId, details, hiredAt } = user;
     const mainStartDate = schedule?.startDate || today;
     const displaySchedules = schedule?.weeklyData?.length ? schedule.weeklyData : createEmptySchedules(today);
 
@@ -77,7 +71,7 @@ export const formatUserFormData = (user: User): UserFormData => {
         password: '',
         sendInvite: false,
         role: roles?.[0]?.name || 'user',
-        userType: userType ?? '',
+        userTypeId: userTypeId ? String(userTypeId) : '',
         hiredAt: hiredAt || today,
         jobTitle: details?.jobTitle ?? '',
         department: details?.department ?? '',

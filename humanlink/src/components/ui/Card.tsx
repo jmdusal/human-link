@@ -8,8 +8,8 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const variants = {
-    default: 'p-6 border border-slate-100 rounded-2xl bg-white shadow-sm',
-    section: 'p-8 border border-slate-100 rounded-3xl bg-white shadow-sm',
+    default: 'p-6 border border-slate-100 rounded-2xl bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900',
+    section: 'p-8 border border-slate-100 rounded-3xl bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900',
 };
 
 export default function Card({

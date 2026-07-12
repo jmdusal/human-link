@@ -2,11 +2,12 @@ import { useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { createColumnHelper } from '@tanstack/react-table';
 import { AnimatePresence } from 'framer-motion';
-import { Eye, FileSpreadsheet, Trash2, UserRound, Wallet } from 'lucide-react';
+import { ChevronRight, Eye, FileSpreadsheet, Inbox, Trash2, UserRound, Wallet } from 'lucide-react';
 import { DataTable } from '@/components/shared/Datatable';
 import TableActions from '@/components/shared/TableActions';
 import { TextCell, UserCell } from '@/components/shared/TableCells';
 import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
 import Select from '@/components/ui/Select';
 import GenerateIndividualPayslipModal from '@/components/modals/payrolls/GenerateIndividualPayslipModal';
 import MonthlyPayrollSummaryModal from '@/components/modals/payrolls/MonthlyPayrollSummaryModal';
@@ -53,9 +54,139 @@ function toAmount(value: string | number): number {
     return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function MyPayslipsView({
+    payslips,
+    loading,
+    year,
+    month,
+    yearOptions,
+    onYearChange,
+    onMonthChange,
+    onView,
+}: {
+    payslips: Payslip[];
+    loading: boolean;
+    year: number;
+    month: number;
+    yearOptions: { label: string; value: string }[];
+    onYearChange: (year: number) => void;
+    onMonthChange: (month: number) => void;
+    onView: (payslip: Payslip) => void;
+}) {
+    const payslip = payslips[0] ?? null;
+
+    return (
+        <div className="w-full space-y-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-slate-800">My Payslips</h1>
+                    <p className="text-sm font-medium text-slate-400">
+                        View your payslip for each pay period.
+                    </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <div className="w-[110px]">
+                        <Select
+                            options={yearOptions}
+                            value={String(year)}
+                            onChange={(value) => onYearChange(Number(value))}
+                            placeholder="Year"
+                            size="sm"
+                        />
+                    </div>
+                    <div className="w-[160px]">
+                        <Select
+                            options={MONTH_OPTIONS}
+                            value={String(month)}
+                            onChange={(value) => onMonthChange(Number(value))}
+                            placeholder="Month"
+                            size="sm"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {loading ? (
+                <Card className="border-slate-200">
+                    <div className="animate-pulse space-y-4">
+                        <div className="h-5 w-40 rounded bg-slate-100" />
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                            <div className="h-16 rounded-xl bg-slate-50" />
+                            <div className="h-16 rounded-xl bg-slate-50" />
+                            <div className="h-16 rounded-xl bg-slate-50" />
+                            <div className="h-16 rounded-xl bg-slate-50" />
+                        </div>
+                    </div>
+                </Card>
+            ) : !payslip ? (
+                <Card className="border-slate-200 !py-5">
+                    <div className="flex items-center gap-4">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-50 text-slate-300">
+                            <Inbox size={18} strokeWidth={1.75} />
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-slate-700">
+                                No payslip for {periodLabel(year, month)}
+                            </p>
+                            <p className="mt-0.5 text-xs text-slate-400">
+                                When payroll is generated for this period, it will show up here.
+                            </p>
+                        </div>
+                    </div>
+                </Card>
+            ) : (
+                <button
+                    type="button"
+                    onClick={() => onView(payslip)}
+                    className="group w-full cursor-pointer rounded-2xl border border-slate-200 bg-white p-0 text-left shadow-sm transition-all hover:border-blue-200 hover:shadow-md"
+                >
+                    <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+                        <div>
+                            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                Pay period
+                            </p>
+                            <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-800">
+                                {periodLabel(payslip.year, payslip.month)}
+                            </h2>
+                        </div>
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 transition-colors group-hover:bg-blue-100">
+                            View
+                            <ChevronRight size={14} />
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 px-6 py-5 sm:grid-cols-4">
+                        <div className="rounded-xl bg-slate-50/80 px-3.5 py-3">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Days</p>
+                            <p className="mt-1 text-sm font-bold tabular-nums text-slate-800">{payslip.daysWorked}</p>
+                        </div>
+                        <div className="rounded-xl bg-slate-50/80 px-3.5 py-3">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Hours</p>
+                            <p className="mt-1 text-sm font-bold tabular-nums text-slate-800">{payslip.hoursWorked}</p>
+                        </div>
+                        <div className="rounded-xl bg-slate-50/80 px-3.5 py-3">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Gross</p>
+                            <p className="mt-1 text-sm font-bold tabular-nums text-slate-800">
+                                ₱{formatCurrency(payslip.grossPay)}
+                            </p>
+                        </div>
+                        <div className="rounded-xl bg-blue-50/70 px-3.5 py-3">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-blue-500">Net pay</p>
+                            <p className="mt-1 text-base font-bold tabular-nums text-blue-700">
+                                ₱{formatCurrency(payslip.netPay ?? 0)}
+                            </p>
+                        </div>
+                    </div>
+                </button>
+            )}
+        </div>
+    );
+}
+
 export default function PayrollIndex() {
     const { can, hasRole, user } = useAuth();
-    const canManage = hasRole('super-admin') || user?.userType === 'hr' || can('users-edit') || can('payrolls-create');
+    const canManage = hasRole('super-admin') || user?.accessScope === 'company';
 
     const now = useMemo(() => new Date(), []);
     const [year, setYear] = useState(() => now.getFullYear());
@@ -81,9 +212,9 @@ export default function PayrollIndex() {
     const [isDeleting, setIsDeleting] = useState(false);
 
     const selectOptions = useMemo(
-        () => userOptions.map((user) => ({
-            label: `${user.name} (${user.email})`,
-            value: String(user.id),
+        () => userOptions.map((option) => ({
+            label: `${option.name} (${option.email})`,
+            value: String(option.id),
         })),
         [userOptions],
     );
@@ -182,7 +313,7 @@ export default function PayrollIndex() {
                 <button
                     type="button"
                     onClick={() => handleView(info.row.original)}
-                    className="text-left w-full -m-1 p-1 rounded-lg hover:bg-slate-50/80 transition-colors cursor-pointer border-none bg-transparent"
+                    className="-m-1 w-full cursor-pointer rounded-lg border-none bg-transparent p-1 text-left transition-colors hover:bg-slate-50/80"
                 >
                     <UserCell
                         name={info.getValue()}
@@ -231,7 +362,7 @@ export default function PayrollIndex() {
                 <TableActions
                     actions={[
                         {
-                            label: 'View Payslip',
+                            label: 'View',
                             icon: Eye,
                             onClick: () => handleView(info.row.original),
                             show: true,
@@ -249,99 +380,8 @@ export default function PayrollIndex() {
         }),
     ], [can]);
 
-    return (
-        <div className="w-full">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Payroll</h1>
-                    <p className="text-slate-400 text-sm font-medium">
-                        Generate monthly payslips from attendance and employee rates (PHP).
-                    </p>
-                </div>
-
-                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <div className="w-[110px]">
-                            <Select
-                                options={yearOptions}
-                                value={String(year)}
-                                onChange={(value) => setYear(Number(value))}
-                                placeholder="Year"
-                            />
-                        </div>
-                        <div className="w-[160px]">
-                            <Select
-                                options={MONTH_OPTIONS}
-                                value={String(month)}
-                                onChange={(value) => setMonth(Number(value))}
-                                placeholder="Month"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                        {canManage && month !== 13 && (
-                            <Button
-                                variant="primary"
-                                icon={FileSpreadsheet}
-                                onClick={handleGenerateAll}
-                                loading={isGenerating}
-                            >
-                                Generate All
-                            </Button>
-                        )}
-                        <Button
-                            variant="secondary"
-                            icon={Wallet}
-                            onClick={() => setIsSummaryOpen(true)}
-                            disabled={payslips.length === 0}
-                        >
-                            Full Summary
-                        </Button>
-                        {canManage && (
-                            <>
-                                {month !== 13 && (
-                                    <Button
-                                        variant="secondary"
-                                        icon={UserRound}
-                                        onClick={() => setIsGenerateIndividualOpen(true)}
-                                    >
-                                        Individual
-                                    </Button>
-                                )}
-                                <Button
-                                    variant="secondary"
-                                    icon={Wallet}
-                                    onClick={handleGenerate13th}
-                                    loading={isGenerating}
-                                >
-                                    13th Month
-                                </Button>
-                            </>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {payslips.length > 0 && (
-                <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <p className="text-sm text-slate-500 font-medium">
-                        {periodLabel(year, month)}
-                    </p>
-                    <p className="text-sm font-bold text-slate-800">
-                        Gross: ₱{formatCurrency(monthTotals.grossPay)} · Net: ₱{formatCurrency(monthTotals.netPay)}
-                    </p>
-                </div>
-            )}
-
-            <DataTable
-                columns={columns}
-                data={payslips}
-                loading={loading}
-                showSearch={true}
-                countLabel={`${payslips.length} ${payslips.length === 1 ? 'payslip' : 'payslips'}`}
-            />
-
+    const modals = (
+        <>
             <AnimatePresence>
                 {isViewOpen && (
                     <PayslipViewModal
@@ -396,6 +436,117 @@ export default function PayrollIndex() {
                     />
                 )}
             </AnimatePresence>
+        </>
+    );
+
+    if (!canManage) {
+        return (
+            <>
+                <MyPayslipsView
+                    payslips={payslips}
+                    loading={loading}
+                    year={year}
+                    month={month}
+                    yearOptions={yearOptions}
+                    onYearChange={setYear}
+                    onMonthChange={setMonth}
+                    onView={handleView}
+                />
+                {modals}
+            </>
+        );
+    }
+
+    return (
+        <div className="w-full">
+            <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-slate-800">Payroll</h1>
+                    <p className="text-sm font-medium text-slate-400">
+                        Generate monthly payslips from attendance and employee rates (PHP).
+                    </p>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+                    <div className="flex w-full items-center gap-2 sm:w-auto">
+                        <div className="w-[110px]">
+                            <Select
+                                options={yearOptions}
+                                value={String(year)}
+                                onChange={(value) => setYear(Number(value))}
+                                placeholder="Year"
+                            />
+                        </div>
+                        <div className="w-[160px]">
+                            <Select
+                                options={MONTH_OPTIONS}
+                                value={String(month)}
+                                onChange={(value) => setMonth(Number(value))}
+                                placeholder="Month"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                        {month !== 13 && (
+                            <Button
+                                variant="primary"
+                                icon={FileSpreadsheet}
+                                onClick={handleGenerateAll}
+                                loading={isGenerating}
+                            >
+                                Generate All
+                            </Button>
+                        )}
+                        <Button
+                            variant="secondary"
+                            icon={Wallet}
+                            onClick={() => setIsSummaryOpen(true)}
+                            disabled={payslips.length === 0}
+                        >
+                            Full Summary
+                        </Button>
+                        {month !== 13 && (
+                            <Button
+                                variant="secondary"
+                                icon={UserRound}
+                                onClick={() => setIsGenerateIndividualOpen(true)}
+                            >
+                                Individual
+                            </Button>
+                        )}
+                        <Button
+                            variant="secondary"
+                            icon={Wallet}
+                            onClick={handleGenerate13th}
+                            loading={isGenerating}
+                        >
+                            13th Month
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            {payslips.length > 0 && (
+                <div className="mb-4 flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm font-medium text-slate-500">
+                        {periodLabel(year, month)}
+                    </p>
+                    <p className="text-sm font-bold text-slate-800">
+                        Gross: ₱{formatCurrency(monthTotals.grossPay)} · Net: ₱{formatCurrency(monthTotals.netPay)}
+                    </p>
+                </div>
+            )}
+
+            <DataTable
+                columns={columns}
+                data={payslips}
+                loading={loading}
+                showSearch
+                countLabel={`${payslips.length} ${payslips.length === 1 ? 'payslip' : 'payslips'}`}
+            />
+
+            {modals}
         </div>
     );
 }

@@ -209,7 +209,9 @@ export default function UserProfile({ isOpen, onClose, data, onEdit }: UserProfi
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Role / type</p>
                                                     <p className="text-sm font-semibold text-slate-800 truncate">
                                                         {roleName || 'Unassigned'}
-                                                        {data.userType ? ` · ${data.userType}` : ''}
+                                                        {data.assignedUserType?.name || data.userType
+                                                            ? ` · ${data.assignedUserType?.name || data.userType}`
+                                                            : ''}
                                                     </p>
                                                 </div>
                                             </div>

@@ -11,11 +11,11 @@ import {
     formatUserFormData,
     INITIAL_USER_FORM_STATE,
     DAYS_NAME,
-    USER_TYPE_OPTIONS,
     EMPLOYMENT_TYPE_OPTIONS,
 } from '@/utils/userUtils';
 import { UserService } from '@/services/UserService';
 import { useRoles } from '@/hooks/use-roles';
+import { useUserTypes } from '@/hooks/use-user-types';
 import { useForm } from '@/hooks/use-form';
 import ModalTabs from '@/components/ui/ModalTabs';
 import {
@@ -37,6 +37,7 @@ interface UserFormProps {
 export default function UserForm({ isOpen, onClose, onSuccess, selectedUser }: UserFormProps) {
     const [activeTab, setActiveTab] = useState('account');
     const { roleOptions } = useRoles(isOpen);
+    const { userTypeOptions } = useUserTypes(isOpen);
     const form = useForm<UserFormData>(INITIAL_USER_FORM_STATE);
     const isEditing = !!selectedUser;
 
@@ -108,6 +109,21 @@ export default function UserForm({ isOpen, onClose, onSuccess, selectedUser }: U
         form.setFormData(state);
         setActiveTab('account');
     }, [isOpen, selectedUser, form.setFormData]);
+
+    useEffect(() => {
+        if (!isOpen || selectedUser || form.formData.userTypeId || userTypeOptions.length === 0) {
+            return;
+        }
+
+        const employeeOption = userTypeOptions.find((option) =>
+            option.label.toLowerCase() === 'employee'
+        );
+
+        form.setFormData((prev) => ({
+            ...prev,
+            userTypeId: employeeOption?.value || userTypeOptions[0].value,
+        }));
+    }, [isOpen, selectedUser, userTypeOptions, form.formData.userTypeId, form.setFormData]);
 
     return (
         <ModalForm
@@ -210,11 +226,11 @@ export default function UserForm({ isOpen, onClose, onSuccess, selectedUser }: U
                                 />
                                 <Select
                                     label="User type"
-                                    options={USER_TYPE_OPTIONS}
-                                    value={form.formData.userType}
+                                    options={userTypeOptions}
+                                    value={form.formData.userTypeId}
                                     onChange={(val) => form.setFormData({
                                         ...form.formData,
-                                        userType: val as UserFormData['userType'],
+                                        userTypeId: val,
                                     })}
                                 />
                                 <div className="md:col-span-2">

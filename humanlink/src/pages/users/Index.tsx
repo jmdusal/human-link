@@ -31,7 +31,7 @@ import { useAuth } from '@/context/AuthContext';
 import type { HrStatus, User } from '@/types';
 import { UserService } from '@/services/UserService';
 import { useUsers } from '@/hooks/use-users';
-import { StatusBadge, UserCell, RoleBadge, TextCell, DateCell } from '@/components/shared/TableCells';
+import { StatusBadge, UserCell, RoleBadge, TextCell } from '@/components/shared/TableCells';
 import { getInitials } from '@/utils/userUtils';
 import { AnimatePresence } from 'framer-motion';
 
@@ -49,9 +49,10 @@ const HR_STATUS_FILTERS: { value: HrStatusFilter; label: string }[] = [
     { value: 'offboarding', label: 'Offboarding' },
 ];
 
-function formatUserType(userType?: string | null): string {
-    if (!userType) return '';
-    return userType.charAt(0).toUpperCase() + userType.slice(1);
+function formatUserType(user: { userType?: string | null; assignedUserType?: { name?: string } | null }): string {
+    const label = user.assignedUserType?.name || user.userType;
+    if (!label) return '';
+    return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 const CONFIRM_COPY: Record<ConfirmAction, {
@@ -146,7 +147,7 @@ export default function UserIndex() {
                 || user.email.toLowerCase().includes(query)
                 || (user.details?.jobTitle ?? '').toLowerCase().includes(query)
                 || (user.details?.department ?? '').toLowerCase().includes(query)
-                || (user.userType ?? '').toLowerCase().includes(query)
+                || (user.assignedUserType?.name ?? user.userType ?? '').toLowerCase().includes(query)
                 || user.status.toLowerCase().includes(query)
                 || hrStatus.toLowerCase().includes(query);
         });
@@ -302,33 +303,28 @@ export default function UserIndex() {
             cell: (info) => {
                 const user = info.row.original;
                 return (
-                    <button
-                        type="button"
-                        onClick={() => handleView(user)}
-                        className="text-left w-full -m-1 p-1 rounded-lg hover:bg-slate-50/80 transition-colors cursor-pointer border-none bg-transparent"
-                    >
-                        <UserCell
-                            name={info.getValue()}
-                            email={user.email}
-                            subtitle={user.details?.jobTitle}
-                        />
-                    </button>
+                    <UserCell
+                        name={info.getValue()}
+                        email={user.email}
+                        subtitle={user.details?.jobTitle}
+                    />
                 );
             },
         }),
         columnHelper.display({
             id: 'access',
             header: 'Access',
+            enableSorting: false,
             cell: (info) => {
                 const user = info.row.original;
                 const roleName = user.roles?.[0]?.name;
-                const typeLabel = formatUserType(user.userType);
+                const typeLabel = formatUserType(user);
 
                 return (
                     <div className="flex flex-wrap items-center gap-1.5">
                         <RoleBadge roleName={roleName} />
                         {typeLabel && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50/80 border border-blue-100/60 text-blue-700 text-[10px] font-bold uppercase tracking-wider">
+                            <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
                                 {typeLabel}
                             </span>
                         )}
@@ -344,17 +340,23 @@ export default function UserIndex() {
             ),
         }),
         columnHelper.accessor((row) => userHrStatus(row), {
-            id: 'hrStatus',
+            id: 'status',
             header: 'Status',
             cell: (info) => {
                 const user = info.row.original;
                 const invitePending = canResendInvite(user);
+                const accountActive = userIsActive(user);
 
                 return (
-                    <div className="flex flex-col gap-1 items-start">
-                        <StatusBadge status={info.getValue()} />
+                    <div className="flex flex-col items-start gap-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                            <StatusBadge status={info.getValue()} />
+                            {!accountActive && (
+                                <span className="text-[11px] font-medium text-slate-400">Account off</span>
+                            )}
+                        </div>
                         {invitePending && (
-                            <span className="text-[10px] font-medium text-slate-400 tracking-tight">
+                            <span className="text-[10px] font-medium tracking-tight text-slate-400">
                                 Invite pending
                             </span>
                         )}
@@ -362,23 +364,10 @@ export default function UserIndex() {
                 );
             },
         }),
-        columnHelper.accessor((row) => userIsActive(row), {
-            id: 'isActive',
-            header: 'Active',
-            cell: (info) => (
-                <StatusBadge status={info.getValue() ? 'active' : 'inactive'} />
-            ),
-        }),
-        columnHelper.accessor((row) => row.hiredAt || row.createdAt, {
-            id: 'hired',
-            header: 'Hired',
-            cell: (info) => (
-                <DateCell date={info.getValue()} dateOnly />
-            ),
-        }),
         columnHelper.display({
             id: 'actions',
             size: 50,
+            enableSorting: false,
             header: () => <div className="text-right">Actions</div>,
             cell: (info) => (
                 <TableActions actions={userActions(info.row.original)} />
@@ -463,6 +452,7 @@ export default function UserIndex() {
                     loading={loading}
                     showSearch={false}
                     countLabel={`${filteredUsers.length} ${filteredUsers.length === 1 ? 'person' : 'people'}`}
+                    onRowClick={handleView}
                 />
             )}
 
@@ -513,7 +503,7 @@ export default function UserIndex() {
                                         <div className="flex items-center gap-1.5 text-slate-400">
                                             <Briefcase size={12} className="shrink-0" />
                                             <span className="text-[11px] font-medium truncate">
-                                                {user.details?.jobTitle || user.userType || 'No title'}
+                                                {user.details?.jobTitle || user.assignedUserType?.name || user.userType || 'No title'}
                                                 {user.details?.department ? ` · ${user.details.department}` : ''}
                                             </span>
                                         </div>
@@ -599,7 +589,7 @@ export default function UserIndex() {
                                                             <StatusBadge status={userIsActive(user) ? 'active' : 'inactive'} />
                                                         </div>
                                                         <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase truncate max-w-[110px]">
-                                                            {user.details?.jobTitle || user.userType || 'User'}
+                                                            {user.details?.jobTitle || user.assignedUserType?.name || user.userType || 'User'}
                                                         </span>
                                                     </div>
                                                 </div>

@@ -12,7 +12,7 @@
                     <tr>
                         <td style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); padding: 36px 40px; text-align: center;">
                             <p style="color: #bfdbfe; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.18em; margin: 0 0 12px; text-transform: uppercase;">
-                                HumanLink
+                                {{ ! empty($companyName) ? $companyName : 'HumanLink' }}
                             </p>
                             <h1 style="color: #ffffff; font-size: 28px; font-weight: 400; letter-spacing: -0.02em; margin: 0; line-height: 1.25;">
                                 {{ $title }}
@@ -41,7 +41,7 @@
                     </tr>
                 </table>
                 <p style="color: #94a3b8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 11px; margin-top: 24px; text-align: center;">
-                    &copy; {{ date('Y') }} HumanLink
+                    &copy; {{ date('Y') }} {{ ! empty($companyName) ? $companyName : 'HumanLink' }}
                 </p>
             </td>
         </tr>

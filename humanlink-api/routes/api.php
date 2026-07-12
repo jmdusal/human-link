@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AuthenticationController;
 use App\Http\Controllers\Api\LeavePolicyController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\UserTypeController;
 use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\LeaveBalanceController;
@@ -45,7 +46,10 @@ Route::group(['middleware' => ['web']], function () {
 // Authenticated routes
 Route::middleware('auth:sanctum', 'permission')->group(function () {
     Route::get('/user', function (Request $request) {
-        $user = $request->user()->load('company:id,name,slug,legal_name,timezone');
+        $user = $request->user()->load([
+            'company:id,name,slug,legal_name,timezone',
+            'assignedUserType:id,name,slug,access_scope',
+        ]);
 
         return response()->json([
             'user' => $user,
@@ -121,6 +125,13 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::post('/', 'store')->name('store');
         Route::put('/{role}', 'update')->name('update');
         Route::delete('/{role}', 'destroy')->name('destroy');
+    });
+
+    Route::controller(UserTypeController::class)->prefix('user-types')->name('user-types.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::put('/{userType}', 'update')->name('update');
+        Route::delete('/{userType}', 'destroy')->name('destroy');
     });
 
     Route::controller(WorkspaceController::class)->prefix('workspaces')->name('workspaces.')->group(function () {

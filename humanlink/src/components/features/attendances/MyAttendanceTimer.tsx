@@ -103,87 +103,89 @@ export default function MyAttendanceTimer({
     };
 
     return (
-        <Card className="border-slate-200 overflow-hidden relative">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.08),_transparent_45%)] pointer-events-none" />
-            <div className="relative z-10 space-y-8">
-                <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <h2 className="text-xl font-bold text-slate-800">My Attendance</h2>
-                        <p className="text-sm text-slate-400 mt-1">
-                            Based on your schedule. Lunch break is excluded from required work time.
-                        </p>
-                    </div>
-                    <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg ${
-                        isCompletedToday
-                            ? 'bg-emerald-50 text-emerald-600'
-                            : status === 'working'
+        <Card className="relative flex h-full flex-col overflow-hidden border-slate-200">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.08),_transparent_45%)]" />
+            <div className="relative z-10 flex min-h-0 flex-1 flex-col justify-between gap-6">
+                <div className="space-y-6">
+                    <div className="flex items-start justify-between gap-4">
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-800">My Attendance</h2>
+                            <p className="mt-1 text-sm text-slate-400">
+                                Based on your schedule. Lunch break is excluded from required work time.
+                            </p>
+                        </div>
+                        <span className={`rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${
+                            isCompletedToday
                                 ? 'bg-emerald-50 text-emerald-600'
-                                : status === 'paused'
-                                    ? 'bg-amber-50 text-amber-600'
-                                    : 'bg-slate-100 text-slate-500'
-                    }`}>
-                        {isCompletedToday ? 'Stopped' : (statusLabel[status] || status)}
-                    </span>
-                </div>
-
-                {schedule && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Schedule</p>
-                            <p className="text-sm font-bold text-slate-700 mt-1">
-                                {schedule.isRestDay
-                                    ? 'Rest day'
-                                    : `${formatTimeLabel(schedule.shiftStart)} – ${formatTimeLabel(schedule.shiftEnd)}`}
-                            </p>
-                        </div>
-                        <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Break</p>
-                            <p className="text-sm font-bold text-slate-700 mt-1">{schedule.breakMinutes} min</p>
-                        </div>
-                        <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Required</p>
-                            <p className="text-sm font-bold text-slate-700 mt-1">
-                                {schedule.isRestDay ? 'None' : formatHoursLabel(requiredMs)}
-                            </p>
-                        </div>
+                                : status === 'working'
+                                    ? 'bg-emerald-50 text-emerald-600'
+                                    : status === 'paused'
+                                        ? 'bg-amber-50 text-amber-600'
+                                        : 'bg-slate-100 text-slate-500'
+                        }`}>
+                            {isCompletedToday ? 'Stopped' : (statusLabel[status] || status)}
+                        </span>
                     </div>
-                )}
 
-                <div className="text-center py-2">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-3">
-                        Today&apos;s time
-                    </p>
-                    <p className={`font-mono text-5xl md:text-6xl font-black tracking-tight tabular-nums ${
-                        status === 'working' ? 'text-slate-900' : 'text-slate-700'
-                    }`}>
-                        {loading ? '--:--:--' : formatClock(displayMs)}
-                    </p>
-                    {timer.attendance?.startedAt && (
-                        <p className="text-xs text-slate-400 mt-3">
-                            Started at {new Date(timer.attendance.startedAt).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                            })}
+                    {schedule && (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                            <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Schedule</p>
+                                <p className="mt-1 text-sm font-bold text-slate-700">
+                                    {schedule.isRestDay
+                                        ? 'Rest day'
+                                        : `${formatTimeLabel(schedule.shiftStart)} – ${formatTimeLabel(schedule.shiftEnd)}`}
+                                </p>
+                            </div>
+                            <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Break</p>
+                                <p className="mt-1 text-sm font-bold text-slate-700">{schedule.breakMinutes} min</p>
+                            </div>
+                            <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Required</p>
+                                <p className="mt-1 text-sm font-bold text-slate-700">
+                                    {schedule.isRestDay ? 'None' : formatHoursLabel(requiredMs)}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="py-2 text-center">
+                        <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                            Today&apos;s time
                         </p>
+                        <p className={`font-mono text-5xl font-black tracking-tight tabular-nums md:text-6xl ${
+                            status === 'working' ? 'text-slate-900' : 'text-slate-700'
+                        }`}>
+                            {loading ? '--:--:--' : formatClock(displayMs)}
+                        </p>
+                        {timer.attendance?.startedAt && (
+                            <p className="mt-3 text-xs text-slate-400">
+                                Started at {new Date(timer.attendance.startedAt).toLocaleTimeString([], {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                })}
+                            </p>
+                        )}
+                    </div>
+
+                    {!schedule?.isRestDay && requiredMs > 0 && !isCompletedToday && (
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between text-xs font-bold">
+                                <span className="uppercase tracking-wider text-slate-500">Remaining</span>
+                                <span className={`tabular-nums ${remainingMs === 0 ? 'text-emerald-600' : 'text-slate-700'}`}>
+                                    {remainingMs === 0 ? 'Done' : formatClock(remainingMs)}
+                                </span>
+                            </div>
+                            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                                <div
+                                    className={`h-full transition-all duration-300 ${remainingMs === 0 ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                                    style={{ width: `${progress}%` }}
+                                />
+                            </div>
+                        </div>
                     )}
                 </div>
-
-                {!schedule?.isRestDay && requiredMs > 0 && !isCompletedToday && (
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs font-bold">
-                            <span className="text-slate-500 uppercase tracking-wider">Remaining</span>
-                            <span className={`tabular-nums ${remainingMs === 0 ? 'text-emerald-600' : 'text-slate-700'}`}>
-                                {remainingMs === 0 ? 'Done' : formatClock(remainingMs)}
-                            </span>
-                        </div>
-                        <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-                            <div
-                                className={`h-full transition-all duration-300 ${remainingMs === 0 ? 'bg-emerald-500' : 'bg-blue-500'}`}
-                                style={{ width: `${progress}%` }}
-                            />
-                        </div>
-                    </div>
-                )}
 
                 <div className="flex flex-wrap items-center justify-center gap-3">
                     {status === 'offline' && !isCompletedToday && (
@@ -233,8 +235,8 @@ export default function MyAttendanceTimer({
                     )}
 
                     {isCompletedToday && canContinue && (
-                        <div className="w-full flex flex-col items-center gap-3">
-                            <p className="text-sm font-medium text-slate-500 text-center max-w-md">
+                        <div className="flex w-full flex-col items-center gap-3">
+                            <p className="max-w-md text-center text-sm font-medium text-slate-500">
                                 Attendance stopped for this shift day ({formatHoursLabel(displayMs)} recorded).
                                 If you stopped by mistake, you can continue — only today. Tomorrow you will need to start a new timer.
                             </p>
@@ -250,7 +252,7 @@ export default function MyAttendanceTimer({
                     )}
 
                     {status !== 'offline' && (
-                        <div className="flex items-center gap-2 text-xs text-slate-400 font-medium px-2">
+                        <div className="flex items-center gap-2 px-2 text-xs font-medium text-slate-400">
                             <TimerReset size={14} />
                             Live across your open sessions
                         </div>

@@ -38,10 +38,10 @@ export const UserService = {
             return time.slice(0, 5);
         };
 
-        const { scheduleStartDate, weeklyData, userType, employmentType, ...rest } = formData;
+        const { scheduleStartDate, weeklyData, userTypeId, employmentType, ...rest } = formData;
         const payload: any = {
             ...rest,
-            userType: userType || null,
+            userTypeId: userTypeId ? Number(userTypeId) : null,
             employmentType: employmentType || null,
             startDate: scheduleStartDate,
             weeklyData: weeklyData.map((day: any) => ({

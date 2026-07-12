@@ -4,7 +4,8 @@ import type { UserDetail, EmploymentType } from '@/types/UserDetail';
 import type { Schedule, WeeklyScheduleDay } from '@/types/Schedule';
 import type { UserDocument } from '@/types/UserDocument';
 
-export type UserType = 'employee' | 'hr' | 'manager';
+export type UserType = string;
+export type AccessScope = 'self' | 'workspace' | 'company';
 export type HrStatus = 'incomplete' | 'ready' | 'active' | 'inactive' | 'offboarding';
 
 export interface UserLeaveBalanceSummary {
@@ -29,6 +30,14 @@ export interface User {
     emailVerifiedAt?: string | null;
     hasTwoFactorEnabled?: boolean;
     userType?: UserType | null;
+    userTypeId?: number | null;
+    accessScope?: AccessScope | null;
+    assignedUserType?: {
+        id: number;
+        name: string;
+        slug: string;
+        accessScope: AccessScope;
+    } | null;
     hiredAt?: string | null;
     terminatedAt?: string | null;
     timerStatus: 'working' | 'paused' | 'offline';
@@ -50,7 +59,7 @@ export interface UserFormData {
     sendInvite?: boolean;
     role: string;
     status: string;
-    userType: UserType | '';
+    userTypeId: string;
     hiredAt: string;
     jobTitle: string;
     department: string;

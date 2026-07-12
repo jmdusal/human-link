@@ -41,6 +41,12 @@ export const API_ROUTES = {
         UPDATE: (id: number) => `/roles/${id}`,
         DELETE: (id: number) => `/roles/${id}`,
     },
+    USER_TYPES: {
+        LIST: '/user-types',
+        STORE: '/user-types',
+        UPDATE: (id: number) => `/user-types/${id}`,
+        DELETE: (id: number) => `/user-types/${id}`,
+    },
     PERMISSIONS: {
         LIST: '/permissions',
         STORE: '/permissions',

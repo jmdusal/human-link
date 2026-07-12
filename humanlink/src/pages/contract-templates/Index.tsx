@@ -108,14 +108,6 @@ export default function ContractTemplateIndex() {
                     <StatusBadge status={info.getValue() ? 'active' : 'inactive'} />
                 ),
             }),
-            columnHelper.accessor('createdAt', {
-                header: 'Created',
-                cell: (info) => (
-                    info.getValue()
-                        ? <DateCell date={info.getValue()} dateOnly />
-                        : <TextCell title="—" />
-                ),
-            }),
             columnHelper.display({
                 id: 'actions',
                 size: 50,
