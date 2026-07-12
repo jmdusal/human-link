@@ -102,5 +102,3 @@ Password for all: `password`
 ## Main modules
 
 Auth · Attendance · Schedules · Leave · Payroll · Reports · Workspaces · Users · Dashboard · Company settings · Activity logs · Notifications
-
-More API detail: `humanlink-api/README.md`
