@@ -48,6 +48,7 @@ export interface User {
     schedule?: Schedule;
     documents?: UserDocument[];
     latestContract?: UserDocument | null;
+    latestIdCard?: UserDocument | null;
     currentBalances?: UserLeaveBalanceSummary[];
     createdAt: string;
 }

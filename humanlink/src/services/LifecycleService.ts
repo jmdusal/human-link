@@ -26,4 +26,12 @@ export const LifecycleService = {
         const response = await api.post(API_ROUTES.USERS.OFFBOARD(userId), payload);
         return response.data.data;
     },
+
+    async reonboard(userId: number): Promise<{
+        user: User;
+        onboard: EmployeeLifecyclePayload['onboard'];
+    }> {
+        const response = await api.post(API_ROUTES.USERS.REONBOARD(userId));
+        return response.data.data;
+    },
 };

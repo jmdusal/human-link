@@ -26,6 +26,11 @@ class LeaveRequestSubmittedNotification extends Notification implements ShouldBr
         return ['database', 'broadcast'];
     }
 
+    public function broadcastType(): string
+    {
+        return 'leave_request_submitted';
+    }
+
     public function toBroadcast(object $notifiable): BroadcastMessage
     {
         return new BroadcastMessage($this->withCompanyContext([

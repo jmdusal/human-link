@@ -164,7 +164,10 @@ trait ManagesWorkspaceMembers
             });
     }
 
-    public function acceptInvitation(string $token): Workspace
+    /**
+     * @return array{status: string, workspace: Workspace}
+     */
+    public function getInvitation(string $token): array
     {
         $membership = WorkspaceMember::query()
             ->where('invitation_token', $token)
@@ -174,7 +177,38 @@ trait ManagesWorkspaceMembers
             throw new NotFoundHttpException('Invitation not found or already used.');
         }
 
+        if ((int) $membership->user_id !== (int) Auth::id()) {
+            throw new AccessDeniedHttpException('This invitation was sent to a different account.');
+        }
+
+        $workspace = $membership->workspace()
+            ->with(['members', 'statuses', 'tags', 'projects'])
+            ->firstOrFail();
+
+        if ($membership->status === WorkspaceMember::STATUS_ACCEPTED) {
+            return [
+                'status' => WorkspaceMember::STATUS_ACCEPTED,
+                'workspace' => $workspace,
+            ];
+        }
+
         $this->assertInvitationIsValid($membership);
+
+        return [
+            'status' => WorkspaceMember::STATUS_PENDING,
+            'workspace' => $workspace,
+        ];
+    }
+
+    public function acceptInvitation(string $token): Workspace
+    {
+        $membership = WorkspaceMember::query()
+            ->where('invitation_token', $token)
+            ->first();
+
+        if (! $membership) {
+            throw new NotFoundHttpException('Invitation not found or already used.');
+        }
 
         if ((int) $membership->user_id !== (int) Auth::id()) {
             throw new AccessDeniedHttpException('This invitation was sent to a different account.');
@@ -186,9 +220,10 @@ trait ManagesWorkspaceMembers
             return $workspace;
         }
 
+        $this->assertInvitationIsValid($membership);
+
         $membership->update([
             'status' => WorkspaceMember::STATUS_ACCEPTED,
-            'invitation_token' => null,
             'accepted_at' => now(),
         ]);
 

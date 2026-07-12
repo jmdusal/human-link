@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             LeavePolicySeeder::class,
             DepartmentPositionSeeder::class,
             ContractTemplateSeeder::class,
+            IdCardTemplateSeeder::class,
             RoleSeeder::class,
             UserSeeder::class,
             StatutoryContributionSeeder::class,

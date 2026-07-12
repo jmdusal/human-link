@@ -25,6 +25,10 @@ export type {
     ContractEmploymentType,
 } from '@/types/ContractTemplate';
 export type {
+    IdCardTemplate,
+    IdCardTemplateFormData,
+} from '@/types/IdCardTemplate';
+export type {
     LeaveRequest,
     LeaveRequestFormData,
     LeaveRequestStatus,

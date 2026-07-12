@@ -1,6 +1,7 @@
 import api from '@/api/axios';
 import { API_ROUTES } from '@/constants';
 import type { Attendance, AttendanceTimerState } from '@/types';
+import type { GeoPosition } from '@/utils/geolocation';
 
 export const AttendanceService = {
     async list(params?: { start?: string; end?: string }): Promise<Attendance[]> {
@@ -13,8 +14,8 @@ export const AttendanceService = {
         return response.data.data;
     },
 
-    async start(): Promise<AttendanceTimerState> {
-        const response = await api.post(API_ROUTES.ATTENDANCES.START);
+    async start(location?: GeoPosition | null): Promise<AttendanceTimerState> {
+        const response = await api.post(API_ROUTES.ATTENDANCES.START, location ?? undefined);
         return response.data.data;
     },
 
@@ -28,8 +29,8 @@ export const AttendanceService = {
         return response.data.data;
     },
 
-    async end(): Promise<AttendanceTimerState> {
-        const response = await api.post(API_ROUTES.ATTENDANCES.END);
+    async end(location?: GeoPosition | null): Promise<AttendanceTimerState> {
+        const response = await api.post(API_ROUTES.ATTENDANCES.END, location ?? undefined);
         return response.data.data;
     },
 

@@ -29,4 +29,9 @@ interface EmployeeLifecycleServiceInterface
      * @return array{user: User, checklist: \App\Models\EmployeeChecklist, payslip: \App\Models\Payslip|null}
      */
     public function offboard(User $user, array $data): array;
+
+    /**
+     * @return array{user: User, onboard: \App\Models\EmployeeChecklist}
+     */
+    public function reonboard(User $user): array;
 }

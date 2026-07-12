@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Eye, Pencil, Plus, Trash2 } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { DataTable } from '@/components/shared/Datatable';
 import Button from '@/components/ui/Button';
 import DepartmentForm from '@/pages/departments/DepartmentForm';
 import ModalConfirmation from '@/components/modals/ModalConfirmation';
+import DepartmentJobsModal from '@/components/modals/departments/DepartmentJobsModal';
 import TableActions from '@/components/shared/TableActions';
 import { TextCell, StatusBadge } from '@/components/shared/TableCells';
 import { useAuth } from '@/context/AuthContext';
@@ -21,13 +22,20 @@ export default function DepartmentIndex() {
     const { departments, setDepartments, loading } = useDepartments(true);
 
     const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
+    const [viewDepartment, setViewDepartment] = useState<Department | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [isViewOpen, setIsViewOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
     const handleAdd = () => {
         setSelectedDepartment(null);
         setIsFormOpen(true);
+    };
+
+    const handleView = (department: Department) => {
+        setViewDepartment(department);
+        setIsViewOpen(true);
     };
 
     const handleEdit = (department: Department) => {
@@ -76,9 +84,9 @@ export default function DepartmentIndex() {
             columnHelper.accessor('name', {
                 header: 'Department',
                 cell: (info) => (
-                    <div className="flex flex-col min-w-0">
+                    <div className="flex min-w-0 flex-col">
                         <TextCell title={info.getValue()} />
-                        <span className="text-[11px] text-slate-400 font-medium truncate mt-0.5">
+                        <span className="mt-0.5 truncate text-[11px] font-medium text-slate-400">
                             {info.row.original.slug}
                         </span>
                     </div>
@@ -102,6 +110,11 @@ export default function DepartmentIndex() {
                     <TableActions
                         actions={[
                             {
+                                label: 'View',
+                                icon: Eye,
+                                onClick: () => handleView(info.row.original),
+                            },
+                            {
                                 label: 'Edit',
                                 icon: Pencil,
                                 onClick: () => handleEdit(info.row.original),
@@ -124,10 +137,10 @@ export default function DepartmentIndex() {
 
     return (
         <div className="w-full">
-            <div className="flex items-center justify-between mb-8">
+            <div className="mb-8 flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Departments</h1>
-                    <p className="text-slate-400 text-sm font-medium">
+                    <h1 className="text-2xl font-bold tracking-tight text-slate-800">Departments</h1>
+                    <p className="text-sm font-medium text-slate-400">
                         Organize teams and assign jobs under each department.
                     </p>
                 </div>
@@ -145,7 +158,22 @@ export default function DepartmentIndex() {
                 loading={loading}
                 showSearch={true}
                 countLabel={`${departments.length} ${departments.length === 1 ? 'department' : 'departments'}`}
+                onRowClick={handleView}
             />
+
+            <AnimatePresence>
+                {isViewOpen && (
+                    <DepartmentJobsModal
+                        key={viewDepartment ? `view-${viewDepartment.id}` : 'view-department'}
+                        isOpen={isViewOpen}
+                        onClose={() => {
+                            setIsViewOpen(false);
+                            setViewDepartment(null);
+                        }}
+                        department={viewDepartment}
+                    />
+                )}
+            </AnimatePresence>
 
             <AnimatePresence>
                 {isFormOpen && (

@@ -1,26 +1,81 @@
-import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Loader2, Mail, XCircle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { WorkspaceService } from '@/services/WorkspaceService';
 import { usePageTitle } from '@/hooks/use-title';
 
-type InviteState = 'idle' | 'loading' | 'success' | 'declined' | 'error';
+type InviteState = 'loading' | 'idle' | 'success' | 'declined' | 'error';
 
 export default function AcceptInvitation() {
     usePageTitle('Workspace Invitation');
     const { token } = useParams<{ token: string }>();
+    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const [state, setState] = useState<InviteState>(token ? 'idle' : 'error');
+    const [state, setState] = useState<InviteState>(token ? 'loading' : 'error');
     const [message, setMessage] = useState(
-        token ? 'You were invited to join a workspace.' : 'Invalid invitation link.'
+        token ? 'Checking invitation...' : 'Invalid invitation link.'
     );
     const [workspaceSlug, setWorkspaceSlug] = useState<string | null>(null);
+    const [alreadyAccepted, setAlreadyAccepted] = useState(false);
+
+    const loadInvitation = useCallback(async () => {
+        if (!token) {
+            setState('error');
+            setMessage('Invalid invitation link.');
+            return;
+        }
+
+        setState('loading');
+        setMessage('Checking invitation...');
+        setAlreadyAccepted(false);
+
+        try {
+            const invitation = await WorkspaceService.getInvitation(token);
+            setWorkspaceSlug(invitation.workspace.slug);
+
+            if (invitation.status === 'accepted') {
+                setAlreadyAccepted(true);
+                setMessage(`You've already accepted the invitation to ${invitation.workspace.name}.`);
+                setState('success');
+                return;
+            }
+
+            setMessage(`You were invited to join ${invitation.workspace.name}.`);
+            setState('idle');
+        } catch (error: any) {
+            const slug = searchParams.get('slug');
+
+            if (slug) {
+                try {
+                    const workspace = await WorkspaceService.getWorkspaceBySlug(slug);
+                    setAlreadyAccepted(true);
+                    setWorkspaceSlug(workspace.slug);
+                    setMessage(`You've already accepted the invitation to ${workspace.name}.`);
+                    setState('success');
+                    return;
+                } catch {
+                    // Fall through to the generic error state.
+                }
+            }
+
+            setMessage(
+                error?.response?.data?.message
+                || 'This invitation could not be found. It may be invalid, expired, or already used.'
+            );
+            setState('error');
+        }
+    }, [token, searchParams]);
+
+    useEffect(() => {
+        loadInvitation();
+    }, [loadInvitation]);
 
     const handleAccept = async () => {
         if (!token) return;
         setState('loading');
         setMessage('Accepting your invitation...');
+        setAlreadyAccepted(false);
 
         try {
             const workspace = await WorkspaceService.acceptInvitation(token);
@@ -87,7 +142,9 @@ export default function AcceptInvitation() {
                 {state === 'success' && (
                     <>
                         <CheckCircle2 className="mx-auto mb-4 text-emerald-600" size={40} />
-                        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Welcome aboard</h1>
+                        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+                            {alreadyAccepted ? 'Already accepted' : 'Welcome aboard'}
+                        </h1>
                         <p className="mt-2 text-sm text-slate-500">{message}</p>
                         <div className="mt-6 flex flex-col gap-3">
                             {workspaceSlug && (

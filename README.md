@@ -72,7 +72,21 @@ cd humanlink-api && composer install && php artisan key:generate \
 cd humanlink && npm install && npm run dev
 ```
 
-Optional: `php artisan queue:work` · `php artisan reverb:start --port=8081`
+Optional: `php artisan queue:work` (emails / queued jobs)
+
+## Realtime notifications
+
+In-app bell notifications (workspace invites, leave, tasks, etc.) update live over **Laravel Reverb** + **Echo**. Without Reverb they still save to the database — you just need a page reload to see new ones.
+
+Set `BROADCAST_CONNECTION=reverb` plus matching `REVERB_*` values in `humanlink-api/.env`, and the same app key/port in `humanlink/.env` as `VITE_REVERB_*` if you override the UI defaults.
+
+**With Docker** — `docker compose up` already starts the `reverb` service on port `8081`. Use `REVERB_HOST=reverb` so the API container can reach it.
+
+**Without Docker** — use `REVERB_HOST=localhost` and start the websocket server yourself:
+
+```bash
+cd humanlink-api && php artisan reverb:start --host=0.0.0.0 --port=8081
+```
 
 ## Seeded logins
 

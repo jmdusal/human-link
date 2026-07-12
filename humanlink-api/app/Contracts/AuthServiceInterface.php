@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 interface AuthServiceInterface
 {
     /**
-     * @return array{user?: User, requires_two_factor?: bool, login_token?: string}
+     * @return array{user?: User, requires_two_factor?: bool, login_token?: string, email?: string}
      */
     public function login(Request $request, array $credentials): array;
 
@@ -27,7 +27,7 @@ interface AuthServiceInterface
     public function verifyEmail(int $userId, string $hash): User;
 
     /**
-     * @return array{secret: string, qr_code_url: string, recovery_codes: list<string>}
+     * @return array{method: string, email: string, expires_in: int}
      */
     public function beginTwoFactorSetup(User $user): array;
 

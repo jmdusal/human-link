@@ -1,6 +1,6 @@
 import api from '@/api/axios';
 import { API_ROUTES } from '@/constants';
-import type { User } from '@/types';
+import type { User, UserDocument } from '@/types';
 
 export interface UpdateMePayload {
     name?: string;
@@ -9,9 +9,9 @@ export interface UpdateMePayload {
 }
 
 export interface TwoFactorSetup {
-    secret: string;
-    qrCodeUrl: string;
-    recoveryCodes: string[];
+    method: 'email';
+    email: string;
+    expiresIn: number;
 }
 
 export const MeService = {
@@ -22,6 +22,16 @@ export const MeService = {
 
     async update(payload: UpdateMePayload): Promise<User> {
         const response = await api.put(API_ROUTES.ME.UPDATE, payload);
+        return response.data.data;
+    },
+
+    async generateContract(): Promise<UserDocument> {
+        const response = await api.post(API_ROUTES.ME.GENERATE_CONTRACT);
+        return response.data.data;
+    },
+
+    async generateIdCard(): Promise<UserDocument> {
+        const response = await api.post(API_ROUTES.ME.GENERATE_ID);
         return response.data.data;
     },
 

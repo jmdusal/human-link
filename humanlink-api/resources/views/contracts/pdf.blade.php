@@ -117,13 +117,12 @@
 
         .section-num {
             width: 28px;
-            height: 22px;
-            background: #2563eb;
-            color: #ffffff;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: bold;
-            text-align: center;
-            line-height: 22px;
+            text-align: left;
+            color: #334155;
+            line-height: 1.2;
+            letter-spacing: 0.04em;
         }
 
         .section-title {

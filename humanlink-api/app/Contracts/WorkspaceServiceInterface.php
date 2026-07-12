@@ -27,6 +27,11 @@ interface WorkspaceServiceInterface
 
     public function activity(Workspace $workspace, int $limit = 20): SupportCollection;
 
+    /**
+     * @return array{status: string, workspace: Workspace}
+     */
+    public function getInvitation(string $token): array;
+
     public function acceptInvitation(string $token): Workspace;
 
     public function declineInvitation(string $token): void;

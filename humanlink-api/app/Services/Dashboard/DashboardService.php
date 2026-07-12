@@ -47,6 +47,7 @@ class DashboardService implements DashboardServiceInterface
             'recent_activity' => [],
             'role_distribution' => [],
             'contract' => $actor->latestContract,
+            'id_card' => $actor->latestIdCard,
         ];
     }
 

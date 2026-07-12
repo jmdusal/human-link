@@ -54,6 +54,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Company whereSlug($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Company whereTimezone($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Company whereUpdatedAt($value)
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\IdCardTemplate> $idCardTemplates
+ * @property-read int|null $id_card_templates_count
  * @mixin \Eloquent
  */
 /**
@@ -103,6 +105,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Company whereSlug($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Company whereTimezone($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Company whereUpdatedAt($value)
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\IdCardTemplate> $idCardTemplates
+ * @property-read int|null $id_card_templates_count
  * @mixin \Eloquent
  */
 class Company extends Model
@@ -177,6 +181,11 @@ class Company extends Model
     public function contractTemplates(): HasMany
     {
         return $this->hasMany(ContractTemplate::class);
+    }
+
+    public function idCardTemplates(): HasMany
+    {
+        return $this->hasMany(IdCardTemplate::class);
     }
 
     public function payrollDeductions(): HasMany

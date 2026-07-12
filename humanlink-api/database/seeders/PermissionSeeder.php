@@ -24,6 +24,7 @@ class PermissionSeeder extends Seeder
             'departments',
             'positions',
             'contract-templates',
+            'id-card-templates',
             'leave-requests',
             'activity-logs',
             'schedules',

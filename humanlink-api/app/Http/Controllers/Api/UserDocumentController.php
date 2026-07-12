@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api;
 use App\Contracts\UserDocumentServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UserDocument\GenerateContractRequest;
+use App\Http\Requests\UserDocument\GenerateIdCardRequest;
 use App\Http\Requests\UserDocument\StoreUserDocumentRequest;
 use App\Models\User;
 use App\Models\UserDocument;
@@ -50,6 +51,21 @@ class UserDocumentController extends Controller
 
         return response()->json([
             'message' => 'Contract generated successfully.',
+            'data' => $document,
+        ], 201);
+    }
+
+    public function generateId(GenerateIdCardRequest $request, User $user): JsonResponse
+    {
+        $templateId = $request->validated('template_id');
+
+        $document = $this->userDocumentService->generateIdCard(
+            $user,
+            $templateId !== null ? (int) $templateId : null
+        );
+
+        return response()->json([
+            'message' => 'ID card generated successfully.',
             'data' => $document,
         ], 201);
     }

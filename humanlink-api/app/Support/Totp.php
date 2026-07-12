@@ -15,9 +15,9 @@ final class Totp
         return self::base32Encode(random_bytes($bytes));
     }
 
-    public static function verify(string $secret, string $code, int $window = 1): bool
+    public static function verify(string $secret, string $code, int $window = 2): bool
     {
-        $code = trim($code);
+        $code = preg_replace('/\s+/', '', trim($code)) ?? '';
 
         if (! preg_match('/^\d{6}$/', $code)) {
             return false;

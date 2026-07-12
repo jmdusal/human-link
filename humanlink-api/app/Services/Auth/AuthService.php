@@ -7,7 +7,7 @@ namespace App\Services\Auth;
 use App\Contracts\AuthServiceInterface;
 use App\Models\EmployeeChecklistItem;
 use App\Models\User;
-use App\Support\Totp;
+use App\Notifications\TwoFactorEmailCodeNotification;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\Request;
@@ -21,6 +21,8 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 class AuthService implements AuthServiceInterface
 {
+    private const OTP_TTL_MINUTES = 10;
+
     public function login(Request $request, array $credentials): array
     {
         $user = User::query()->where('email', $credentials['email'])->first();
@@ -52,11 +54,17 @@ class AuthService implements AuthServiceInterface
 
         if ($user->hasTwoFactorEnabled()) {
             $loginToken = Str::random(64);
-            Cache::put($this->twoFactorCacheKey($loginToken), $user->id, now()->addMinutes(5));
+            Cache::put(
+                $this->twoFactorLoginCacheKey($loginToken),
+                $user->id,
+                now()->addMinutes(self::OTP_TTL_MINUTES)
+            );
+            $this->sendEmailOtp($user, 'login', $loginToken);
 
             return [
                 'requires_two_factor' => true,
                 'login_token' => $loginToken,
+                'email' => $this->maskEmail($user->email),
             ];
         }
 
@@ -68,7 +76,7 @@ class AuthService implements AuthServiceInterface
 
     public function completeTwoFactorLogin(Request $request, string $loginToken, string $code): User
     {
-        $userId = Cache::pull($this->twoFactorCacheKey($loginToken));
+        $userId = Cache::get($this->twoFactorLoginCacheKey($loginToken));
 
         if (! $userId) {
             throw ValidationException::withMessages([
@@ -85,11 +93,13 @@ class AuthService implements AuthServiceInterface
             ]);
         }
 
-        if (! $this->verifyTwoFactorCode($user, $code)) {
+        if (! $this->consumeEmailOtp($code, 'login', $loginToken)) {
             throw ValidationException::withMessages([
-                'code' => ['The authentication code is invalid.'],
+                'code' => ['The authentication code is invalid or has expired.'],
             ]);
         }
+
+        Cache::forget($this->twoFactorLoginCacheKey($loginToken));
 
         Auth::login($user);
         $request->session()->regenerate();
@@ -191,39 +201,47 @@ class AuthService implements AuthServiceInterface
 
     public function beginTwoFactorSetup(User $user): array
     {
-        $secret = Totp::generateSecret();
-        $user->replaceTwoFactorSecret($secret);
+        if (! $user->hasVerifiedEmail()) {
+            throw ValidationException::withMessages([
+                'email' => ['Verify your email before enabling two-factor authentication.'],
+            ]);
+        }
 
-        $recoveryCodes = collect(range(1, 8))
-            ->map(fn (): string => Str::lower(Str::random(10)))
-            ->values()
-            ->all();
+        if ($user->hasTwoFactorEnabled()) {
+            throw ValidationException::withMessages([
+                'code' => ['Two-factor authentication is already enabled.'],
+            ]);
+        }
 
-        $user->storeRecoveryCodes($recoveryCodes);
+        $this->sendEmailOtp($user, 'setup');
 
         return [
-            'secret' => $secret,
-            'qr_code_url' => Totp::otpAuthUrl($user->email, $secret, (string) config('app.name', 'HumanLink')),
-            'recovery_codes' => $recoveryCodes,
+            'method' => 'email',
+            'email' => $this->maskEmail($user->email),
+            'expires_in' => self::OTP_TTL_MINUTES * 60,
         ];
     }
 
     public function confirmTwoFactorSetup(User $user, string $code): User
     {
-        $secret = $user->getTwoFactorSecret();
+        $user->refresh();
 
-        if (! $secret || $user->two_factor_confirmed_at) {
+        if ($user->hasTwoFactorEnabled()) {
             throw ValidationException::withMessages([
-                'code' => ['Two-factor setup is not pending confirmation.'],
+                'code' => ['Two-factor authentication is already enabled.'],
             ]);
         }
 
-        if (! Totp::verify($secret, $code)) {
+        if (! $this->consumeEmailOtp($code, 'setup', null, $user->id)) {
             throw ValidationException::withMessages([
-                'code' => ['The authentication code is invalid.'],
+                'code' => ['The authentication code is invalid or has expired. Check your email and try again.'],
             ]);
         }
 
+        $user->forceFill([
+            'two_factor_secret' => null,
+            'two_factor_recovery_codes' => null,
+        ])->save();
         $user->confirmTwoFactor();
 
         return $user->fresh();
@@ -242,37 +260,68 @@ class AuthService implements AuthServiceInterface
         return $user->fresh();
     }
 
-    protected function verifyTwoFactorCode(User $user, string $code): bool
+    protected function sendEmailOtp(User $user, string $purpose, ?string $loginToken = null): void
     {
-        $secret = $user->getTwoFactorSecret();
+        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
-        if ($secret && Totp::verify($secret, $code)) {
-            return true;
-        }
+        Cache::put(
+            $this->otpCacheKey($purpose, $loginToken, $user->id),
+            Hash::make($code),
+            now()->addMinutes(self::OTP_TTL_MINUTES)
+        );
 
-        $recoveryCodes = $user->recoveryCodes();
-        $matchIndex = null;
+        $user->notify(new TwoFactorEmailCodeNotification($code, $purpose));
+    }
 
-        foreach ($recoveryCodes as $index => $recoveryCode) {
-            if (hash_equals($recoveryCode, trim($code))) {
-                $matchIndex = $index;
-                break;
-            }
-        }
+    protected function consumeEmailOtp(
+        string $code,
+        string $purpose,
+        ?string $loginToken = null,
+        ?int $userId = null
+    ): bool {
+        $code = preg_replace('/\s+/', '', trim($code)) ?? '';
 
-        if ($matchIndex === null) {
+        if (! preg_match('/^\d{6}$/', $code)) {
             return false;
         }
 
-        unset($recoveryCodes[$matchIndex]);
-        $user->storeRecoveryCodes(array_values($recoveryCodes));
+        $key = $this->otpCacheKey($purpose, $loginToken, $userId);
+        $hash = Cache::get($key);
+
+        if (! is_string($hash) || ! Hash::check($code, $hash)) {
+            return false;
+        }
+
+        Cache::forget($key);
 
         return true;
     }
 
-    protected function twoFactorCacheKey(string $token): string
+    protected function otpCacheKey(string $purpose, ?string $loginToken = null, ?int $userId = null): string
+    {
+        if ($purpose === 'login') {
+            return 'auth.two_factor.otp.login.'.($loginToken ?? '');
+        }
+
+        return 'auth.two_factor.otp.setup.'.($userId ?? 0);
+    }
+
+    protected function twoFactorLoginCacheKey(string $token): string
     {
         return 'auth.two_factor.login.'.$token;
+    }
+
+    protected function maskEmail(string $email): string
+    {
+        [$local, $domain] = array_pad(explode('@', $email, 2), 2, '');
+
+        if ($local === '' || $domain === '') {
+            return $email;
+        }
+
+        $visible = substr($local, 0, min(2, strlen($local)));
+
+        return $visible.str_repeat('*', max(strlen($local) - strlen($visible), 1)).'@'.$domain;
     }
 
     protected function markOnboardWelcomeComplete(User $user): void

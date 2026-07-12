@@ -133,6 +133,15 @@ class WorkspaceController extends Controller
         ], 200);
     }
 
+    public function showInvitation(string $token): JsonResponse
+    {
+        $invitation = $this->workspaceService->getInvitation($token);
+
+        return response()->json([
+            'data' => $invitation,
+        ], 200);
+    }
+
     public function acceptInvitation(string $token): JsonResponse
     {
         $workspace = $this->workspaceService->acceptInvitation($token);

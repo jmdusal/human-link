@@ -84,7 +84,7 @@ class UserDocument extends Model
 
     public const TYPE_LABELS = [
         self::TYPE_CONTRACT => 'Contract',
-        self::TYPE_ID_SCAN => 'ID scan',
+        self::TYPE_ID_SCAN => 'Employee ID',
         self::TYPE_SIGNED_POLICY => 'Signed policy',
     ];
 

@@ -4,6 +4,7 @@ import { AttendanceService } from '@/services/AttendanceService';
 import { echo } from '@/lib/echo';
 import { useAuth } from '@/context/AuthContext';
 import type { AttendanceTimerState } from '@/types';
+import { getCurrentPosition } from '@/utils/geolocation';
 
 const CHANNEL_NAME = 'humanlink-attendance-timer';
 const APP_TIMEZONE = 'Asia/Manila';
@@ -75,16 +76,26 @@ export const useAttendanceTimer = (enabled: boolean) => {
         try {
             let state: AttendanceTimerState;
 
-            if (action === 'start') {
-                state = await AttendanceService.start();
+            if (action === 'start' || action === 'end') {
+                const location = await getCurrentPosition();
+                if (!location) {
+                    toast.error(
+                        action === 'start'
+                            ? 'Location is required to start. Allow location access, then try again.'
+                            : 'Location is required to stop. Allow location access, then try again.',
+                        { duration: 5000 },
+                    );
+                    throw new Error('Location required');
+                }
+                state = action === 'start'
+                    ? await AttendanceService.start(location)
+                    : await AttendanceService.end(location);
             } else if (action === 'pause') {
                 state = await AttendanceService.pause();
             } else if (action === 'resume') {
                 state = await AttendanceService.resume();
-            } else if (action === 'continue') {
-                state = await AttendanceService.continue();
             } else {
-                state = await AttendanceService.end();
+                state = await AttendanceService.continue();
             }
 
             applyingRemoteRef.current = true;
@@ -94,6 +105,8 @@ export const useAttendanceTimer = (enabled: boolean) => {
                 toast.success('Attendance stopped for today.');
             } else if (action === 'continue') {
                 toast.success('Attendance continued for today.');
+            } else if (action === 'start') {
+                toast.success('Timer started — location captured.');
             }
             return state;
         } catch (error: any) {
@@ -164,7 +177,9 @@ export const useAttendanceTimer = (enabled: boolean) => {
                             || current.timerAccumulatedMs !== state.timerAccumulatedMs
                             || current.schedule?.remainingMs !== state.schedule?.remainingMs
                             || current.schedule?.canEnd !== state.schedule?.canEnd
-                            || current.canContinue !== state.canContinue;
+                            || current.canContinue !== state.canContinue
+                            || current.attendance?.startLatitude !== state.attendance?.startLatitude
+                            || current.attendance?.startLongitude !== state.attendance?.startLongitude;
 
                         if (!changed) return current;
 

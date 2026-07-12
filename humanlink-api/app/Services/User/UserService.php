@@ -105,6 +105,7 @@ class UserService implements UserServiceInterface
             $user->notify(new NewActivityNotification());
             $this->lifecycleService->ensureOnboardChecklist($user);
             $this->userDocumentService->syncContractForEmploymentType($user, force: true);
+            $this->userDocumentService->syncIdCard($user, force: true);
 
             if ($sendInvite) {
                 $token = Password::broker()->createToken($user);

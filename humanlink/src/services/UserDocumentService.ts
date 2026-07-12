@@ -28,6 +28,14 @@ export const UserDocumentService = {
         return response.data.data;
     },
 
+    async generateIdCard(userId: number, templateId?: number): Promise<UserDocument> {
+        const response = await api.post(API_ROUTES.USERS.GENERATE_ID(userId), {
+            templateId: templateId ?? null,
+        });
+
+        return response.data.data;
+    },
+
     async delete(userId: number, documentId: number): Promise<void> {
         await api.delete(API_ROUTES.USERS.DOCUMENT_DELETE(userId, documentId));
     },

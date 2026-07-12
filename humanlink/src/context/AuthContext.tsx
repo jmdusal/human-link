@@ -6,6 +6,7 @@ export interface Company {
     id: number;
     name: string;
     slug: string;
+    legalName?: string | null;
     legal_name?: string | null;
     timezone?: string;
 }
@@ -19,6 +20,7 @@ export interface User {
     userType?: string | null;
     userTypeId?: number | null;
     accessScope?: 'self' | 'workspace' | 'company' | null;
+    companyId?: number;
     company_id?: number;
     company?: Company | null;
 }

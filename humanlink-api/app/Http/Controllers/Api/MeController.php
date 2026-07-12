@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Contracts\UserDocumentServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Me\UpdateMeRequest;
 use App\Models\User;
@@ -13,13 +14,17 @@ use Illuminate\Support\Facades\DB;
 
 class MeController extends Controller
 {
+    public function __construct(
+        private UserDocumentServiceInterface $userDocumentService
+    ) {}
+
     public function show(): JsonResponse
     {
         /** @var User $user */
         $user = Auth::user();
 
         return response()->json([
-            'data' => $user->load(['roles', 'details', 'rate', 'schedule', 'currentBalances.leavePolicy', 'latestContract']),
+            'data' => $this->loadProfile($user),
         ]);
     }
 
@@ -38,12 +43,51 @@ class MeController extends Controller
 
             $user->update($payload);
 
-            return $user->fresh()->load(['roles', 'details', 'rate', 'schedule', 'currentBalances.leavePolicy', 'latestContract']);
+            return $this->loadProfile($user->fresh());
         });
 
         return response()->json([
             'message' => 'Profile updated successfully.',
             'data' => $user,
+        ]);
+    }
+
+    public function generateContract(): JsonResponse
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        $document = $this->userDocumentService->generateContract($user);
+
+        return response()->json([
+            'message' => 'Contract generated successfully.',
+            'data' => $document,
+        ], 201);
+    }
+
+    public function generateId(): JsonResponse
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        $document = $this->userDocumentService->generateIdCard($user);
+
+        return response()->json([
+            'message' => 'ID card generated successfully.',
+            'data' => $document,
+        ], 201);
+    }
+
+    private function loadProfile(User $user): User
+    {
+        return $user->load([
+            'roles',
+            'details',
+            'rate',
+            'schedule',
+            'currentBalances.leavePolicy',
+            'latestContract',
+            'latestIdCard',
         ]);
     }
 }

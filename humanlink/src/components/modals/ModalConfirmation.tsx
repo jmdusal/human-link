@@ -49,7 +49,7 @@ export default function ModalConfirmation({
     const { icon: Icon, iconColor, btnVariant } = variantConfig[variant];
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-hidden">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 overflow-hidden">
             {/* BACKDROP ANIMATION */}
             <motion.div 
                 initial={{ opacity: 0 }}

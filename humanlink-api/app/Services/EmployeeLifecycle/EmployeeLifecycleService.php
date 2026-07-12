@@ -245,6 +245,35 @@ class EmployeeLifecycleService implements EmployeeLifecycleServiceInterface
         });
     }
 
+    public function reonboard(User $user): array
+    {
+        if ($user->terminated_at === null) {
+            throw ValidationException::withMessages([
+                'user' => ['This employee is not offboarded.'],
+            ]);
+        }
+
+        return DB::transaction(function () use ($user): array {
+            $user->update([
+                'terminated_at' => null,
+                'status' => 'active',
+                'is_active' => true,
+            ]);
+
+            EmployeeChecklist::query()
+                ->where('user_id', $user->id)
+                ->where('type', 'offboard')
+                ->delete();
+
+            $onboard = $this->ensureOnboardChecklist($user);
+
+            return [
+                'user' => $user->fresh(['roles', 'rate', 'schedule', 'details', 'leaveBalances', 'checklists', 'documents']),
+                'onboard' => $onboard,
+            ];
+        });
+    }
+
     protected function ensureOffboardChecklist(User $user): EmployeeChecklist
     {
         $existing = EmployeeChecklist::query()

@@ -7,8 +7,6 @@ import type { Schedule } from '@/types';
 import ScheduleCalendar from '@/components/features/schedules/ScheduleCalendar';
 import ScheduleForm from '@/pages/schedules/ScheduleForm';
 import ModalConfirmation from '@/components/modals/ModalConfirmation';
-import Searchbar from '@/components/shared/Searchbar';
-import Card from '@/components/ui/Card';
 import { useAuth } from '@/context/AuthContext';
 import { ScheduleService } from '@/services/ScheduleService';
 
@@ -31,10 +29,17 @@ export default function ScheduleIndex() {
     const [scrollToDay, setScrollToDay] = useState<number | 'start'>('start');
 
     const filteredSchedules = useMemo(() => {
-        return schedules.filter((item) =>
-            item.user?.name.toLowerCase().includes(globalFilter.toLowerCase())
-        );
+        const query = globalFilter.trim().toLowerCase();
+        if (!query) return schedules;
+
+        return schedules.filter((item) => {
+            const name = item.user?.name?.toLowerCase() ?? '';
+            const email = item.user?.email?.toLowerCase() ?? '';
+            return name.includes(query) || email.includes(query);
+        });
     }, [schedules, globalFilter]);
+
+    const monthLabel = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
 
     const fetchSchedules = async () => {
         setLoading(true);
@@ -106,59 +111,51 @@ export default function ScheduleIndex() {
     };
 
     return (
-        <div className="w-full">
-            <div className="flex items-center justify-between mb-8 gap-4">
+        <div className="w-full space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Schedules</h1>
-                    <p className="text-slate-400 text-sm font-medium">
+                    <h1 className="text-2xl font-black tracking-tight text-slate-800">Schedules</h1>
+                    <p className="mt-1 text-sm text-slate-500">
                         {canManageSchedules
                             ? 'Create, edit, and visualize employee shift patterns.'
                             : 'View your weekly shifts and rest days.'}
                     </p>
                 </div>
-                {canManageSchedules && (can('schedules-create') || can('users-edit') || hasRole('super-admin') || user?.accessScope === 'company') && (
-                    <Button variant="primary" icon={Plus} onClick={handleCreate}>
-                        New Schedule
-                    </Button>
-                )}
-            </div>
 
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                {canManageSchedules ? (
-                    <div className="relative flex-1 max-w-sm">
-                        <Searchbar
-                            value={globalFilter}
-                            onChange={setGlobalFilter}
-                            placeholder="Search users..."
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-1 rounded-xl border border-slate-200/80 bg-white p-1 shadow-sm">
+                        <Button
+                            variant="secondary"
+                            icon={ChevronLeft}
+                            onClick={handlePrevMonth}
+                            aria-label="Previous month"
+                            className="!border-0 !bg-transparent !shadow-none hover:!bg-blue-50 hover:!text-blue-700"
                         />
+                        <div className="min-w-[148px] px-2 text-center text-sm font-bold text-slate-800">
+                            {monthLabel}
+                        </div>
+                        <Button
+                            variant="secondary"
+                            icon={ChevronRight}
+                            onClick={handleNextMonth}
+                            aria-label="Next month"
+                            className="!border-0 !bg-transparent !shadow-none hover:!bg-blue-50 hover:!text-blue-700"
+                        />
+                        <div className="mx-1 h-6 w-px bg-slate-200" />
+                        <Button
+                            onClick={handleToday}
+                            className="!min-w-0 !rounded-lg !px-3 !py-1.5 !text-xs"
+                        >
+                            Today
+                        </Button>
                     </div>
-                ) : (
-                    <div className="flex-1" />
-                )}
 
-                <Card className="!p-1.5 flex items-center gap-1 w-fit">
-                    <Button
-                        variant="ghost"
-                        icon={ChevronLeft}
-                        onClick={handlePrevMonth}
-                        aria-label="Previous month"
-                    />
-
-                    <Button variant="secondary" onClick={handleToday}>
-                        Today
-                    </Button>
-
-                    <span className="px-4 font-semibold text-slate-700 min-w-[150px] text-center text-sm">
-                        {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                    </span>
-
-                    <Button
-                        variant="ghost"
-                        icon={ChevronRight}
-                        onClick={handleNextMonth}
-                        aria-label="Next month"
-                    />
-                </Card>
+                    {canManageSchedules && (can('schedules-create') || can('users-edit') || hasRole('super-admin') || user?.accessScope === 'company') && (
+                        <Button variant="primary" icon={Plus} onClick={handleCreate}>
+                            New Schedule
+                        </Button>
+                    )}
+                </div>
             </div>
 
             <ScheduleCalendar
@@ -171,6 +168,11 @@ export default function ScheduleIndex() {
                 onDeleteSchedule={can('schedules-delete') || hasRole('super-admin') || user?.accessScope === 'company' || can('users-edit')
                     ? handleDeleteClick
                     : undefined}
+                showSearch={canManageSchedules}
+                searchValue={globalFilter}
+                onSearchChange={setGlobalFilter}
+                searchPlaceholder="Search users..."
+                resultCount={filteredSchedules.length}
             />
 
             <AnimatePresence>

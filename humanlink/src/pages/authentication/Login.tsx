@@ -17,6 +17,7 @@ const Login = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [loginToken, setLoginToken] = useState<string | null>(null);
+    const [mfaEmail, setMfaEmail] = useState<string | null>(null);
     const [mfaCode, setMfaCode] = useState('');
     const redirectTo = (location.state as { from?: string } | null)?.from || '/dashboard';
 
@@ -38,6 +39,7 @@ const Login = () => {
             const result = await AuthService.login(email, password);
             if (result.requiresTwoFactor) {
                 setLoginToken(result.loginToken);
+                setMfaEmail(result.email ?? null);
                 return;
             }
             await checkAuth();
@@ -92,7 +94,9 @@ const Login = () => {
                         </div>
                         <h1 className="text-xl font-semibold text-blue-600 tracking-tight">Human Link</h1>
                         <p className="text-slate-500 text-sm mt-1.5 tracking-tight">
-                            {loginToken ? 'Enter your authenticator code' : 'Sign in to your professional workspace'}
+                            {loginToken
+                                ? `Enter the 6-digit code sent to ${mfaEmail || 'your email'}`
+                                : 'Sign in to your professional workspace'}
                         </p>
                     </div>
 
@@ -118,7 +122,7 @@ const Login = () => {
                     {loginToken ? (
                         <form className="space-y-4" onSubmit={handleTwoFactor}>
                             <div className="space-y-1">
-                                <label className="text-[12px] font-medium text-slate-600 ml-1">Authentication code</label>
+                                <label className="text-[12px] font-medium text-slate-600 ml-1">Email code</label>
                                 <div className="relative group">
                                     <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                                     <input
@@ -127,12 +131,12 @@ const Login = () => {
                                         autoComplete="one-time-code"
                                         placeholder="123456"
                                         value={mfaCode}
-                                        onChange={(e) => setMfaCode(e.target.value)}
+                                        onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                                         required
                                         className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-slate-100 focus:border-slate-400 transition-all text-[14px] text-slate-800 tracking-widest"
                                     />
                                 </div>
-                                <p className="text-[11px] text-slate-400 ml-1">Or use a recovery code.</p>
+                                <p className="text-[11px] text-slate-400 ml-1">Check your inbox for the one-time code.</p>
                             </div>
                             <motion.button
                                 whileHover={{ y: -1 }}
@@ -145,7 +149,7 @@ const Login = () => {
                             </motion.button>
                             <button
                                 type="button"
-                                onClick={() => { setLoginToken(null); setMfaCode(''); }}
+                                onClick={() => { setLoginToken(null); setMfaEmail(null); setMfaCode(''); }}
                                 className="w-full text-center text-[12px] font-medium text-slate-500 hover:text-slate-800"
                             >
                                 Back to sign in

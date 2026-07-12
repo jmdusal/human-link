@@ -3,7 +3,7 @@ import { API_ROUTES } from '@/constants';
 import type { User } from '@/types';
 
 export type LoginResult =
-    | { requiresTwoFactor: true; loginToken: string }
+    | { requiresTwoFactor: true; loginToken: string; email?: string }
     | { requiresTwoFactor?: false; user: User };
 
 export const AuthService = {
@@ -15,6 +15,7 @@ export const AuthService = {
             return {
                 requiresTwoFactor: true,
                 loginToken: response.data.loginToken,
+                email: response.data.email,
             };
         }
 

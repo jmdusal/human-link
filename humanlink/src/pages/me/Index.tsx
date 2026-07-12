@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import MyContractCard from '@/components/shared/MyContractCard';
+import MyIdCardCard from '@/components/shared/MyIdCardCard';
 import { AuthService } from '@/services/AuthService';
 import { MeService, type TwoFactorSetup } from '@/services/MeService';
 import { PayrollService } from '@/services/PayrollService';
@@ -41,6 +42,8 @@ export default function MyProfilePage() {
     const [twoFactorSetup, setTwoFactorSetup] = useState<TwoFactorSetup | null>(null);
     const [mfaCode, setMfaCode] = useState('');
     const [mfaPassword, setMfaPassword] = useState('');
+    const [generatingContract, setGeneratingContract] = useState(false);
+    const [generatingIdCard, setGeneratingIdCard] = useState(false);
 
     const { payslips, loading: payslipsLoading } = usePayrolls(true, year, month);
     const { attendances, loading: attendanceLoading } = useAttendances(true, range.start, range.end);
@@ -100,6 +103,43 @@ export default function MyProfilePage() {
         }
     };
 
+    const handleGenerateContract = async () => {
+        setGeneratingContract(true);
+        try {
+            const document = await MeService.generateContract();
+            setProfile((prev) => (prev ? { ...prev, latestContract: document } : prev));
+            toast.success('Contract generated.');
+        } catch (error: any) {
+            toast.error(
+                error?.response?.data?.message
+                || error?.response?.data?.errors?.contract?.[0]
+                || error?.response?.data?.errors?.employmentType?.[0]
+                || error?.response?.data?.errors?.templateId?.[0]
+                || 'Failed to generate contract.'
+            );
+        } finally {
+            setGeneratingContract(false);
+        }
+    };
+
+    const handleGenerateIdCard = async () => {
+        setGeneratingIdCard(true);
+        try {
+            const document = await MeService.generateIdCard();
+            setProfile((prev) => (prev ? { ...prev, latestIdCard: document } : prev));
+            toast.success('ID card generated.');
+        } catch (error: any) {
+            toast.error(
+                error?.response?.data?.message
+                || error?.response?.data?.errors?.idScan?.[0]
+                || error?.response?.data?.errors?.templateId?.[0]
+                || 'Failed to generate ID card.'
+            );
+        } finally {
+            setGeneratingIdCard(false);
+        }
+    };
+
     const handleResendVerification = async () => {
         setVerifying(true);
         try {
@@ -117,22 +157,33 @@ export default function MyProfilePage() {
         try {
             const setup = await MeService.enableTwoFactor();
             setTwoFactorSetup(setup);
-            toast.success('Scan the secret in your authenticator app, then confirm.');
+            toast.success(`Code sent to ${setup.email}. Check your email.`);
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Failed to start 2FA setup.');
+            toast.error(
+                error?.response?.data?.errors?.email?.[0]
+                || error?.response?.data?.message
+                || 'Failed to send verification code.'
+            );
         } finally {
             setMfaLoading(false);
         }
     };
 
     const handleConfirmTwoFactor = async () => {
+        const code = mfaCode.replace(/\D/g, '').trim();
+
+        if (code.length !== 6) {
+            toast.error('Enter the 6-digit code from your email.');
+            return;
+        }
+
         setMfaLoading(true);
         try {
-            const updated = await MeService.confirmTwoFactor(mfaCode);
+            const updated = await MeService.confirmTwoFactor(code);
             setProfile(updated);
             setTwoFactorSetup(null);
             setMfaCode('');
-            toast.success('Two-factor authentication enabled.');
+            toast.success('Email two-factor authentication enabled.');
         } catch (error: any) {
             toast.error(error?.response?.data?.errors?.code?.[0] || error?.response?.data?.message || 'Invalid code.');
         } finally {
@@ -168,17 +219,36 @@ export default function MyProfilePage() {
     }
 
     return (
-        <div className="w-full max-w-5xl mx-auto space-y-6">
+        <div className="w-full space-y-6">
             <div>
                 <h1 className="text-2xl font-black text-slate-800 tracking-tight">My Profile</h1>
                 <p className="text-sm text-slate-500 mt-1">
-                    Update your contact details and review leave, attendance, payslips, and contract.
+                    Update your contact details and review leave, attendance, payslips, and documents.
                 </p>
             </div>
 
-            <MyContractCard contract={profile?.latestContract} />
+            <section className="space-y-3">
+                <div>
+                    <h2 className="text-sm font-bold text-slate-800">Documents</h2>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                        Generate and download your employment contract and employee ID.
+                    </p>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <MyContractCard
+                        contract={profile?.latestContract}
+                        generating={generatingContract}
+                        onGenerate={handleGenerateContract}
+                    />
+                    <MyIdCardCard
+                        idCard={profile?.latestIdCard}
+                        generating={generatingIdCard}
+                        onGenerate={handleGenerateIdCard}
+                    />
+                </div>
+            </section>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                 <Card className="border-slate-200 space-y-4">
                     <div className="flex items-center gap-2">
                         <UserRound size={16} className="text-slate-500" />
@@ -222,29 +292,39 @@ export default function MyProfilePage() {
                             <p className="text-sm font-semibold text-slate-800">Two-factor authentication</p>
                             <p className="text-xs text-slate-500">
                                 {profile?.hasTwoFactorEnabled
-                                    ? 'Enabled. Required at sign-in.'
-                                    : 'Optional. Add an authenticator app for stronger sign-in.'}
+                                    ? 'Enabled. A one-time email code is required at sign-in.'
+                                    : 'Optional. We send a one-time code to your email at sign-in.'}
                             </p>
                         </div>
 
                         {twoFactorSetup && !profile?.hasTwoFactorEnabled && (
-                            <div className="space-y-2 rounded-lg bg-slate-50 p-3">
-                                <p className="text-xs text-slate-600 break-all">
-                                    Secret: <span className="font-mono">{twoFactorSetup.secret}</span>
-                                </p>
-                                <p className="text-[11px] text-slate-500 break-all">{twoFactorSetup.qrCodeUrl}</p>
-                                <p className="text-[11px] text-slate-500">
-                                    Recovery codes (store safely): {twoFactorSetup.recoveryCodes.join(', ')}
+                            <div className="space-y-3 rounded-lg bg-slate-50 p-3">
+                                <p className="text-xs text-slate-600">
+                                    We sent a 6-digit code to{' '}
+                                    <span className="font-medium text-slate-800">{twoFactorSetup.email}</span>.
+                                    Enter it below to enable two-factor authentication.
                                 </p>
                                 <Input
-                                    label="Confirm code from app"
+                                    label="Email code"
                                     value={mfaCode}
-                                    onChange={(e) => setMfaCode(e.target.value)}
+                                    onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                                     placeholder="123456"
+                                    inputMode="numeric"
+                                    autoComplete="one-time-code"
                                 />
-                                <Button type="button" loading={mfaLoading} onClick={handleConfirmTwoFactor}>
-                                    Confirm & enable
-                                </Button>
+                                <div className="flex flex-wrap gap-2">
+                                    <Button type="button" loading={mfaLoading} onClick={handleConfirmTwoFactor}>
+                                        Confirm & enable
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        loading={mfaLoading}
+                                        onClick={handleEnableTwoFactor}
+                                    >
+                                        Resend code
+                                    </Button>
+                                </div>
                             </div>
                         )}
 
@@ -262,7 +342,7 @@ export default function MyProfilePage() {
                             </div>
                         ) : !twoFactorSetup ? (
                             <Button type="button" variant="secondary" loading={mfaLoading} onClick={handleEnableTwoFactor}>
-                                Set up 2FA
+                                Enable email 2FA
                             </Button>
                         ) : null}
                     </div>

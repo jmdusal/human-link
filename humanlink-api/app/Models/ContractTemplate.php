@@ -60,6 +60,7 @@ class ContractTemplate extends Model
     use BelongsToCompany;
 
     public const PLACEHOLDERS = [
+        'company_name',
         'employee_name',
         'email',
         'job_title',

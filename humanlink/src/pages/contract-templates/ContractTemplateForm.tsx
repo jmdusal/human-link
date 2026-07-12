@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { AnimatePresence } from 'framer-motion';
 import ModalForm from '@/components/modals/ModalForm';
+import ContractTemplatePreviewModal from '@/components/modals/contract-templates/ContractTemplatePreviewModal';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
@@ -32,6 +34,8 @@ export default function ContractTemplateForm({
 }: ContractTemplateFormProps) {
     const form = useForm<ContractTemplateFormData>(INITIAL_CONTRACT_TEMPLATE_FORM_STATE);
     const [previewing, setPreviewing] = useState(false);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
     const onSubmit = (e: React.FormEvent) => {
         form.handleSubmit(
@@ -46,18 +50,35 @@ export default function ContractTemplateForm({
         );
     };
 
+    const closePreview = () => {
+        if (previewUrl) {
+            window.URL.revokeObjectURL(previewUrl);
+        }
+        setPreviewUrl(null);
+        setIsPreviewOpen(false);
+        setPreviewing(false);
+    };
+
     const handlePreview = async () => {
         if (!form.formData.body.trim()) {
             toast.error('Add template body before previewing.');
             return;
         }
 
+        if (previewUrl) {
+            window.URL.revokeObjectURL(previewUrl);
+            setPreviewUrl(null);
+        }
+
+        setIsPreviewOpen(true);
         setPreviewing(true);
         try {
-            await ContractTemplateService.previewDraft(form.formData.body);
+            const url = await ContractTemplateService.previewDraft(form.formData.body);
+            setPreviewUrl(url);
         } catch (error) {
             console.error('Preview Error:', error);
             toast.error('Failed to preview contract template.');
+            setIsPreviewOpen(false);
         } finally {
             setPreviewing(false);
         }
@@ -72,78 +93,93 @@ export default function ContractTemplateForm({
     }, [selectedTemplate, form.setFormData]);
 
     return (
-        <ModalForm
-            isOpen={isOpen}
-            onClose={onClose}
-            onSubmit={onSubmit}
-            title={selectedTemplate ? 'Edit Contract Template' : 'Create Contract Template'}
-            description={selectedTemplate ? 'MODIFY EXISTING TEMPLATE' : 'SETUP A NEW TEMPLATE'}
-            isUpdate={!!selectedTemplate}
-            loading={form.isSubmitting}
-            footerStart={
-                <Button
-                    type="button"
-                    variant="secondary"
-                    loading={previewing}
-                    onClick={handlePreview}
-                >
-                    Preview
-                </Button>
-            }
-        >
-            <div className="col-span-1 md:col-span-2 flex flex-col gap-5 py-2">
-                <Input
-                    label="Name"
-                    placeholder="e.g. Regular Employment Contract"
-                    value={form.formData.name}
-                    onChange={(e) => form.handleChange('name', e.target.value)}
-                    error={form.errors.name?.[0]}
-                />
-                <Select
-                    label="Employment type"
-                    options={EMPLOYMENT_TYPE_OPTIONS}
-                    value={form.formData.employmentType}
-                    onChange={(value) => form.handleChange('employmentType', value)}
-                    placeholder="Select employment type"
-                />
-                {form.errors.employmentType?.[0] && (
-                    <p className="text-xs text-rose-500 -mt-3">{form.errors.employmentType[0]}</p>
-                )}
-                <Textarea
-                    label="Template body"
-                    helperText="Use placeholders below"
-                    rows={14}
-                    value={form.formData.body}
-                    onChange={(e) => form.handleChange('body', e.target.value)}
-                    error={form.errors.body?.[0]}
-                    placeholder="Write contract HTML or plain text with {{placeholders}}"
-                />
-                <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                        Placeholders
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                        {CONTRACT_PLACEHOLDERS.map((token) => (
-                            <button
-                                key={token}
-                                type="button"
-                                onClick={() =>
-                                    form.handleChange('body', `${form.formData.body}${token}`)
-                                }
-                                className="text-[11px] font-mono px-2 py-1 rounded bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
-                            >
-                                {token}
-                            </button>
-                        ))}
+        <>
+            <ModalForm
+                isOpen={isOpen}
+                onClose={onClose}
+                onSubmit={onSubmit}
+                title={selectedTemplate ? 'Edit Contract Template' : 'Create Contract Template'}
+                description={selectedTemplate ? 'MODIFY EXISTING TEMPLATE' : 'SETUP A NEW TEMPLATE'}
+                isUpdate={!!selectedTemplate}
+                loading={form.isSubmitting}
+                footerStart={
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        loading={previewing}
+                        onClick={handlePreview}
+                    >
+                        Preview
+                    </Button>
+                }
+            >
+                <div className="col-span-1 md:col-span-2 flex flex-col gap-5 py-2">
+                    <Input
+                        label="Name"
+                        placeholder="e.g. Regular Employment Contract"
+                        value={form.formData.name}
+                        onChange={(e) => form.handleChange('name', e.target.value)}
+                        error={form.errors.name?.[0]}
+                    />
+                    <Select
+                        label="Employment type"
+                        options={EMPLOYMENT_TYPE_OPTIONS}
+                        value={form.formData.employmentType}
+                        onChange={(value) => form.handleChange('employmentType', value)}
+                        placeholder="Select employment type"
+                    />
+                    {form.errors.employmentType?.[0] && (
+                        <p className="-mt-3 text-xs text-rose-500">{form.errors.employmentType[0]}</p>
+                    )}
+                    <Textarea
+                        label="Template body"
+                        helperText="Use placeholders below"
+                        rows={14}
+                        value={form.formData.body}
+                        onChange={(e) => form.handleChange('body', e.target.value)}
+                        error={form.errors.body?.[0]}
+                        placeholder="Write contract HTML or plain text with {{placeholders}}"
+                    />
+                    <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                        <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Placeholders
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                            {CONTRACT_PLACEHOLDERS.map((token) => (
+                                <button
+                                    key={token}
+                                    type="button"
+                                    onClick={() =>
+                                        form.handleChange('body', `${form.formData.body}${token}`)
+                                    }
+                                    className="rounded border border-slate-200 bg-white px-2 py-1 font-mono text-[11px] text-slate-600 hover:border-slate-300"
+                                >
+                                    {token}
+                                </button>
+                            ))}
+                        </div>
                     </div>
+                    <Switch
+                        label="Active"
+                        description="Inactive templates cannot be used to generate contracts."
+                        checked={form.formData.isActive}
+                        onChange={(val) => form.handleChange('isActive', val)}
+                    />
                 </div>
-                <Switch
-                    label="Active"
-                    description="Inactive templates cannot be used to generate contracts."
-                    checked={form.formData.isActive}
-                    onChange={(val) => form.handleChange('isActive', val)}
-                />
-            </div>
-        </ModalForm>
+            </ModalForm>
+
+            <AnimatePresence>
+                {isPreviewOpen && (
+                    <ContractTemplatePreviewModal
+                        isOpen={isPreviewOpen}
+                        onClose={closePreview}
+                        title={form.formData.name.trim() || 'Draft preview'}
+                        subtitle="PDF preview"
+                        pdfUrl={previewUrl}
+                        loading={previewing && !previewUrl}
+                    />
+                )}
+            </AnimatePresence>
+        </>
     );
 }

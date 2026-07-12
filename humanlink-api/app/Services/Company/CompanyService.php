@@ -8,9 +8,11 @@ use App\Contracts\CompanyServiceInterface;
 use App\Contracts\UserTypeServiceInterface;
 use App\Models\Company;
 use App\Models\ContractTemplate;
+use App\Models\IdCardTemplate;
 use App\Models\LeavePolicy;
 use App\Support\CompanyContext;
 use App\Support\DefaultContractTemplates;
+use App\Support\DefaultIdCardTemplates;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -182,6 +184,18 @@ class CompanyService implements CompanyServiceInterface
                 ]
             );
         }
+
+        $idCardTemplate = DefaultIdCardTemplates::default();
+        IdCardTemplate::query()->updateOrCreate(
+            [
+                'company_id' => $company->id,
+            ],
+            [
+                'name' => $idCardTemplate['name'],
+                'body' => $idCardTemplate['body'],
+                'is_active' => $idCardTemplate['is_active'],
+            ]
+        );
 
         $this->userTypeService->provisionDefaults($company);
     }

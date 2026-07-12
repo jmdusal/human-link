@@ -17,8 +17,10 @@ function localDateKey(year: number, monthIndex: number, day: number): string {
 }
 
 export default function AttendanceIndex() {
-    const { can, hasRole, user } = useAuth();
-    const isAdminView = hasRole('super-admin') || user?.accessScope === 'company' || can('users-edit');
+    const { hasRole, user } = useAuth();
+    const isHrUserType = (user?.userType ?? '').toLowerCase() === 'hr'
+        || user?.accessScope === 'company';
+    const isAdminView = hasRole('super-admin') || isHrUserType;
 
     const [currentDate, setCurrentDate] = useState(new Date());
     const [disputeAttendance, setDisputeAttendance] = useState<Attendance | null>(null);
@@ -96,7 +98,7 @@ export default function AttendanceIndex() {
                     <p className="text-sm text-slate-500 mt-1">Track and control your work time for today.</p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:items-stretch xl:h-[min(640px,calc(100vh-12rem))]">
+                <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
                     <MyAttendanceTimer
                         timer={timer}
                         displayMs={displayMs}
@@ -141,29 +143,32 @@ export default function AttendanceIndex() {
         <div className="w-full space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-black text-slate-800 tracking-tight">Attendance</h1>
-                    <p className="text-sm text-slate-500 mt-1">
+                    <h1 className="text-2xl font-black tracking-tight text-slate-800">Attendance</h1>
+                    <p className="mt-1 text-sm text-slate-500">
                         Calendar of employee presence for the selected month.
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 rounded-xl border border-slate-200/80 bg-white p-1 shadow-sm">
                     <Button
                         variant="secondary"
                         icon={ChevronLeft}
                         onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
+                        className="!border-0 !bg-transparent !shadow-none hover:!bg-blue-50 hover:!text-blue-700"
                     />
-                    <div className="min-w-[160px] text-center text-sm font-bold text-slate-700">
+                    <div className="min-w-[148px] px-2 text-center text-sm font-bold text-slate-800">
                         {monthLabel}
                     </div>
                     <Button
                         variant="secondary"
                         icon={ChevronRight}
                         onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
+                        className="!border-0 !bg-transparent !shadow-none hover:!bg-blue-50 hover:!text-blue-700"
                     />
+                    <div className="mx-1 h-6 w-px bg-slate-200" />
                     <Button
-                        variant="outline"
                         onClick={() => setCurrentDate(new Date())}
+                        className="!min-w-0 !rounded-lg !px-3 !py-1.5 !text-xs"
                     >
                         Today
                     </Button>

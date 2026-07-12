@@ -29,9 +29,10 @@ class AuthenticationController extends Controller
 
         if (! empty($result['requires_two_factor'])) {
             return response()->json([
-                'message' => 'Two-factor authentication required.',
+                'message' => 'A verification code was sent to your email.',
                 'requires_two_factor' => true,
                 'login_token' => $result['login_token'],
+                'email' => $result['email'] ?? null,
             ]);
         }
 
@@ -113,7 +114,7 @@ class AuthenticationController extends Controller
         $setup = $this->authService->beginTwoFactorSetup($user);
 
         return response()->json([
-            'message' => 'Scan the QR code with your authenticator app, then confirm with a code.',
+            'message' => 'We sent a 6-digit code to your email. Enter it to enable two-factor authentication.',
             'data' => $setup,
         ]);
     }
@@ -125,7 +126,7 @@ class AuthenticationController extends Controller
         $user = $this->authService->confirmTwoFactorSetup($user, $request->validated('code'));
 
         return response()->json([
-            'message' => 'Two-factor authentication enabled.',
+            'message' => 'Email two-factor authentication enabled.',
             'data' => $user,
         ]);
     }

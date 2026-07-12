@@ -30,6 +30,12 @@ export interface Attendance {
     scheduledStart?: string | null;
     scheduledEnd?: string | null;
     status: 'working' | 'paused' | 'completed';
+    startLatitude?: number | null;
+    startLongitude?: number | null;
+    startAccuracy?: number | null;
+    endLatitude?: number | null;
+    endLongitude?: number | null;
+    endAccuracy?: number | null;
     user?: AttendanceUser;
     breaks?: AttendanceBreak[];
     createdAt?: string;

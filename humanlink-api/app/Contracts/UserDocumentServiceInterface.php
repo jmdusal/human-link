@@ -19,5 +19,9 @@ interface UserDocumentServiceInterface
 
     public function syncContractForEmploymentType(User $user, bool $force = false): ?UserDocument;
 
+    public function generateIdCard(User $user, ?int $templateId = null): UserDocument;
+
+    public function syncIdCard(User $user, bool $force = false): ?UserDocument;
+
     public function delete(UserDocument $document): void;
 }

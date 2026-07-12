@@ -36,4 +36,5 @@ export interface DashboardSummary {
     roleDistribution: RoleDistributionItem[];
     recentActivity: DashboardActivityItem[];
     contract?: import('@/types/UserDocument').UserDocument | null;
+    idCard?: import('@/types/UserDocument').UserDocument | null;
 }

@@ -12,9 +12,7 @@ interface TabsProps {
 
 export default function ModalTabs({ tabs, activeTab, onTabChange }: TabsProps) {
   return (
-    // <div className="max-w-7xl mx-auto px-6">
-    <div className="max-w-[2000px] mx-auto px-10">
-    
+    <div className="w-full border-b border-slate-100">
       <nav className="flex gap-8">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;

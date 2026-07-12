@@ -116,3 +116,14 @@ export const getInitials = (name: string): string => {
 
     return parts[0].slice(0, 2).toUpperCase();
 };
+
+export const getCompanyEmailDomain = (companySlug?: string | null): string => {
+    if (!companySlug) return '';
+
+    const domain = companySlug
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]/g, '');
+
+    return domain ? `${domain}.com` : '';
+};

@@ -9,11 +9,13 @@ import type { User, UserFormData } from '@/types';
 import { USER_STATUS_OPTIONS } from '@/constants';
 import {
     formatUserFormData,
+    getCompanyEmailDomain,
     INITIAL_USER_FORM_STATE,
     DAYS_NAME,
     EMPLOYMENT_TYPE_OPTIONS,
 } from '@/utils/userUtils';
 import { UserService } from '@/services/UserService';
+import { useAuth } from '@/context/AuthContext';
 import { useRoles } from '@/hooks/use-roles';
 import { useUserTypes } from '@/hooks/use-user-types';
 import { useDepartments } from '@/hooks/use-departments';
@@ -38,12 +40,27 @@ interface UserFormProps {
 
 export default function UserForm({ isOpen, onClose, onSuccess, selectedUser }: UserFormProps) {
     const [activeTab, setActiveTab] = useState('account');
+    const { user } = useAuth();
     const { roleOptions } = useRoles(isOpen);
     const { userTypeOptions } = useUserTypes(isOpen);
     const { departments } = useDepartments(isOpen);
     const form = useForm<UserFormData>(INITIAL_USER_FORM_STATE);
     const { positions: allPositions } = usePositions(isOpen);
     const isEditing = !!selectedUser;
+    const companyEmailDomain = getCompanyEmailDomain(user?.company?.slug);
+    const emailLocalPart = useMemo(() => {
+        if (!companyEmailDomain || !form.formData.email) return '';
+
+        const suffix = `@${companyEmailDomain}`;
+
+        if (form.formData.email.endsWith(suffix)) {
+            return form.formData.email.slice(0, -suffix.length);
+        }
+
+        const atIndex = form.formData.email.indexOf('@');
+        return atIndex === -1 ? form.formData.email : form.formData.email.slice(0, atIndex);
+    }, [companyEmailDomain, form.formData.email]);
+    const useCompanyEmailDomain = !isEditing && !!companyEmailDomain;
 
     const TABS = [
         { id: 'account', label: 'Account', icon: UserIcon },
@@ -158,16 +175,29 @@ export default function UserForm({ isOpen, onClose, onSuccess, selectedUser }: U
         }));
     };
 
+    const handleEmailLocalPartChange = (localPart: string) => {
+        const sanitized = localPart.replace(/@/g, '');
+        form.handleChange(
+            'email',
+            companyEmailDomain ? `${sanitized}@${companyEmailDomain}` : sanitized
+        );
+    };
+
     useEffect(() => {
         if (!isOpen) return;
 
-        const state = selectedUser
-            ? formatUserFormData(selectedUser)
-            : INITIAL_USER_FORM_STATE;
+        if (selectedUser) {
+            form.setFormData(formatUserFormData(selectedUser));
+        } else {
+            const domain = getCompanyEmailDomain(user?.company?.slug);
+            form.setFormData({
+                ...INITIAL_USER_FORM_STATE,
+                email: domain ? `@${domain}` : '',
+            });
+        }
 
-        form.setFormData(state);
         setActiveTab('account');
-    }, [isOpen, selectedUser, form.setFormData]);
+    }, [isOpen, selectedUser, user?.company?.slug, form.setFormData]);
 
     useEffect(() => {
         if (!isOpen || selectedUser || form.formData.userTypeId || userTypeOptions.length === 0) {
@@ -207,12 +237,12 @@ export default function UserForm({ isOpen, onClose, onSuccess, selectedUser }: U
                 {activeTab === 'account' && (
                     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
                         <section className="space-y-3">
-                            <div>
+                            {/* <div>
                                 <h3 className="text-sm font-semibold text-slate-800">Profile</h3>
                                 <p className="text-xs text-slate-500 mt-0.5">
                                     Basic identity used across attendance, leave, and payroll.
                                 </p>
-                            </div>
+                            </div> */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <Input
                                     label="Full name"
@@ -221,24 +251,55 @@ export default function UserForm({ isOpen, onClose, onSuccess, selectedUser }: U
                                     onChange={(e) => form.handleChange('name', e.target.value)}
                                     error={form.errors.name?.[0]}
                                 />
-                                <Input
-                                    label="Work email"
-                                    type="email"
-                                    placeholder="Enter email address"
-                                    value={form.formData.email}
-                                    onChange={(e) => form.handleChange('email', e.target.value)}
-                                    error={form.errors.email?.[0]}
-                                />
+                                {useCompanyEmailDomain ? (
+                                    <div className="space-y-1.5 text-left w-full">
+                                        <label className="block text-slate-700 font-medium text-xs uppercase tracking-wider">
+                                            Work email
+                                        </label>
+                                        <div
+                                            className={`
+                                                flex items-center w-full bg-white border rounded-md
+                                                shadow-[0_1px_2px_rgba(0,0,0,0.05)]
+                                                focus-within:border-black focus-within:ring-4 focus-within:ring-slate-100
+                                                transition-all duration-200 ease-out
+                                                ${form.errors.email?.[0]
+                                                    ? 'border-red-500 focus-within:border-red-500 focus-within:ring-red-500/10'
+                                                    : 'border-slate-200 hover:border-slate-300'}
+                                            `}
+                                        >
+                                            <input
+                                                type="text"
+                                                autoComplete="off"
+                                                placeholder="username"
+                                                value={emailLocalPart}
+                                                onChange={(e) => handleEmailLocalPartChange(e.target.value)}
+                                                className="min-w-0 flex-1 px-3 py-2 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 outline-none"
+                                            />
+                                            <span className="shrink-0 pr-3 py-2 text-sm text-slate-500 select-none">
+                                                @{companyEmailDomain}
+                                            </span>
+                                        </div>
+                                        {form.errors.email?.[0] && (
+                                            <p className="text-[11px] text-red-500 font-medium mt-1">
+                                                {form.errors.email[0]}
+                                            </p>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <Input
+                                        label="Work email"
+                                        type="email"
+                                        placeholder="Enter email address"
+                                        value={form.formData.email}
+                                        onChange={(e) => form.handleChange('email', e.target.value)}
+                                        error={form.errors.email?.[0]}
+                                    />
+                                )}
                             </div>
                         </section>
 
                         {!isEditing && (
                             <section className="space-y-3">
-                                <div>
-                                    <p className="text-xs text-slate-500 mt-0.5">
-                                        Prefer invite email so the person sets their own password.
-                                    </p>
-                                </div>
                                 <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3 cursor-pointer">
                                     <input
                                         type="checkbox"
@@ -255,6 +316,10 @@ export default function UserForm({ isOpen, onClose, onSuccess, selectedUser }: U
                                         <span className="block text-xs text-slate-500 mt-0.5">
                                             User receives a link to set their password. Recommended for real onboarding.
                                         </span>
+                                        <span className="block text-xs text-slate-500 mt-0.5">
+                                            Please note that the user will receive an invite email to set their own password.
+                                        </span>
+                                        
                                     </span>
                                 </label>
                                 <Input

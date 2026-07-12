@@ -1,6 +1,7 @@
 import type { ContractTemplate, ContractTemplateFormData } from '@/types';
 
 export const CONTRACT_PLACEHOLDERS = [
+    '{{company_name}}',
     '{{employee_name}}',
     '{{email}}',
     '{{job_title}}',

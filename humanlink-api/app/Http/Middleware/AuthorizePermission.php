@@ -65,6 +65,8 @@ class AuthorizePermission
             'toggleLifecycleItem' => 'edit',
             'offboard' => 'edit',
             'generateContract' => 'edit',
+            'generateId' => 'edit',
+            'reonboard' => 'edit',
             'resendInvite' => 'edit',
             'forcePasswordReset' => 'edit',
             'deactivate' => 'edit',

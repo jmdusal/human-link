@@ -59,12 +59,12 @@ class AttendanceService implements AttendanceServiceInterface
         return $this->timerPayload($user->fresh());
     }
 
-    public function start(): array
+    public function start(?array $location = null): array
     {
         /** @var User $user */
         $user = Auth::user();
 
-        return DB::transaction(function () use ($user): array {
+        return DB::transaction(function () use ($user, $location): array {
             $user = User::query()->lockForUpdate()->findOrFail($user->id);
             $this->syncDayBoundary($user);
 
@@ -81,6 +81,7 @@ class AttendanceService implements AttendanceServiceInterface
             $now = now();
             $attendance = $this->todayAttendance($user);
             $scheduleMeta = $this->scheduleMetaForUser($user, 0);
+            $locationPayload = $this->startLocationPayload($location);
 
             if ($attendance && $attendance->status === 'completed') {
                 throw ValidationException::withMessages([
@@ -102,6 +103,7 @@ class AttendanceService implements AttendanceServiceInterface
                     'total_ms' => 0,
                     'status' => 'working',
                     ...$schedulePayload,
+                    ...$locationPayload,
                 ]);
             } else {
                 $attendance->update([
@@ -109,6 +111,7 @@ class AttendanceService implements AttendanceServiceInterface
                     'ended_at' => null,
                     'started_at' => $attendance->started_at ?? $now,
                     ...$schedulePayload,
+                    ...($attendance->start_latitude === null ? $locationPayload : []),
                 ]);
             }
 
@@ -220,12 +223,12 @@ class AttendanceService implements AttendanceServiceInterface
         });
     }
 
-    public function end(): array
+    public function end(?array $location = null): array
     {
         /** @var User $user */
         $user = Auth::user();
 
-        return DB::transaction(function () use ($user): array {
+        return DB::transaction(function () use ($user, $location): array {
             $user = User::query()->lockForUpdate()->findOrFail($user->id);
             $this->syncDayBoundary($user);
 
@@ -243,6 +246,7 @@ class AttendanceService implements AttendanceServiceInterface
             $scheduleMeta = $this->scheduleMetaForUser($user, $elapsed);
             $attendance = $this->todayAttendance($user);
             $now = now();
+            $locationPayload = $this->endLocationPayload($location);
 
             if ($attendance && $user->timer_status === 'paused') {
                 $openBreak = AttendanceBreak::query()
@@ -279,6 +283,7 @@ class AttendanceService implements AttendanceServiceInterface
                     'scheduled_start' => $scheduleMeta['shift_start'],
                     'scheduled_end' => $scheduleMeta['shift_end'],
                     ...$metrics,
+                    ...$locationPayload,
                 ]);
             }
 
@@ -338,6 +343,40 @@ class AttendanceService implements AttendanceServiceInterface
 
             return $this->broadcastAndReturn($user->fresh(), $attendance->fresh());
         });
+    }
+
+    /**
+     * @param  array{latitude?: float|int|string|null, longitude?: float|int|string|null, accuracy?: float|int|string|null}|null  $location
+     * @return array{start_latitude: float, start_longitude: float, start_accuracy: float|null}|array{}
+     */
+    protected function startLocationPayload(?array $location): array
+    {
+        if ($location === null || ! isset($location['latitude'], $location['longitude'])) {
+            return [];
+        }
+
+        return [
+            'start_latitude' => (float) $location['latitude'],
+            'start_longitude' => (float) $location['longitude'],
+            'start_accuracy' => isset($location['accuracy']) ? (float) $location['accuracy'] : null,
+        ];
+    }
+
+    /**
+     * @param  array{latitude?: float|int|string|null, longitude?: float|int|string|null, accuracy?: float|int|string|null}|null  $location
+     * @return array{end_latitude: float, end_longitude: float, end_accuracy: float|null}|array{}
+     */
+    protected function endLocationPayload(?array $location): array
+    {
+        if ($location === null || ! isset($location['latitude'], $location['longitude'])) {
+            return [];
+        }
+
+        return [
+            'end_latitude' => (float) $location['latitude'],
+            'end_longitude' => (float) $location['longitude'],
+            'end_accuracy' => isset($location['accuracy']) ? (float) $location['accuracy'] : null,
+        ];
     }
 
     /**

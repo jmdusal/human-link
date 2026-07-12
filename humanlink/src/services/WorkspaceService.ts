@@ -72,6 +72,11 @@ export const WorkspaceService = {
         return response.data.data;
     },
 
+    async getInvitation(token: string): Promise<{ status: 'pending' | 'accepted'; workspace: Workspace }> {
+        const response = await api.get(API_ROUTES.WORKSPACES.GET_INVITATION(token));
+        return response.data.data;
+    },
+
     async acceptInvitation(token: string): Promise<Workspace> {
         const response = await api.post(API_ROUTES.WORKSPACES.ACCEPT_INVITATION(token));
         return response.data.data;

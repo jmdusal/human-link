@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\ContractTemplate;
 
 use App\Contracts\ContractTemplateServiceInterface;
+use App\Models\Company;
 use App\Models\ContractTemplate;
 use App\Support\CompanyContext;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -82,18 +83,39 @@ class ContractTemplateService implements ContractTemplateServiceInterface
     private function fillSamplePlaceholders(string $body): string
     {
         $replacements = [
-            '{{employee_name}}' => e('Alex Rivera'),
-            '{{email}}' => e('alex.rivera@example.com'),
-            '{{job_title}}' => e('Software Engineer'),
-            '{{department}}' => e('Engineering'),
-            '{{employment_type}}' => e('Regular'),
-            '{{hired_at}}' => e(now()->format('F j, Y')),
-            '{{monthly_rate}}' => e('75,000.00'),
-            '{{daily_rate}}' => e('3,409.09'),
-            '{{hourly_rate}}' => e('426.14'),
-            '{{generated_at}}' => e(now()->format('F j, Y')),
+            '{{company_name}}' => e($this->resolveCompanyDisplayName()),
+            '{{employee_name}}' => '',
+            '{{email}}' => '',
+            '{{job_title}}' => '',
+            '{{department}}' => '',
+            '{{employment_type}}' => '',
+            '{{hired_at}}' => '',
+            '{{monthly_rate}}' => '',
+            '{{daily_rate}}' => '',
+            '{{hourly_rate}}' => '',
+            '{{generated_at}}' => '',
         ];
 
         return str_replace(array_keys($replacements), array_values($replacements), $body);
+    }
+
+    private function resolveCompanyDisplayName(): string
+    {
+        $companyId = $this->companyContext->id();
+        if ($companyId === null) {
+            return '';
+        }
+
+        $company = Company::query()->find($companyId);
+        if (! $company) {
+            return '';
+        }
+
+        $name = trim((string) ($company->name ?? ''));
+        if ($name !== '') {
+            return $name;
+        }
+
+        return trim((string) ($company->legal_name ?? ''));
     }
 }

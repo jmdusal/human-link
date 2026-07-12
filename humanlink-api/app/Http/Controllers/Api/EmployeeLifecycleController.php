@@ -43,4 +43,14 @@ class EmployeeLifecycleController extends Controller
             'data' => $result,
         ]);
     }
+
+    public function reonboard(User $user): JsonResponse
+    {
+        $result = $this->lifecycleService->reonboard($user);
+
+        return response()->json([
+            'message' => 'Employee re-onboarded successfully. Access restored. Re-assign workspaces if needed.',
+            'data' => $result,
+        ]);
+    }
 }

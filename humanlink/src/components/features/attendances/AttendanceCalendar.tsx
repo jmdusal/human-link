@@ -1,7 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { getInitials } from '@/utils/userUtils';
 import { formatISODate } from '@/utils/dateUtils';
 import Card from '@/components/ui/Card';
+import AttendancePresentModal from '@/components/modals/attendances/AttendancePresentModal';
 import type { Attendance } from '@/types';
 
 interface Props {
@@ -10,27 +12,23 @@ interface Props {
     loading?: boolean;
 }
 
-function formatDuration(ms: number): string {
-    const totalSeconds = Math.floor(ms / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    return `${hours}h ${String(minutes).padStart(2, '0')}m`;
-}
-
 export default function AttendanceCalendar({ data, currentDate, loading }: Props) {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const firstWeekday = new Date(year, month, 1).getDay();
     const today = new Date();
-    const [selectedDay, setSelectedDay] = useState<number | null>(
-        today.getFullYear() === year && today.getMonth() === month ? today.getDate() : null,
-    );
+    const [selectedDay, setSelectedDay] = useState<number | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    useEffect(() => {
+        setSelectedDay(null);
+        setIsModalOpen(false);
+    }, [year, month]);
 
     const byDate = useMemo(() => {
         const map = new Map<string, Attendance[]>();
         data.forEach((item) => {
-            // Prefer plain Y-m-d; otherwise convert via Asia/Manila (avoids UTC day shift).
             const key = /^\d{4}-\d{2}-\d{2}$/.test(item.date)
                 ? item.date
                 : formatISODate(item.date);
@@ -46,6 +44,9 @@ export default function AttendanceCalendar({ data, currentDate, loading }: Props
         ? `${year}-${String(month + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`
         : null;
     const selectedAttendances = selectedKey ? (byDate.get(selectedKey) ?? []) : [];
+    const dateLabel = selectedDay
+        ? `${currentDate.toLocaleString('default', { month: 'long' })} ${selectedDay}, ${year}`
+        : '';
 
     const cells: Array<number | null> = [
         ...Array.from({ length: firstWeekday }, () => null),
@@ -56,127 +57,123 @@ export default function AttendanceCalendar({ data, currentDate, loading }: Props
         cells.push(null);
     }
 
+    const openDay = (day: number) => {
+        setSelectedDay(day);
+        setIsModalOpen(true);
+    };
+
     return (
-        <div className="space-y-6">
-            <Card className="!p-0 overflow-hidden border-slate-200 relative">
+        <>
+            <Card className="relative w-full overflow-hidden border-slate-200/80 !p-0 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_rgba(37,99,235,0.04)]">
                 {loading && (
-                    <div className="absolute inset-0 z-20 bg-white/75 backdrop-blur-[1px] flex items-center justify-center">
-                        <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                    <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/80 backdrop-blur-[1px]">
+                        <div className="flex flex-col items-center gap-2">
+                            <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600">
+                                Loading
+                            </span>
+                        </div>
                     </div>
                 )}
 
-                <div className="grid grid-cols-7 border-b border-slate-100">
+                <div className="grid grid-cols-7 border-b border-blue-100/80 bg-gradient-to-b from-blue-50/90 to-white">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((label) => (
-                        <div key={label} className="px-2 py-3 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        <div
+                            key={label}
+                            className="px-1 py-3.5 text-center text-[10px] font-bold uppercase tracking-[0.14em] text-blue-700/70 sm:px-2"
+                        >
                             {label}
                         </div>
                     ))}
                 </div>
 
-                <div className="grid grid-cols-7 auto-rows-[minmax(96px,1fr)]">
+                <div className="grid grid-cols-7 auto-rows-[minmax(76px,1fr)] sm:auto-rows-[minmax(104px,1fr)]">
                     {cells.map((day, index) => {
                         if (!day) {
-                            return <div key={`empty-${index}`} className="border-b border-r border-slate-50 bg-slate-50/40" />;
+                            return (
+                                <div
+                                    key={`empty-${index}`}
+                                    className="border-b border-r border-slate-100/80 bg-slate-50/50"
+                                />
+                            );
                         }
 
                         const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                         const dayItems = byDate.get(key) ?? [];
+                        const hasPresence = dayItems.length > 0;
                         const isToday =
                             today.getFullYear() === year
                             && today.getMonth() === month
                             && today.getDate() === day;
-                        const isSelected = selectedDay === day;
+                        const isSelected = selectedDay === day && isModalOpen;
 
                         return (
                             <button
                                 key={key}
                                 type="button"
-                                onClick={() => setSelectedDay(day)}
-                                className={`border-b border-r border-slate-100 p-2 text-left transition-colors hover:bg-blue-50/40 ${
-                                    isSelected ? 'bg-blue-50/70' : 'bg-white'
+                                onClick={() => openDay(day)}
+                                className={`group relative border-b border-r border-slate-100 p-1.5 text-left transition-all duration-200 sm:p-2.5 ${
+                                    isSelected
+                                        ? 'bg-blue-50 ring-2 ring-inset ring-blue-500/40'
+                                        : hasPresence
+                                            ? 'bg-blue-50/40 hover:bg-blue-50'
+                                            : 'bg-white hover:bg-blue-50/50'
                                 }`}
                             >
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className={`text-sm font-bold ${isToday ? 'text-blue-600' : 'text-slate-700'}`}>
+                                <div className="mb-1.5 sm:mb-2.5">
+                                    <span
+                                        className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold tabular-nums transition-colors ${
+                                            isToday
+                                                ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/25'
+                                                : isSelected
+                                                    ? 'text-blue-700'
+                                                    : 'text-slate-700 group-hover:text-blue-700'
+                                        }`}
+                                    >
                                         {day}
                                     </span>
-                                    {dayItems.length > 0 && (
-                                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
-                                            {dayItems.length}
-                                        </span>
-                                    )}
                                 </div>
+
                                 <div className="flex -space-x-1.5">
                                     {dayItems.slice(0, 4).map((item) => (
                                         <div
                                             key={item.id}
                                             title={item.user?.name}
-                                            className="w-6 h-6 rounded-full bg-emerald-100 border-2 border-white flex items-center justify-center"
+                                            className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-blue-500 to-blue-600 shadow-sm shadow-blue-600/15"
                                         >
-                                            <span className="text-[8px] font-bold text-emerald-700 uppercase">
+                                            <span className="text-[8px] font-bold uppercase tracking-wide text-white">
                                                 {getInitials(item.user?.name || '?')}
                                             </span>
                                         </div>
                                     ))}
                                     {dayItems.length > 4 && (
-                                        <div className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center">
-                                            <span className="text-[8px] font-bold text-slate-500">+{dayItems.length - 4}</span>
+                                        <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-blue-100">
+                                            <span className="text-[8px] font-bold text-blue-700">
+                                                +{dayItems.length - 4}
+                                            </span>
                                         </div>
                                     )}
                                 </div>
+
+                                {hasPresence && (
+                                    <span className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-blue-500/0 via-blue-500/70 to-blue-500/0 opacity-0 transition-opacity group-hover:opacity-100" />
+                                )}
                             </button>
                         );
                     })}
                 </div>
             </Card>
 
-            <Card className="border-slate-200">
-                <h3 className="text-sm font-bold text-slate-800 mb-1">
-                    {selectedDay
-                        ? `Present on ${currentDate.toLocaleString('default', { month: 'long' })} ${selectedDay}`
-                        : 'Select a day'}
-                </h3>
-                <p className="text-xs text-slate-400 mb-5">
-                    Users who started attendance on this date.
-                </p>
-
-                {selectedAttendances.length === 0 ? (
-                    <div className="py-10 text-center text-sm text-slate-400 font-medium">
-                        No one present on this day.
-                    </div>
-                ) : (
-                    <div className="space-y-3 max-h-[520px] overflow-auto pr-1">
-                        {selectedAttendances.map((item) => (
-                            <div
-                                key={item.id}
-                                className="w-full flex items-center justify-between gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50/50"
-                            >
-                                <div className="flex items-center gap-3 min-w-0">
-                                    <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-[10px] font-bold uppercase shrink-0">
-                                        {getInitials(item.user?.name || '?')}
-                                    </div>
-                                    <div className="min-w-0">
-                                        <p className="text-sm font-bold text-slate-800 truncate">{item.user?.name}</p>
-                                        <p className="text-[11px] text-slate-400 capitalize">
-                                            {item.status}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="text-right shrink-0">
-                                    <p className="text-sm font-bold text-slate-700 tabular-nums">
-                                        {formatDuration(item.totalMs)}
-                                    </p>
-                                    {item.startedAt && (
-                                        <p className="text-[10px] text-slate-400">
-                                            In {new Date(item.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+            <AnimatePresence>
+                {isModalOpen && selectedDay != null && (
+                    <AttendancePresentModal
+                        isOpen={isModalOpen}
+                        onClose={() => setIsModalOpen(false)}
+                        dateLabel={dateLabel}
+                        attendances={selectedAttendances}
+                    />
                 )}
-            </Card>
-        </div>
+            </AnimatePresence>
+        </>
     );
 }

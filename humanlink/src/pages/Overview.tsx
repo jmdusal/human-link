@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import {
@@ -10,8 +11,10 @@ import { useWorkspaces } from '@/hooks/use-workspace';
 import { useAuth } from '@/context/AuthContext';
 import { getInitials } from '@/utils/userUtils';
 import { DashboardService } from '@/services/DashboardService';
+import { MeService } from '@/services/MeService';
 import { formatCurrency } from '@/utils/formatUtils';
 import MyContractCard from '@/components/shared/MyContractCard';
+import MyIdCardCard from '@/components/shared/MyIdCardCard';
 import type { DashboardSummary, Workspace } from '@/types';
 
 interface StatProps {
@@ -32,6 +35,8 @@ export default function Overview() {
     const { workspaces, loading: wLoading } = useWorkspaces(!authLoading && canViewWorkspaces);
     const [dashboard, setDashboard] = useState<DashboardSummary | null>(null);
     const [dashLoading, setDashLoading] = useState(true);
+    const [generatingContract, setGeneratingContract] = useState(false);
+    const [generatingIdCard, setGeneratingIdCard] = useState(false);
 
     useEffect(() => {
         if (authLoading) return;
@@ -54,6 +59,43 @@ export default function Overview() {
             cancelled = true;
         };
     }, [authLoading]);
+
+    const handleGenerateContract = async () => {
+        setGeneratingContract(true);
+        try {
+            const document = await MeService.generateContract();
+            setDashboard((prev) => (prev ? { ...prev, contract: document } : prev));
+            toast.success('Contract generated.');
+        } catch (error: any) {
+            toast.error(
+                error?.response?.data?.message
+                || error?.response?.data?.errors?.contract?.[0]
+                || error?.response?.data?.errors?.employmentType?.[0]
+                || error?.response?.data?.errors?.templateId?.[0]
+                || 'Failed to generate contract.'
+            );
+        } finally {
+            setGeneratingContract(false);
+        }
+    };
+
+    const handleGenerateIdCard = async () => {
+        setGeneratingIdCard(true);
+        try {
+            const document = await MeService.generateIdCard();
+            setDashboard((prev) => (prev ? { ...prev, idCard: document } : prev));
+            toast.success('ID card generated.');
+        } catch (error: any) {
+            toast.error(
+                error?.response?.data?.message
+                || error?.response?.data?.errors?.idScan?.[0]
+                || error?.response?.data?.errors?.templateId?.[0]
+                || 'Failed to generate ID card.'
+            );
+        } finally {
+            setGeneratingIdCard(false);
+        }
+    };
 
     const isAppLoading = authLoading || wLoading || dashLoading;
     const kpis = dashboard?.kpis;
@@ -236,7 +278,18 @@ export default function Overview() {
                         />
                     </div>
 
-                    <MyContractCard contract={dashboard?.contract} />
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <MyContractCard
+                            contract={dashboard?.contract}
+                            generating={generatingContract}
+                            onGenerate={handleGenerateContract}
+                        />
+                        <MyIdCardCard
+                            idCard={dashboard?.idCard}
+                            generating={generatingIdCard}
+                            onGenerate={handleGenerateIdCard}
+                        />
+                    </div>
                 </>
             )}
 

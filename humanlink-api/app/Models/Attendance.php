@@ -23,6 +23,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $scheduled_start
  * @property string|null $scheduled_end
  * @property string $status
+ * @property string|null $start_latitude
+ * @property string|null $start_longitude
+ * @property string|null $start_accuracy
+ * @property string|null $end_latitude
+ * @property string|null $end_longitude
+ * @property string|null $end_accuracy
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\AttendanceBreak> $breaks
@@ -49,6 +55,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereUndertimeMs($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereUserId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereEndAccuracy($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereEndLatitude($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereEndLongitude($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereStartAccuracy($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereStartLatitude($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Attendance whereStartLongitude($value)
  * @mixin \Eloquent
  */
 class Attendance extends Model
@@ -67,6 +79,12 @@ class Attendance extends Model
         'scheduled_start',
         'scheduled_end',
         'status',
+        'start_latitude',
+        'start_longitude',
+        'start_accuracy',
+        'end_latitude',
+        'end_longitude',
+        'end_accuracy',
     ];
 
     protected function casts(): array
@@ -81,6 +99,12 @@ class Attendance extends Model
             'overtime_ms' => 'integer',
             'break_ms' => 'integer',
             'required_ms' => 'integer',
+            'start_latitude' => 'float',
+            'start_longitude' => 'float',
+            'start_accuracy' => 'float',
+            'end_latitude' => 'float',
+            'end_longitude' => 'float',
+            'end_accuracy' => 'float',
         ];
     }
 

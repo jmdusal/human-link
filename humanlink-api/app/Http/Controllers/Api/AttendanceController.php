@@ -6,6 +6,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Contracts\AttendanceServiceInterface;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Attendance\EndAttendanceRequest;
+use App\Http\Requests\Attendance\StartAttendanceRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -32,11 +34,11 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function start(): JsonResponse
+    public function start(StartAttendanceRequest $request): JsonResponse
     {
         return response()->json([
             'message' => 'Timer started.',
-            'data' => $this->attendanceService->start(),
+            'data' => $this->attendanceService->start($request->validated()),
         ]);
     }
 
@@ -56,11 +58,11 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function end(): JsonResponse
+    public function end(EndAttendanceRequest $request): JsonResponse
     {
         return response()->json([
             'message' => 'Attendance stopped for today.',
-            'data' => $this->attendanceService->end(),
+            'data' => $this->attendanceService->end($request->validated()),
         ]);
     }
 

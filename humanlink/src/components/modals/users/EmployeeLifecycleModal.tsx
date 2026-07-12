@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { CheckCircle2, Circle, FileText, Trash2, Upload, X } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { CheckCircle2, Circle, Eye, FileText, Trash2, Upload, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Button from '@/components/ui/Button';
+import ModalConfirmation from '@/components/modals/ModalConfirmation';
+import ContractTemplatePreviewModal from '@/components/modals/contract-templates/ContractTemplatePreviewModal';
 import { LifecycleService } from '@/services/LifecycleService';
 import { UserDocumentService } from '@/services/UserDocumentService';
 import type {
@@ -13,6 +15,8 @@ import type {
     UserDocumentType,
 } from '@/types';
 
+type LifecycleConfirmAction = 'offboard' | 'reonboard';
+
 interface Props {
     isOpen: boolean;
     onClose: () => void;
@@ -22,7 +26,7 @@ interface Props {
 
 const DOCUMENT_TYPES: { type: UserDocumentType; label: string }[] = [
     { type: 'contract', label: 'Contract' },
-    { type: 'id_scan', label: 'ID scan' },
+    { type: 'id_scan', label: 'Employee ID' },
     { type: 'signed_policy', label: 'Signed policy' },
 ];
 
@@ -112,8 +116,13 @@ export default function EmployeeLifecycleModal({ isOpen, onClose, user, onUserUp
     const [togglingId, setTogglingId] = useState<number | null>(null);
     const [uploadingType, setUploadingType] = useState<UserDocumentType | null>(null);
     const [generatingContract, setGeneratingContract] = useState(false);
+    const [generatingIdCard, setGeneratingIdCard] = useState(false);
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [offboarding, setOffboarding] = useState(false);
+    const [reonboarding, setReonboarding] = useState(false);
+    const [confirmAction, setConfirmAction] = useState<LifecycleConfirmAction | null>(null);
+    const [previewDoc, setPreviewDoc] = useState<UserDocument | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [terminatedAt, setTerminatedAt] = useState(() => new Date().toISOString().slice(0, 10));
     const [generateFinalPayslip, setGenerateFinalPayslip] = useState(true);
     const [includeLeavePayout, setIncludeLeavePayout] = useState(true);
@@ -216,6 +225,11 @@ export default function EmployeeLifecycleModal({ isOpen, onClose, user, onUserUp
             return;
         }
 
+        if (documents.some((doc) => doc.type === 'contract')) {
+            toast.error('Delete the existing contract before generating a new one.');
+            return;
+        }
+
         setGeneratingContract(true);
         try {
             await UserDocumentService.generateContract(user.id);
@@ -224,12 +238,36 @@ export default function EmployeeLifecycleModal({ isOpen, onClose, user, onUserUp
         } catch (error: any) {
             const message =
                 error?.response?.data?.message ||
+                error?.response?.data?.errors?.contract?.[0] ||
                 error?.response?.data?.errors?.employment_type?.[0] ||
                 error?.response?.data?.errors?.template_id?.[0] ||
                 'Failed to generate contract.';
             toast.error(message);
         } finally {
             setGeneratingContract(false);
+        }
+    };
+
+    const handleGenerateIdCard = async () => {
+        if (documents.some((doc) => doc.type === 'id_scan')) {
+            toast.error('Delete the existing employee ID before generating a new one.');
+            return;
+        }
+
+        setGeneratingIdCard(true);
+        try {
+            await UserDocumentService.generateIdCard(user.id);
+            await refreshLifecycle();
+            toast.success('Employee ID generated from template.');
+        } catch (error: any) {
+            const message =
+                error?.response?.data?.message ||
+                error?.response?.data?.errors?.id_scan?.[0] ||
+                error?.response?.data?.errors?.template_id?.[0] ||
+                'Failed to generate employee ID.';
+            toast.error(message);
+        } finally {
+            setGeneratingIdCard(false);
         }
     };
 
@@ -246,42 +284,97 @@ export default function EmployeeLifecycleModal({ isOpen, onClose, user, onUserUp
         }
     };
 
-    const handleOffboard = async () => {
+    const closeDocumentPreview = () => {
+        setPreviewDoc(null);
+        setPreviewUrl(null);
+    };
+
+    const openDocumentPreview = (doc: UserDocument) => {
+        setPreviewDoc(doc);
+        setPreviewUrl(resolveUrl(doc.url));
+    };
+
+    const canPreviewInModal = (type: UserDocumentType) =>
+        type === 'contract' || type === 'id_scan';
+
+    const requestOffboard = () => {
         if (!terminatedAt) {
             toast.error('Termination date is required.');
             return;
         }
+        setConfirmAction('offboard');
+    };
 
-        setOffboarding(true);
-        try {
-            const result = await LifecycleService.offboard(user.id, {
-                terminatedAt,
-                generateFinalPayslip,
-                includeLeavePayout,
-                notes: notes || undefined,
-            });
-            onUserUpdated?.(result.user);
-            if (result.checklist) {
-                setLifecycle((prev) => ({
-                    onboard: prev?.onboard ?? null,
-                    offboard: result.checklist,
-                    documents: prev?.documents,
-                    softDocumentKeys: prev?.softDocumentKeys,
-                }));
-            } else {
-                await refreshLifecycle();
+    const requestReonboard = () => {
+        setConfirmAction('reonboard');
+    };
+
+    const handleConfirmAction = async () => {
+        if (!confirmAction) return;
+
+        if (confirmAction === 'offboard') {
+            setOffboarding(true);
+            try {
+                const result = await LifecycleService.offboard(user.id, {
+                    terminatedAt,
+                    generateFinalPayslip,
+                    includeLeavePayout,
+                    notes: notes || undefined,
+                });
+                onUserUpdated?.(result.user);
+                if (result.checklist) {
+                    setLifecycle((prev) => ({
+                        onboard: prev?.onboard ?? null,
+                        offboard: result.checklist,
+                        documents: prev?.documents,
+                        softDocumentKeys: prev?.softDocumentKeys,
+                    }));
+                } else {
+                    await refreshLifecycle();
+                }
+                setConfirmAction(null);
+                toast.success('Employee offboarded. Access revoked.');
+            } catch (error: any) {
+                toast.error(error?.response?.data?.message || 'Failed to offboard employee.');
+            } finally {
+                setOffboarding(false);
             }
-            toast.success('Employee offboarded. Access revoked.');
+            return;
+        }
+
+        setReonboarding(true);
+        try {
+            const result = await LifecycleService.reonboard(user.id);
+            onUserUpdated?.(result.user);
+            await refreshLifecycle();
+            setConfirmAction(null);
+            toast.success('Offboarding undone. Access restored. Re-assign workspaces if needed.');
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Failed to offboard employee.');
+            toast.error(error?.response?.data?.message || 'Failed to undo offboarding.');
         } finally {
-            setOffboarding(false);
+            setReonboarding(false);
         }
     };
 
     const docsByType = (type: UserDocumentType) => documents.filter((doc) => doc.type === type);
 
+    const confirmCopy =
+        confirmAction === 'offboard'
+            ? {
+                  title: 'Offboard employee',
+                  message: `Offboard ${user.name}? This sets a termination date, revokes access, and ends employment. Final payslip options you selected will be applied.`,
+                  confirmText: 'Offboard',
+                  variant: 'danger' as const,
+              }
+            : {
+                  title: 'Undo offboarding',
+                  message: `Undo offboarding for ${user.name}? Access will be restored. Workspaces may need to be re-assigned. Any final payslip already created will be kept.`,
+                  confirmText: 'Undo offboarding',
+                  variant: 'warning' as const,
+              };
+
     return (
+        <>
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div
                 initial={{ opacity: 0 }}
@@ -327,11 +420,25 @@ export default function EmployeeLifecycleModal({ isOpen, onClose, user, onUserUp
                                                 <div className="flex items-center justify-between gap-3">
                                                     <span className="text-sm font-medium text-slate-700">{label}</span>
                                                     <div className="flex items-center gap-2 shrink-0">
-                                                        {type === 'contract' && (
+                                                        {(type === 'contract' || type === 'id_scan') && (
                                                             <Button
                                                                 variant="secondary"
-                                                                loading={generatingContract}
-                                                                onClick={handleGenerateContract}
+                                                                loading={
+                                                                    type === 'contract'
+                                                                        ? generatingContract
+                                                                        : generatingIdCard
+                                                                }
+                                                                disabled={files.length > 0}
+                                                                title={
+                                                                    files.length > 0
+                                                                        ? `Delete the existing ${label.toLowerCase()} before generating a new one`
+                                                                        : undefined
+                                                                }
+                                                                onClick={
+                                                                    type === 'contract'
+                                                                        ? handleGenerateContract
+                                                                        : handleGenerateIdCard
+                                                                }
                                                             >
                                                                 Generate
                                                             </Button>
@@ -356,17 +463,37 @@ export default function EmployeeLifecycleModal({ isOpen, onClose, user, onUserUp
                                                                 className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/60 px-2.5 py-2"
                                                             >
                                                                 <FileText size={14} className="text-slate-400 shrink-0" />
-                                                                <a
-                                                                    href={resolveUrl(doc.url)}
-                                                                    target="_blank"
-                                                                    rel="noreferrer"
-                                                                    className="flex-1 min-w-0 text-xs text-slate-700 truncate hover:underline"
-                                                                >
-                                                                    {doc.fileName}
-                                                                </a>
+                                                                {canPreviewInModal(type) ? (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => openDocumentPreview(doc)}
+                                                                        className="flex-1 min-w-0 text-left text-xs text-slate-700 truncate hover:underline"
+                                                                    >
+                                                                        {doc.fileName}
+                                                                    </button>
+                                                                ) : (
+                                                                    <a
+                                                                        href={resolveUrl(doc.url)}
+                                                                        target="_blank"
+                                                                        rel="noreferrer"
+                                                                        className="flex-1 min-w-0 text-xs text-slate-700 truncate hover:underline"
+                                                                    >
+                                                                        {doc.fileName}
+                                                                    </a>
+                                                                )}
                                                                 <span className="text-[10px] text-slate-400 shrink-0">
                                                                     {formatFileSize(doc.fileSize)}
                                                                 </span>
+                                                                {canPreviewInModal(type) && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => openDocumentPreview(doc)}
+                                                                        className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                                                                        title="Preview"
+                                                                    >
+                                                                        <Eye size={14} />
+                                                                    </button>
+                                                                )}
                                                                 <button
                                                                     type="button"
                                                                     disabled={deletingId === doc.id}
@@ -463,9 +590,28 @@ export default function EmployeeLifecycleModal({ isOpen, onClose, user, onUserUp
                                     <Button
                                         variant="danger"
                                         loading={offboarding}
-                                        onClick={handleOffboard}
+                                        onClick={requestOffboard}
                                     >
                                         Offboard employee
+                                    </Button>
+                                </div>
+                            )}
+
+                            {!!user.terminatedAt && (
+                                <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3">
+                                    <div>
+                                        <h3 className="text-sm font-bold text-slate-800">Undo offboarding</h3>
+                                        <p className="text-xs text-slate-500 mt-0.5">
+                                            Accidental exit? Restore access and clear the termination date.
+                                            Final payslips already generated are kept. Re-assign workspaces if needed.
+                                        </p>
+                                    </div>
+                                    <Button
+                                        variant="secondary"
+                                        loading={reonboarding}
+                                        onClick={requestReonboard}
+                                    >
+                                        Undo offboarding
                                     </Button>
                                 </div>
                             )}
@@ -474,5 +620,51 @@ export default function EmployeeLifecycleModal({ isOpen, onClose, user, onUserUp
                 </div>
             </motion.div>
         </div>
+
+        <AnimatePresence>
+            {confirmAction && (
+                <ModalConfirmation
+                    key={`lifecycle-confirm-${confirmAction}`}
+                    isOpen={Boolean(confirmAction)}
+                    onClose={() => setConfirmAction(null)}
+                    onConfirm={handleConfirmAction}
+                    loading={offboarding || reonboarding}
+                    title={confirmCopy.title}
+                    message={confirmCopy.message}
+                    confirmText={confirmCopy.confirmText}
+                    variant={confirmCopy.variant}
+                />
+            )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+            {previewDoc && (
+                <ContractTemplatePreviewModal
+                    key={`doc-preview-${previewDoc.id}`}
+                    isOpen={Boolean(previewDoc)}
+                    onClose={closeDocumentPreview}
+                    title={previewDoc.fileName}
+                    subtitle={
+                        previewDoc.type === 'contract'
+                            ? 'Contract preview'
+                            : previewDoc.type === 'id_scan'
+                              ? 'Employee ID preview'
+                              : 'Document preview'
+                    }
+                    pdfUrl={previewUrl}
+                    previewKind={
+                        previewDoc.fileType?.startsWith('image/') ||
+                        previewDoc.fileName?.toLowerCase().endsWith('.png') ||
+                        previewDoc.fileName?.toLowerCase().endsWith('.jpg') ||
+                        previewDoc.fileName?.toLowerCase().endsWith('.jpeg') ||
+                        previewDoc.fileName?.toLowerCase().endsWith('.webp') ||
+                        previewDoc.fileName?.toLowerCase().endsWith('.gif')
+                            ? 'image'
+                            : 'pdf'
+                    }
+                />
+            )}
+        </AnimatePresence>
+        </>
     );
 }

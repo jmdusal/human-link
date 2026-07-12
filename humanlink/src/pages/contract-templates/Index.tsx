@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Plus, Pencil, Trash2, Eye } from 'lucide-react';
@@ -7,8 +7,9 @@ import { DataTable } from '@/components/shared/Datatable';
 import Button from '@/components/ui/Button';
 import ContractTemplateForm from '@/pages/contract-templates/ContractTemplateForm';
 import ModalConfirmation from '@/components/modals/ModalConfirmation';
+import ContractTemplatePreviewModal from '@/components/modals/contract-templates/ContractTemplatePreviewModal';
 import TableActions from '@/components/shared/TableActions';
-import { TextCell, StatusBadge, DateCell } from '@/components/shared/TableCells';
+import { TextCell, StatusBadge } from '@/components/shared/TableCells';
 import { useAuth } from '@/context/AuthContext';
 import type { ContractTemplate } from '@/types';
 import { ContractTemplateService } from '@/services/ContractTemplateService';
@@ -25,10 +26,13 @@ export default function ContractTemplateIndex() {
     const { templates, setTemplates, loading } = useContractTemplates(true);
 
     const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplate | null>(null);
+    const [previewTemplate, setPreviewTemplate] = useState<ContractTemplate | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [previewingId, setPreviewingId] = useState<number | null>(null);
+    const [previewLoading, setPreviewLoading] = useState(false);
 
     const handleAdd = () => {
         setSelectedTemplate(null);
@@ -40,15 +44,36 @@ export default function ContractTemplateIndex() {
         setIsFormOpen(true);
     };
 
+    const closePreview = useCallback(() => {
+        if (previewUrl) {
+            window.URL.revokeObjectURL(previewUrl);
+        }
+        setPreviewUrl(null);
+        setPreviewTemplate(null);
+        setIsPreviewOpen(false);
+        setPreviewLoading(false);
+    }, [previewUrl]);
+
     const handlePreview = async (template: ContractTemplate) => {
-        setPreviewingId(template.id);
+        if (previewUrl) {
+            window.URL.revokeObjectURL(previewUrl);
+            setPreviewUrl(null);
+        }
+
+        setPreviewTemplate(template);
+        setIsPreviewOpen(true);
+        setPreviewLoading(true);
+
         try {
-            await ContractTemplateService.preview(template.id);
+            const url = await ContractTemplateService.preview(template.id);
+            setPreviewUrl(url);
         } catch (err) {
             console.error('Preview Error:', err);
             toast.error('Failed to preview contract template.');
+            setIsPreviewOpen(false);
+            setPreviewTemplate(null);
         } finally {
-            setPreviewingId(null);
+            setPreviewLoading(false);
         }
     };
 
@@ -97,7 +122,7 @@ export default function ContractTemplateIndex() {
             columnHelper.accessor('employmentType', {
                 header: 'Employment',
                 cell: (info) => (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50/80 border border-blue-100/60 text-blue-700 text-[10px] font-bold uppercase tracking-wider">
+                    <span className="inline-flex items-center rounded-md border border-blue-100/60 bg-blue-50/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-700">
                         {employmentLabel(info.getValue())}
                     </span>
                 ),
@@ -116,7 +141,7 @@ export default function ContractTemplateIndex() {
                     <TableActions
                         actions={[
                             {
-                                label: previewingId === info.row.original.id ? 'Loading…' : 'Preview',
+                                label: 'Preview',
                                 icon: Eye,
                                 onClick: () => handlePreview(info.row.original),
                                 show: can('contract-templates-view'),
@@ -139,17 +164,17 @@ export default function ContractTemplateIndex() {
                 ),
             }),
         ],
-        [can, previewingId]
+        [can]
     );
 
     return (
         <div className="w-full">
-            <div className="flex items-center justify-between mb-8">
+            <div className="mb-8 flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
+                    <h1 className="text-2xl font-bold tracking-tight text-slate-800">
                         Contract Templates
                     </h1>
-                    <p className="text-slate-400 text-sm font-medium">
+                    <p className="text-sm font-medium text-slate-400">
                         Org-level templates used to generate employee contracts.
                     </p>
                 </div>
@@ -167,7 +192,26 @@ export default function ContractTemplateIndex() {
                 loading={loading}
                 showSearch={true}
                 countLabel={`${templates.length} ${templates.length === 1 ? 'template' : 'templates'}`}
+                onRowClick={can('contract-templates-view') ? handlePreview : undefined}
             />
+
+            <AnimatePresence>
+                {isPreviewOpen && (
+                    <ContractTemplatePreviewModal
+                        key={previewTemplate ? `preview-${previewTemplate.id}` : 'preview'}
+                        isOpen={isPreviewOpen}
+                        onClose={closePreview}
+                        title={previewTemplate?.name || 'Contract preview'}
+                        subtitle={
+                            previewTemplate
+                                ? `${employmentLabel(previewTemplate.employmentType)} · PDF preview`
+                                : 'PDF preview'
+                        }
+                        pdfUrl={previewUrl}
+                        loading={previewLoading}
+                    />
+                )}
+            </AnimatePresence>
 
             <AnimatePresence>
                 {isFormOpen && (

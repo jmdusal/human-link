@@ -236,6 +236,7 @@ export default function WorkspaceIndex() {
                     loading={loading}
                     showSearch={true}
                     countLabel={`${workspaces.length} ${workspaces.length === 1 ? 'workspace' : 'workspaces'}`}
+                    onRowClick={handleOpenWorkspace}
                 />
             )}
             

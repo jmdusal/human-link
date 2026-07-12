@@ -123,6 +123,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property int $company_id
  * @property-read \App\Models\Company $company
  * @property-read \App\Models\UserDocument|null $latestContract
+ * @property-read \App\Models\UserDocument|null $latestIdCard
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User forCompany(int $companyId)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereCompanyId($value)
  * @property int|null $user_type_id
@@ -236,7 +237,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function hasTwoFactorEnabled(): bool
     {
-        return filled($this->two_factor_secret) && $this->two_factor_confirmed_at !== null;
+        return $this->two_factor_confirmed_at !== null;
     }
 
     public function getTwoFactorSecret(): ?string
@@ -540,9 +541,22 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function latestContract(): HasOne
     {
-        return $this->hasOne(UserDocument::class)
-            ->where('type', UserDocument::TYPE_CONTRACT)
-            ->latestOfMany();
+        return $this->hasOne(UserDocument::class)->ofMany(
+            ['id' => 'max'],
+            function ($query): void {
+                $query->where('type', UserDocument::TYPE_CONTRACT);
+            }
+        );
+    }
+
+    public function latestIdCard(): HasOne
+    {
+        return $this->hasOne(UserDocument::class)->ofMany(
+            ['id' => 'max'],
+            function ($query): void {
+                $query->where('type', UserDocument::TYPE_ID_SCAN);
+            }
+        );
     }
 
     public function workspaces(): BelongsToMany

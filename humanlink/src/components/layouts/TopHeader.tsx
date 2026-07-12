@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Building2, ChevronDown, Moon, PanelLeftClose, PanelLeftOpen, Sun } from 'lucide-react';
+import { Building2, Check, ChevronDown, Moon, PanelLeftClose, PanelLeftOpen, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -45,6 +45,8 @@ export default function TopHeader({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    const activeCompanyId = Number(user?.companyId ?? user?.company_id ?? 0) || null;
+
     useEffect(() => {
         if (!isPlatformAdmin) {
             setCompanies([]);
@@ -64,7 +66,7 @@ export default function TopHeader({
         return () => {
             cancelled = true;
         };
-    }, [isPlatformAdmin, user?.company_id]);
+    }, [isPlatformAdmin, activeCompanyId]);
 
     const handleLogout = async () => {
         try {
@@ -79,7 +81,7 @@ export default function TopHeader({
     };
 
     const handleSwitchCompany = async (company: Company) => {
-        if (company.id === user?.company_id || switching) {
+        if ((activeCompanyId != null && company.id === activeCompanyId) || switching) {
             setCompanyOpen(false);
             return;
         }
@@ -155,22 +157,27 @@ export default function TopHeader({
                                         </p>
                                     </div>
                                     {companies.map((company) => {
-                                        const active = company.id === user?.company_id;
+                                        const active = activeCompanyId != null && company.id === activeCompanyId;
                                         return (
                                             <button
                                                 key={company.id}
                                                 type="button"
                                                 onClick={() => handleSwitchCompany(company)}
-                                                className={`w-full px-3.5 py-2 text-left text-sm transition-colors ${
+                                                className={`flex w-full items-center gap-2 px-3.5 py-2 text-left text-sm transition-colors ${
                                                     active
-                                                        ? 'bg-blue-600 text-white'
+                                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
                                                         : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800'
                                                 }`}
                                             >
-                                                <span className="block truncate font-medium">{company.name}</span>
-                                                <span className={`text-[11px] ${active ? 'text-blue-100' : 'text-slate-400'}`}>
-                                                    {company.slug}
-                                                </span>
+                                                <div className="min-w-0 flex-1">
+                                                    <span className="block truncate font-medium">{company.name}</span>
+                                                    <span className={`text-[11px] ${active ? 'text-blue-500/80' : 'text-slate-400'}`}>
+                                                        {company.slug}
+                                                    </span>
+                                                </div>
+                                                {active && (
+                                                    <Check size={16} className="shrink-0 text-blue-600 dark:text-blue-400" />
+                                                )}
                                             </button>
                                         );
                                     })}

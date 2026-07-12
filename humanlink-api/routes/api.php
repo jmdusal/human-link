@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\EmployeeLifecycleController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\UserDocumentController;
 use App\Http\Controllers\Api\ContractTemplateController;
+use App\Http\Controllers\Api\IdCardTemplateController;
 use App\Http\Controllers\Api\CompanyController;
 
 Route::group(['middleware' => ['web']], function () {
@@ -73,6 +74,8 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::get('/', 'show')->name('show');
         Route::put('/', 'update')->name('update');
         Route::patch('/', 'update')->name('patch');
+        Route::post('/documents/generate-contract', 'generateContract')->name('generateContract');
+        Route::post('/documents/generate-id', 'generateId')->name('generateId');
     });
 
     Route::controller(CompanyController::class)->prefix('companies')->name('companies.')->group(function () {
@@ -139,6 +142,7 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
     Route::controller(WorkspaceController::class)->prefix('workspaces')->name('workspaces.')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/', 'store')->name('store');
+        Route::get('/invitations/{token}', 'showInvitation')->name('showInvitation');
         Route::post('/invitations/{token}/accept', 'acceptInvitation')->name('acceptInvitation');
         Route::post('/invitations/{token}/decline', 'declineInvitation')->name('declineInvitation');
         Route::post('/{workspace}/members', 'inviteMember')->name('inviteMember');
@@ -240,6 +244,15 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::delete('/{contractTemplate}', 'destroy')->name('destroy');
     });
 
+    Route::controller(IdCardTemplateController::class)->prefix('id-card-templates')->name('id-card-templates.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::post('/preview', 'previewDraft')->name('previewDraft');
+        Route::get('/{idCardTemplate}/preview', 'preview')->name('preview');
+        Route::put('/{idCardTemplate}', 'update')->name('update');
+        Route::delete('/{idCardTemplate}', 'destroy')->name('destroy');
+    });
+
     Route::controller(LeaveBalanceController::class)->prefix('leave-balances')->name('leave-balances.')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/', 'store')->name('store');
@@ -311,12 +324,14 @@ Route::middleware('auth:sanctum', 'permission')->group(function () {
         Route::get('/{user}/lifecycle', 'show')->name('lifecycle');
         Route::post('/{user}/lifecycle/items/{item}/toggle', 'toggleItem')->name('toggleLifecycleItem');
         Route::post('/{user}/offboard', 'offboard')->name('offboard');
+        Route::post('/{user}/reonboard', 'reonboard')->name('reonboard');
     });
 
     Route::controller(UserDocumentController::class)->prefix('users/{user}/documents')->name('users.documents.')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/', 'store')->name('store');
         Route::post('/generate-contract', 'generateContract')->name('generateContract');
+        Route::post('/generate-id', 'generateId')->name('generateId');
         Route::delete('/{document}', 'destroy')->name('destroy');
     });
 });

@@ -26,6 +26,11 @@ class LeaveRequestStatusNotification extends Notification implements ShouldBroad
         return ['database', 'broadcast'];
     }
 
+    public function broadcastType(): string
+    {
+        return 'leave_request_status';
+    }
+
     public function toBroadcast(object $notifiable): BroadcastMessage
     {
         return new BroadcastMessage($this->withCompanyContext([

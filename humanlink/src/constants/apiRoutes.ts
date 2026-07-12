@@ -30,10 +30,12 @@ export const API_ROUTES = {
         LIFECYCLE_TOGGLE: (userId: number, itemId: number) =>
             `/users/${userId}/lifecycle/items/${itemId}/toggle`,
         OFFBOARD: (id: number) => `/users/${id}/offboard`,
+        REONBOARD: (id: number) => `/users/${id}/reonboard`,
         DOCUMENTS: (id: number) => `/users/${id}/documents`,
         DOCUMENT_DELETE: (userId: number, documentId: number) =>
             `/users/${userId}/documents/${documentId}`,
         GENERATE_CONTRACT: (id: number) => `/users/${id}/documents/generate-contract`,
+        GENERATE_ID: (id: number) => `/users/${id}/documents/generate-id`,
     },
     ROLES: {
         LIST: '/roles',
@@ -63,6 +65,7 @@ export const API_ROUTES = {
         ACTIVITY: (id: number) => `/workspaces/${id}/activity`,
         TASKS: (id: number) => `/workspaces/${id}/tasks`,
         GET_BY_SLUG: (slug: string) => `/workspaces/${slug}`,
+        GET_INVITATION: (token: string) => `/workspaces/invitations/${token}`,
         ACCEPT_INVITATION: (token: string) => `/workspaces/invitations/${token}/accept`,
         DECLINE_INVITATION: (token: string) => `/workspaces/invitations/${token}/decline`,
         INVITE_MEMBER: (workspaceId: number) => `/workspaces/${workspaceId}/members`,
@@ -150,6 +153,14 @@ export const API_ROUTES = {
         PREVIEW: (id: number) => `/contract-templates/${id}/preview`,
         PREVIEW_DRAFT: '/contract-templates/preview',
     },
+    ID_CARD_TEMPLATES: {
+        LIST: '/id-card-templates',
+        STORE: '/id-card-templates',
+        UPDATE: (id: number) => `/id-card-templates/${id}`,
+        DELETE: (id: number) => `/id-card-templates/${id}`,
+        PREVIEW: (id: number) => `/id-card-templates/${id}/preview`,
+        PREVIEW_DRAFT: '/id-card-templates/preview',
+    },
     LEAVE_REQUESTS: {
         LIST: '/leave-requests',
         POLICY_OPTIONS: '/leave-requests/policy-options',
@@ -214,6 +225,8 @@ export const API_ROUTES = {
     ME: {
         SHOW: '/me',
         UPDATE: '/me',
+        GENERATE_CONTRACT: '/me/documents/generate-contract',
+        GENERATE_ID: '/me/documents/generate-id',
     },
     COMPANIES: {
         LIST: '/companies',

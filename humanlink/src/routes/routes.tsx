@@ -33,6 +33,7 @@ const LeavePolicyIndex = lazy(() => import('@/pages/leave-policies/Index'));
 const DepartmentIndex = lazy(() => import('@/pages/departments/Index'));
 const JobIndex = lazy(() => import('@/pages/jobs/Index'));
 const ContractTemplateIndex = lazy(() => import('@/pages/contract-templates/Index'));
+const IdCardTemplateIndex = lazy(() => import('@/pages/id-card-templates/Index'));
 const LeaveBalanceIndex = lazy(() => import('@/pages/leave-balances/Index'));
 const LeaveRequestIndex = lazy(() => import('@/pages/leave-requests/Index'));
 const LeaveCalendarIndex = lazy(() => import('@/pages/leave-calendar/Index'));
@@ -136,6 +137,15 @@ export const navItems = [
         icon: <FileText size={18} />,
         component: <ContractTemplateIndex />,
         permission: 'contract-templates-view',
+    },
+    {
+        path: '/id-card-templates',
+        label: 'ID Cards',
+        title: 'ID Card Templates',
+        category: 'People',
+        icon: <IdCard size={18} />,
+        component: <IdCardTemplateIndex />,
+        permission: 'id-card-templates-view',
     },
 
     // --- Leave (flat items for employee/manager; hidden when Leaves group is available) ---

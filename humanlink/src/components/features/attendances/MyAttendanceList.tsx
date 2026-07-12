@@ -41,7 +41,7 @@ export default function MyAttendanceList({ data, loading, liveElapsedMs, onDispu
     });
 
     return (
-        <Card className="flex h-full min-h-[420px] flex-col overflow-hidden border-slate-200 !p-0 xl:min-h-0">
+        <Card className="flex w-full flex-col overflow-hidden border-slate-200 !p-0">
             <div className="shrink-0 border-b border-slate-100 px-6 py-4">
                 <h3 className="text-sm font-bold text-slate-800">Attendance records</h3>
                 <p className="mt-0.5 text-xs text-slate-400">Days you were present this month.</p>
@@ -56,8 +56,8 @@ export default function MyAttendanceList({ data, loading, liveElapsedMs, onDispu
                     No attendance records yet.
                 </div>
             ) : (
-                <div className="min-h-0 flex-1 overflow-auto">
-                    <table className="w-full text-left">
+                <div className="max-h-[min(560px,70vh)] overflow-auto">
+                    <table className="w-full min-w-[640px] text-left">
                         <thead className="sticky top-0 z-10">
                             <tr className="border-b border-slate-100 bg-slate-50/95 backdrop-blur-sm">
                                 <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Date</th>

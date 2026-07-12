@@ -9,6 +9,29 @@ import { LeaveRequestService } from '@/services/LeaveRequestService';
 import type { LeaveRequest } from '@/types/LeaveRequest';
 import LeaveRequestReviewModal from '@/components/modals/leave-requests/LeaveRequestReviewModal';
 
+function isLaravelClassType(type: unknown): boolean {
+    return typeof type === 'string' && (type.includes('\\') || type.startsWith('App.'));
+}
+
+function resolveNotificationType(notification: any): string | null {
+    const candidates = [
+        notification.notification_type,
+        notification.notificationType,
+        notification.data?.notification_type,
+        notification.data?.notificationType,
+        notification.data?.type,
+        notification.type,
+    ];
+
+    for (const candidate of candidates) {
+        if (typeof candidate !== 'string' || candidate === '') continue;
+        if (isLaravelClassType(candidate)) continue;
+        return candidate;
+    }
+
+    return null;
+}
+
 export default function NotificationDropdown() {
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -58,7 +81,7 @@ export default function NotificationDropdown() {
                     message: notification.message || notification.data?.message || null,
                     time: displayTime,
                     read: false,
-                    type: notification.type || notification.data?.type || null,
+                    type: resolveNotificationType(notification),
                     companyId: companyId != null ? Number(companyId) : null,
                     leaveRequestId:
                         notification.leaveRequestId
@@ -235,16 +258,24 @@ export default function NotificationDropdown() {
             return;
         }
 
-        if (notification.type === 'workspace_invitation' && notification.invitationToken) {
+        if (notification.invitationToken) {
             setIsOpen(false);
-            navigate(`/invitations/accept/${notification.invitationToken}`);
+            const slugQuery = notification.workspaceSlug
+                ? `?slug=${encodeURIComponent(notification.workspaceSlug)}`
+                : '';
+            navigate(`/invitations/accept/${notification.invitationToken}${slugQuery}`);
             return;
         }
 
-        if (
-            notification.type === 'workspace_invitation_accepted'
-            || notification.type === 'workspace_role_changed'
-        ) {
+        if (notification.type === 'workspace_invitation_accepted') {
+            setIsOpen(false);
+            if (notification.workspaceSlug) {
+                navigate(`/workspaces/${notification.workspaceSlug}#members`);
+            }
+            return;
+        }
+
+        if (notification.type === 'workspace_role_changed') {
             setIsOpen(false);
             if (notification.workspaceSlug) {
                 navigate(`/workspaces/${notification.workspaceSlug}`);
@@ -252,7 +283,11 @@ export default function NotificationDropdown() {
             return;
         }
 
-        if (notification.type === 'task_assigned' || notification.type === 'task_mention') {
+        if (
+            notification.type === 'task_assigned'
+            || notification.type === 'task_mention'
+            || !!notification.taskId
+        ) {
             setIsOpen(false);
             if (notification.workspaceSlug) {
                 navigate(`/workspaces/${notification.workspaceSlug}#board`);

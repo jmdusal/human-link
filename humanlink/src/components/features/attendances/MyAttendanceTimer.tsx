@@ -1,10 +1,12 @@
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Pause, Play, Square, TimerReset } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import ModalConfirmation from '@/components/modals/ModalConfirmation';
 import type { AttendanceTimerState } from '@/types';
+
+const AttendanceLocationMap = lazy(() => import('@/components/features/attendances/AttendanceLocationMap'));
 
 interface Props {
     timer: AttendanceTimerState;
@@ -103,15 +105,15 @@ export default function MyAttendanceTimer({
     };
 
     return (
-        <Card className="relative flex h-full flex-col overflow-hidden border-slate-200">
+        <Card className="relative flex w-full flex-col border-slate-200">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.08),_transparent_45%)]" />
-            <div className="relative z-10 flex min-h-0 flex-1 flex-col justify-between gap-6">
-                <div className="space-y-6">
+            <div className="relative z-10 flex flex-col gap-6">
+                <div className="space-y-5">
                     <div className="flex items-start justify-between gap-4">
                         <div>
                             <h2 className="text-xl font-bold text-slate-800">My Attendance</h2>
                             <p className="mt-1 text-sm text-slate-400">
-                                Based on your schedule. Lunch break is excluded from required work time.
+                                Location is required to start or stop. Lunch break is excluded from required work time.
                             </p>
                         </div>
                         <span className={`rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${
@@ -168,6 +170,24 @@ export default function MyAttendanceTimer({
                             </p>
                         )}
                     </div>
+
+                    {timer.attendance?.startLatitude != null
+                        && timer.attendance?.startLongitude != null && (
+                        <Suspense
+                            fallback={
+                                <div className="flex h-40 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium text-slate-400 sm:h-44">
+                                    Loading map...
+                                </div>
+                            }
+                        >
+                            <AttendanceLocationMap
+                                latitude={timer.attendance.startLatitude}
+                                longitude={timer.attendance.startLongitude}
+                                accuracy={timer.attendance.startAccuracy}
+                                label="Clock-in location"
+                            />
+                        </Suspense>
+                    )}
 
                     {!schedule?.isRestDay && requiredMs > 0 && !isCompletedToday && (
                         <div className="space-y-2">
@@ -236,9 +256,8 @@ export default function MyAttendanceTimer({
 
                     {isCompletedToday && canContinue && (
                         <div className="flex w-full flex-col items-center gap-3">
-                            <p className="max-w-md text-center text-sm font-medium text-slate-500">
-                                Attendance stopped for this shift day ({formatHoursLabel(displayMs)} recorded).
-                                If you stopped by mistake, you can continue — only today. Tomorrow you will need to start a new timer.
+                            <p className="max-w-sm text-center text-sm font-medium text-slate-500">
+                                Stopped ({formatHoursLabel(displayMs)} recorded). Continue is available today only.
                             </p>
                             <Button
                                 icon={Play}

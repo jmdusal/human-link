@@ -2,11 +2,9 @@ import api from '@/api/axios';
 import { API_ROUTES } from '@/constants';
 import type { ContractTemplate, ContractTemplateFormData } from '@/types';
 
-const openPdfBlob = (data: BlobPart) => {
+const createPdfObjectUrl = (data: BlobPart): string => {
     const blob = new Blob([data], { type: 'application/pdf' });
-    const url = window.URL.createObjectURL(blob);
-    window.open(url, '_blank', 'noopener,noreferrer');
-    window.setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
+    return window.URL.createObjectURL(blob);
 };
 
 export const ContractTemplateService = {
@@ -27,19 +25,19 @@ export const ContractTemplateService = {
         await api.delete(API_ROUTES.CONTRACT_TEMPLATES.DELETE(id));
     },
 
-    async preview(id: number): Promise<void> {
+    async preview(id: number): Promise<string> {
         const response = await api.get(API_ROUTES.CONTRACT_TEMPLATES.PREVIEW(id), {
             responseType: 'blob',
         });
-        openPdfBlob(response.data);
+        return createPdfObjectUrl(response.data);
     },
 
-    async previewDraft(body: string): Promise<void> {
+    async previewDraft(body: string): Promise<string> {
         const response = await api.post(
             API_ROUTES.CONTRACT_TEMPLATES.PREVIEW_DRAFT,
             { body },
             { responseType: 'blob' }
         );
-        openPdfBlob(response.data);
+        return createPdfObjectUrl(response.data);
     },
 };
