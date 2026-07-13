@@ -68,7 +68,6 @@ export default function CompanyEmailTab({
                     value={form.mail_from_name}
                     onChange={(e) => onChange({ mail_from_name: e.target.value })}
                     disabled={!canEdit}
-                    placeholder={form.name || 'Company name'}
                 />
                 <Input
                     label="From email"
@@ -76,7 +75,6 @@ export default function CompanyEmailTab({
                     value={form.mail_from_address}
                     onChange={(e) => onChange({ mail_from_address: e.target.value })}
                     disabled={!canEdit}
-                    placeholder="hr@company.com"
                 />
 
                 {isLogMailer && (

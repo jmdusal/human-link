@@ -18,15 +18,6 @@ export default function CompanyGeneralTab({
 }: CompanyGeneralTabProps) {
     return (
         <div className="space-y-3 sm:space-y-4 min-w-0">
-            <div className="min-w-0">
-                <h2 className="text-sm font-semibold text-slate-900 truncate">
-                    {companyName ?? 'Company profile'}
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                    These details identify the employer of record for this company.
-                </p>
-            </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 min-w-0">
                 <Input
                     label="Name"

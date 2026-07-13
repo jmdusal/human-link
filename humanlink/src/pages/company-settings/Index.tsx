@@ -205,11 +205,7 @@ export default function CompanySettingsPage() {
         <div className="w-full min-w-0 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 space-y-4 sm:space-y-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
                 <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        System
-                    </p>
                     <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2 min-w-0">
-                        <Building2 size={22} className="shrink-0 text-slate-700" />
                         <span className="truncate">Company Settings</span>
                     </h1>
                     <p className="text-sm text-slate-500 mt-1 leading-relaxed">
