@@ -1,8 +1,11 @@
 import axios, { type AxiosInstance, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import { camelizeKeys, decamelizeKeys } from 'humps';
 
+const apiBaseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const apiOrigin = apiBaseURL.replace(/\/api\/?$/, '');
+
 const api: AxiosInstance = axios.create({
-  baseURL: 'http://localhost:8000/api',
+  baseURL: apiBaseURL,
   withCredentials: true,
   withXSRFToken: true,
   xsrfCookieName: 'XSRF-TOKEN',
@@ -18,7 +21,7 @@ api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
         ['post', 'put', 'patch', 'delete'].includes(config.method || '') &&
         !document.cookie.includes('XSRF-TOKEN')
     ) {
-        await axios.get('http://localhost:8000/sanctum/csrf-cookie', {
+        await axios.get(`${apiOrigin}/sanctum/csrf-cookie`, {
             withCredentials: true
         });
     }

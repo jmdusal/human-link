@@ -97,12 +97,24 @@ The React app in `humanlink/` can be hosted on Vercel. The Laravel API in `human
 1. Import the GitHub repo in Vercel.
 2. Set **Root Directory** to `humanlink`.
 3. Framework: Vite · Build: `npm run build` · Output: `dist`.
-4. Add env var `VITE_API_URL` pointing at your production API (e.g. `https://api.example.com/api`).
-5. Redeploy.
+4. Add env var `VITE_API_URL` pointing at your **public** API (e.g. `https://api.example.com/api`). Do not use `localhost` — browsers on Vercel cannot reach your laptop.
+5. Redeploy after changing env vars (Vite bakes `VITE_*` in at build time).
 
 SPA routes are handled by `humanlink/vercel.json` (rewrites to `index.html`).
 
-On the API, set `FRONTEND_URL`, `SANCTUM_STATEFUL_DOMAINS`, and CORS to allow your Vercel domain (e.g. `human-link-alpha.vercel.app`).
+### API (required for login)
+
+Host `humanlink-api` publicly, then set:
+
+```
+FRONTEND_URL=https://human-link-alpha.vercel.app
+CORS_ALLOWED_ORIGINS=https://human-link-alpha.vercel.app,http://localhost:5173
+SANCTUM_STATEFUL_DOMAINS=human-link-alpha.vercel.app,localhost:5173
+APP_URL=https://your-api-host
+SESSION_SECURE_COOKIE=true
+```
+
+Quick local test only: expose the API with a tunnel (e.g. ngrok → port 8000), put that HTTPS URL in Vercel `VITE_API_URL`, and add the Vercel origin to `CORS_ALLOWED_ORIGINS` / `FRONTEND_URL` on the API.
 
 ## Seeded logins
 
