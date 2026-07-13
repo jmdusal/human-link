@@ -13,6 +13,8 @@ const api: AxiosInstance = axios.create({
   headers: {
     'Accept': 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
+    // Free ngrok serves an interstitial HTML page to browsers unless this is set.
+    'ngrok-skip-browser-warning': 'true',
   },
 });
 
@@ -22,7 +24,12 @@ api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
         !document.cookie.includes('XSRF-TOKEN')
     ) {
         await axios.get(`${apiOrigin}/sanctum/csrf-cookie`, {
-            withCredentials: true
+            withCredentials: true,
+            headers: {
+                'ngrok-skip-browser-warning': 'true',
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
         });
     }
     
