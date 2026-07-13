@@ -32,6 +32,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Irreversible: company-specific names cannot be restored to "Human Link" safely.
+        // No down migration needed.
     }
 };

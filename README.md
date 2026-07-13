@@ -88,6 +88,22 @@ Set `BROADCAST_CONNECTION=reverb` plus matching `REVERB_*` values in `humanlink-
 cd humanlink-api && php artisan reverb:start --host=0.0.0.0 --port=8081
 ```
 
+## Deploy (Vercel UI)
+
+The React app in `humanlink/` can be hosted on Vercel. The Laravel API in `humanlink-api/` needs a PHP host (Railway, Render, Fly.io, VPS, etc.) — not Vercel.
+
+### Frontend (`humanlink`)
+
+1. Import the GitHub repo in Vercel.
+2. Set **Root Directory** to `humanlink`.
+3. Framework: Vite · Build: `npm run build` · Output: `dist`.
+4. Add env var `VITE_API_URL` pointing at your production API (e.g. `https://api.example.com/api`).
+5. Redeploy.
+
+SPA routes are handled by `humanlink/vercel.json` (rewrites to `index.html`).
+
+On the API, set `FRONTEND_URL`, `SANCTUM_STATEFUL_DOMAINS`, and CORS to allow your Vercel domain (e.g. `human-link-alpha.vercel.app`).
+
 ## Seeded logins
 
 Password for all: `password`
