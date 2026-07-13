@@ -2,7 +2,9 @@ import axios, { type AxiosInstance, type AxiosResponse, type InternalAxiosReques
 import { camelizeKeys, decamelizeKeys } from 'humps';
 
 const apiBaseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-const apiOrigin = apiBaseURL.replace(/\/api\/?$/, '');
+const apiOrigin = apiBaseURL.startsWith('http')
+  ? apiBaseURL.replace(/\/api\/?$/, '')
+  : (typeof window !== 'undefined' ? window.location.origin : '');
 
 const api: AxiosInstance = axios.create({
   baseURL: apiBaseURL,

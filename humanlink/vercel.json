@@ -1,3 +1,20 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://edgy-oncoming-caretaker.ngrok-free.dev/api/:path*"
+    },
+    {
+      "source": "/sanctum/:path*",
+      "destination": "https://edgy-oncoming-caretaker.ngrok-free.dev/sanctum/:path*"
+    },
+    {
+      "source": "/broadcasting/:path*",
+      "destination": "https://edgy-oncoming-caretaker.ngrok-free.dev/broadcasting/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }

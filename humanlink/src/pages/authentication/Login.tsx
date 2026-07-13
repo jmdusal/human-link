@@ -42,7 +42,11 @@ const Login = () => {
                 setMfaEmail(result.email ?? null);
                 return;
             }
-            await checkAuth();
+            const authedUser = await checkAuth();
+            if (!authedUser) {
+                setError('Login succeeded but session could not be established. Check API cookies / CORS.');
+                return;
+            }
             navigate(redirectTo, { replace: true });
         } catch (err: any) {
             setError(
